@@ -1,12 +1,12 @@
-package home
+package request
 
 import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
-	"larsa-tourism-microservices/pkg/services/home/repo"
+	"larsa-tourism-microservices/pkg/services/request/filter"
+	"larsa-tourism-microservices/pkg/services/request/models"
+	"larsa-tourism-microservices/pkg/services/request/repo"
 	"larsa-tourism-microservices/pkg/util"
 	"time"
 

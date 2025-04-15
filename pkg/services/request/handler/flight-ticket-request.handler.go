@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/home"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/services/request"
+	"larsa-tourism-microservices/pkg/services/request/filter"
+	"larsa-tourism-microservices/pkg/services/request/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
@@ -15,16 +15,16 @@ import (
 	"github.com/samber/do"
 )
 
-type VipCarRequestHandler struct {
-	vipCarRequestsvcs home.VipCarRequestSvcs
+type FlightTicketRequestHandler struct {
+	flightTicketRequestsvcs request.FlightTicketRequestSvcs
 }
 
-func NewVipCarRequestHandler(i *do.Injector, r *chi.Mux) {
-	h := &VipCarRequestHandler{
-		vipCarRequestsvcs: do.MustInvoke[home.VipCarRequestSvcs](i),
+func NewFlightTicketRequestHandler(i *do.Injector, r *chi.Mux) {
+	h := &FlightTicketRequestHandler{
+		flightTicketRequestsvcs: do.MustInvoke[request.FlightTicketRequestSvcs](i),
 	}
 
-	r.Route("/vipCarRequest", func(r chi.Router) {
+	r.Route("/flightTicketRequest", func(r chi.Router) {
 
 		r.Get("/{id}", helpers.Make(h.GetOne))
 
@@ -40,13 +40,13 @@ func NewVipCarRequestHandler(i *do.Injector, r *chi.Mux) {
 
 }
 
-func (l *VipCarRequestHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+func (l *FlightTicketRequestHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id")
 
-	result, err := l.vipCarRequestsvcs.GetOne(ctx, id)
+	result, err := l.flightTicketRequestsvcs.GetOne(ctx, id)
 	if err != nil {
 		return err
 
@@ -54,10 +54,10 @@ func (l *VipCarRequestHandler) GetOne(w http.ResponseWriter, r *http.Request) er
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *VipCarRequestHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+func (l *FlightTicketRequestHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	filterParam := r.URL.Query().Get("query")
-	var filter filter.VipCarRequestFilter
+	var filter filter.FlightTicketRequestFilter
 	if filterParam != "" {
 		err := json.Unmarshal([]byte(filterParam), &filter)
 		if err != nil {
@@ -65,24 +65,24 @@ func (l *VipCarRequestHandler) GetAll(w http.ResponseWriter, r *http.Request) er
 			return err
 		}
 	}
-	result, err := l.vipCarRequestsvcs.GetAll(ctx, filter)
+	result, err := l.flightTicketRequestsvcs.GetAll(ctx, filter)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *VipCarRequestHandler) Add(w http.ResponseWriter, r *http.Request) error {
+func (l *FlightTicketRequestHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.VipCarRequestDto
+	var data models.FlightTicketRequestDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 
-	err := l.vipCarRequestsvcs.Add(ctx, &data)
+	err := l.flightTicketRequestsvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
@@ -90,10 +90,10 @@ func (l *VipCarRequestHandler) Add(w http.ResponseWriter, r *http.Request) error
 	return nil
 }
 
-func (l *VipCarRequestHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+func (l *FlightTicketRequestHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
-	var err = l.vipCarRequestsvcs.Delete(ctx, id)
+	var err = l.flightTicketRequestsvcs.Delete(ctx, id)
 
 	if err != nil {
 		return err
@@ -102,17 +102,17 @@ func (l *VipCarRequestHandler) Delete(w http.ResponseWriter, r *http.Request) er
 	return nil
 }
 
-func (l *VipCarRequestHandler) Update(w http.ResponseWriter, r *http.Request) error {
+func (l *FlightTicketRequestHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.VipCarRequestDto
+	var data models.FlightTicketRequestDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 	id := chi.URLParam(r, "id")
-	err := l.vipCarRequestsvcs.Update(ctx, id, &data)
+	err := l.flightTicketRequestsvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}
@@ -120,17 +120,17 @@ func (l *VipCarRequestHandler) Update(w http.ResponseWriter, r *http.Request) er
 	return nil
 }
 
-func (l *VipCarRequestHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
+func (l *FlightTicketRequestHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data []models.VipCarRequestDto
+	var data []models.FlightTicketRequestDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 
-	err := l.vipCarRequestsvcs.AddMany(ctx, data)
+	err := l.flightTicketRequestsvcs.AddMany(ctx, data)
 	if err != nil {
 		return err
 	}

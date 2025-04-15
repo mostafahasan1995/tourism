@@ -3,8 +3,8 @@ package repo
 import (
 	"context"
 	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/services/picklist/filter"
+	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/util"
 
 	"time"
@@ -17,33 +17,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type HotelsRepo interface {
-	dbrepo.MainRepo[models.Hotels]
-	GetOne(ctx context.Context, id string) (*models.Hotels, error)
-	GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) error
+type OurCountryRepo interface {
+	dbrepo.MainRepo[models.OurCountry]
+	GetOne(ctx context.Context, id string) (*models.OurCountry, error)
+	GetAll(ctx context.Context, filter filter.OurCountryFilter) (models.OurCountryPagination, error)
+	Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) error
 	Delete(ctx context.Context, id string) error
 }
 
-type hotelsrepo struct {
-	dbrepo.MainRepoImpl[models.Hotels]
+type ourCountryrepo struct {
+	dbrepo.MainRepoImpl[models.OurCountry]
 
 	db       *mongo.Client
 	collName string
 }
 
-func NewHotelsRepo(i *do.Injector) (HotelsRepo, error) {
-	return &hotelsrepo{
-		MainRepoImpl: dbrepo.MainRepoImpl[models.Hotels]{
+func NewOurCountryRepo(i *do.Injector) (OurCountryRepo, error) {
+	return &ourCountryrepo{
+		MainRepoImpl: dbrepo.MainRepoImpl[models.OurCountry]{
 			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "tourismHotels",
+			CollName: "tourismOurCountry",
 		},
 		db:       do.MustInvoke[*mongo.Client](i),
-		collName: "tourismHotels",
+		collName: "tourismOurCountry",
 	}, nil
 }
 
-func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, error) {
+func (l *ourCountryrepo) GetOne(ctx context.Context, id string) (*models.OurCountry, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 	}
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	var data models.Hotels
+	var data models.OurCountry
 	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
 		return nil, err
 	}
@@ -62,11 +62,11 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 
 }
 
-func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error) {
+func (l *ourCountryrepo) GetAll(ctx context.Context, filter filter.OurCountryFilter) (models.OurCountryPagination, error) {
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return models.HotelsPagination{}, err
+		return models.OurCountryPagination{}, err
 	}
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
@@ -76,7 +76,7 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 	// Count total documents matching the filter
 	totalCount, err := coll.CountDocuments(ctx, filterBody)
 	if err != nil {
-		return models.HotelsPagination{}, err
+		return models.OurCountryPagination{}, err
 	}
 
 	// Pagination defaults and limits
@@ -96,12 +96,12 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 
 	cur, err := coll.Find(ctx, filterBody, findOptions)
 	if err != nil {
-		return models.HotelsPagination{}, err
+		return models.OurCountryPagination{}, err
 	}
 
-	var programs []models.Hotels
+	var programs []models.OurCountry
 	if err := cur.All(ctx, &programs); err != nil {
-		return models.HotelsPagination{}, err
+		return models.OurCountryPagination{}, err
 	}
 
 	// Prepare pagination result
@@ -111,8 +111,8 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 	}
 
 
-	result := models.HotelsPagination {
-		Hotels:programs,
+	result := models.OurCountryPagination {
+		OurCountry:programs,
 		Pagination: common.Pagination{
 			TotalPages: totalPages,
 			PerPage:    int64(size),
@@ -124,7 +124,7 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 	return result, nil
 }
 
-func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) error {
+func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
@@ -132,41 +132,27 @@ func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mo
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	preHotels, err := l.GetOne(ctx, id.Hex())
+	preOurCountry, err := l.GetOne(ctx, id.Hex())
 	if err != nil {
 		return err
 	}
 
-	hotels := &models.Hotels{
-		HotelsDto: models.HotelsDto{
+	ourCountry := &models.OurCountry{
+		OurCountryDto: models.OurCountryDto{
 			Name:                          data.Name,
-			HotelType:                     data.HotelType,
-			Location:                      data.Location,
-			CheckInAndCheckOut:            data.CheckInAndCheckOut,
-			Price:                         data.Price,
-			Ratings:                       data.Ratings,
-			Image:                         data.Image,
-			RoomAmenities:                 data.RoomAmenities,
-			DistanceFromCityCenter:        data.DistanceFromCityCenter,
-			NearbyAttractions:             data.NearbyAttractions,
-			ImagesGallery:                 data.ImagesGallery,
-			OverviewPage:                  data.OverviewPage,
-			RoomsAndSuitesPage:            data.RoomsAndSuitesPage,
-			AmenitiesAndFacilitiesPage:    data.AmenitiesAndFacilitiesPage,
-			LocationNearbyAttractionsPage: data.LocationNearbyAttractionsPage,
-			ReviewsAndRatingsPage:         data.ReviewsAndRatingsPage,
-			BookingAndPoliciesPage:        data.BookingAndPoliciesPage,
+			Image:                          data.Image,
+
 		},
 		Id:        id,
 		Trash:     false,
-		CreatedAt: preHotels.CreatedAt,
-		CreatedBy: preHotels.CreatedBy,
+		CreatedAt: preOurCountry.CreatedAt,
+		CreatedBy: preOurCountry.CreatedBy,
 		UpdatedBy: cfg.User.Id,
 		UpdatedAt: time.Now(),
 	}
 
 	filter := bson.M{"_id": id}
-	update := bson.M{"$set": hotels}
+	update := bson.M{"$set": ourCountry}
 
 	upsert := false
 	after := options.After
@@ -175,19 +161,19 @@ func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mo
 		Upsert:         &upsert,
 	}
 
-	var updatedHotels models.Hotels
+	var updatedOurCountry models.OurCountry
 	if err := coll.FindOneAndUpdate(
 		ctx,
 		filter,
 		update,
 		opts,
-	).Decode(&updatedHotels); err != nil {
+	).Decode(&updatedOurCountry); err != nil {
 		return err
 	}
 
 	return nil
 }
-func (l *hotelsrepo) Delete(ctx context.Context, id string) error {
+func (l *ourCountryrepo) Delete(ctx context.Context, id string) error {
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {

@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/home"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/services/picklist"
+	"larsa-tourism-microservices/pkg/services/picklist/filter"
+	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
@@ -15,16 +15,16 @@ import (
 	"github.com/samber/do"
 )
 
-type TourismProgramHandler struct {
-	tourismProgramsvcs home.TourismProgramSvcs
+type OurCountryHandler struct {
+	ourCountrysvcs picklist.OurCountrySvcs
 }
 
-func NewTourismProgramHandler(i *do.Injector, r *chi.Mux) {
-	h := &TourismProgramHandler{
-		tourismProgramsvcs: do.MustInvoke[home.TourismProgramSvcs](i),
+func NewOurCountryHandler(i *do.Injector, r *chi.Mux) {
+	h := &OurCountryHandler{
+		ourCountrysvcs: do.MustInvoke[picklist.OurCountrySvcs](i),
 	}
 
-	r.Route("/tourism-program", func(r chi.Router) {
+	r.Route("/ourCountry", func(r chi.Router) {
 
 		r.Get("/{id}", helpers.Make(h.GetOne))
 
@@ -38,13 +38,13 @@ func NewTourismProgramHandler(i *do.Injector, r *chi.Mux) {
 
 }
 
-func (l *TourismProgramHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+func (l *OurCountryHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id")
 
-	result, err := l.tourismProgramsvcs.GetOne(ctx, id)
+	result, err := l.ourCountrysvcs.GetOne(ctx, id)
 	if err != nil {
 		return err
 
@@ -52,10 +52,10 @@ func (l *TourismProgramHandler) GetOne(w http.ResponseWriter, r *http.Request) e
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *TourismProgramHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+func (l *OurCountryHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	filterParam := r.URL.Query().Get("query")
-	var filter filter.TourismProgramFilter
+	var filter filter.OurCountryFilter
 	if filterParam != "" {
 		err := json.Unmarshal([]byte(filterParam), &filter)
 		if err != nil {
@@ -63,35 +63,34 @@ func (l *TourismProgramHandler) GetAll(w http.ResponseWriter, r *http.Request) e
 			return err
 		}
 	}
-
-	result, err := l.tourismProgramsvcs.GetAll(ctx, filter)
+	result, err := l.ourCountrysvcs.GetAll(ctx, filter)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *TourismProgramHandler) Add(w http.ResponseWriter, r *http.Request) error {
+func (l *OurCountryHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.TourismProgramDto
+	var data models.OurCountryDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 
-	err := l.tourismProgramsvcs.Add(ctx, &data)
+	err := l.ourCountrysvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
-func (l *TourismProgramHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+func (l *OurCountryHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
-	var err = l.tourismProgramsvcs.Delete(ctx, id)
+	var err = l.ourCountrysvcs.Delete(ctx, id)
 
 	if err != nil {
 		return err
@@ -100,17 +99,17 @@ func (l *TourismProgramHandler) Delete(w http.ResponseWriter, r *http.Request) e
 	return nil
 }
 
-func (l *TourismProgramHandler) Update(w http.ResponseWriter, r *http.Request) error {
+func (l *OurCountryHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.TourismProgramDto
+	var data models.OurCountryDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 	id := chi.URLParam(r, "id")
-	err := l.tourismProgramsvcs.Update(ctx, id, &data)
+	err := l.ourCountrysvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}

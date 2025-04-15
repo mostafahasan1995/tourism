@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/home"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/services/our-service"
+	"larsa-tourism-microservices/pkg/services/our-service/filter"
+	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
@@ -15,16 +15,16 @@ import (
 	"github.com/samber/do"
 )
 
-type HotelsHandler struct {
-	hotelssvcs home.HotelsSvcs
+type TourismProgramHandler struct {
+	tourismProgramsvcs ourService.TourismProgramSvcs
 }
 
-func NewHotelsHandler(i *do.Injector, r *chi.Mux) {
-	h := &HotelsHandler{
-		hotelssvcs: do.MustInvoke[home.HotelsSvcs](i),
+func NewTourismProgramHandler(i *do.Injector, r *chi.Mux) {
+	h := &TourismProgramHandler{
+		tourismProgramsvcs: do.MustInvoke[ourService.TourismProgramSvcs](i),
 	}
 
-	r.Route("/hotels", func(r chi.Router) {
+	r.Route("/tourism-program", func(r chi.Router) {
 
 		r.Get("/{id}", helpers.Make(h.GetOne))
 
@@ -38,13 +38,13 @@ func NewHotelsHandler(i *do.Injector, r *chi.Mux) {
 
 }
 
-func (l *HotelsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+func (l *TourismProgramHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id")
 
-	result, err := l.hotelssvcs.GetOne(ctx, id)
+	result, err := l.tourismProgramsvcs.GetOne(ctx, id)
 	if err != nil {
 		return err
 
@@ -52,10 +52,10 @@ func (l *HotelsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+func (l *TourismProgramHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	filterParam := r.URL.Query().Get("query")
-	var filter filter.HotelsFilter
+	var filter filter.TourismProgramFilter
 	if filterParam != "" {
 		err := json.Unmarshal([]byte(filterParam), &filter)
 		if err != nil {
@@ -63,34 +63,35 @@ func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 	}
-	result, err := l.hotelssvcs.GetAll(ctx, filter)
+
+	result, err := l.tourismProgramsvcs.GetAll(ctx, filter)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *HotelsHandler) Add(w http.ResponseWriter, r *http.Request) error {
+func (l *TourismProgramHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.HotelsDto
+	var data models.TourismProgramDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 
-	err := l.hotelssvcs.Add(ctx, &data)
+	err := l.tourismProgramsvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
-func (l *HotelsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+func (l *TourismProgramHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
-	var err = l.hotelssvcs.Delete(ctx, id)
+	var err = l.tourismProgramsvcs.Delete(ctx, id)
 
 	if err != nil {
 		return err
@@ -99,17 +100,17 @@ func (l *HotelsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func (l *HotelsHandler) Update(w http.ResponseWriter, r *http.Request) error {
+func (l *TourismProgramHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.HotelsDto
+	var data models.TourismProgramDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 	id := chi.URLParam(r, "id")
-	err := l.hotelssvcs.Update(ctx, id, &data)
+	err := l.tourismProgramsvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}

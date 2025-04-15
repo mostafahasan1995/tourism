@@ -7,7 +7,9 @@ import (
 	"larsa-tourism-microservices/pkg/caching"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/nats"
-	home "larsa-tourism-microservices/pkg/services/home/di"
+	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
+	request "larsa-tourism-microservices/pkg/services/request/di"
+	
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
 	gateway "larsa-tourism-microservices/pkg/gatway"
 	
@@ -77,8 +79,9 @@ func Start() error {
 	// validator
 	do.ProvideValue(injector, validateInstance)
 
-	home.Init(injector, r)
+	ourService.Init(injector, r)
 	picklist.Init(injector, r)
+	request.Init(injector, r)
 	
 	//message.Init(injector, r)
 	//whatsapp.Init(injector, r)

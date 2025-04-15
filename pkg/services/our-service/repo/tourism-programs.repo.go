@@ -2,8 +2,8 @@ package repo
 
 import (
 	"context"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/services/our-service/filter"
+	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
 	"time"
 
