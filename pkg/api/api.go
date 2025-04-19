@@ -7,14 +7,15 @@ import (
 	"larsa-tourism-microservices/pkg/caching"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/nats"
+
+	home "larsa-tourism-microservices/pkg/services/home/di"
 	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
 	request "larsa-tourism-microservices/pkg/services/request/di"
-	
-	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
-	gateway "larsa-tourism-microservices/pkg/gatway"
-	
-	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 
+	gateway "larsa-tourism-microservices/pkg/gatway"
+	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
+
+	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 
 	"larsa-tourism-microservices/pkg/util"
 	"log"
@@ -79,10 +80,11 @@ func Start() error {
 	// validator
 	do.ProvideValue(injector, validateInstance)
 
+	home.Init(injector, r)
 	ourService.Init(injector, r)
 	picklist.Init(injector, r)
 	request.Init(injector, r)
-	
+
 	//message.Init(injector, r)
 	//whatsapp.Init(injector, r)
 	//leads
@@ -90,13 +92,8 @@ func Start() error {
 	//db
 	dbsvcs.Init(injector, r)
 
-	//getway 
+	//getway
 	do.Provide(injector, gateway.NewUsersGw)
-
-
-
-	
-
 
 	fmt.Println("start server")
 
