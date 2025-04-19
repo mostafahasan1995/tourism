@@ -4,12 +4,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 )
 
-type FlightTicketRequestFilter struct {
+type ContactUsFilter struct {
 	Page int `bson:"page" json:"page"`
 	Size int `bson:"size" json:"size"`
 }
 
-func (f *FlightTicketRequestFilter) ToBsonFilter() bson.M {
+func (f *ContactUsFilter) ToBsonFilter() bson.M {
 	filterConditions := []bson.M{
 		{"trash": bson.M{"$ne": true}},
 	}

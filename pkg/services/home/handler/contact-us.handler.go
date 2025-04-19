@@ -15,16 +15,16 @@ import (
 	"github.com/samber/do"
 )
 
-type FlightTicketRequestHandler struct {
-	flightTicketRequestsvcs home.FlightTicketRequestSvcs
+type ContactUsHandler struct {
+	contactUssvcs home.ContactUsSvcs
 }
 
-func NewFlightTicketRequestHandler(i *do.Injector, r *chi.Mux) {
-	h := &FlightTicketRequestHandler{
-		flightTicketRequestsvcs: do.MustInvoke[home.FlightTicketRequestSvcs](i),
+func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
+	h := &ContactUsHandler{
+		contactUssvcs: do.MustInvoke[home.ContactUsSvcs](i),
 	}
 
-	r.Route("/flightTicketRequest", func(r chi.Router) {
+	r.Route("/contactUs", func(r chi.Router) {
 
 		r.Get("/{id}", helpers.Make(h.GetOne))
 
@@ -40,13 +40,13 @@ func NewFlightTicketRequestHandler(i *do.Injector, r *chi.Mux) {
 
 }
 
-func (l *FlightTicketRequestHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+func (l *ContactUsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id")
 
-	result, err := l.flightTicketRequestsvcs.GetOne(ctx, id)
+	result, err := l.contactUssvcs.GetOne(ctx, id)
 	if err != nil {
 		return err
 
@@ -54,10 +54,10 @@ func (l *FlightTicketRequestHandler) GetOne(w http.ResponseWriter, r *http.Reque
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *FlightTicketRequestHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+func (l *ContactUsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	filterParam := r.URL.Query().Get("query")
-	var filter filter.FlightTicketRequestFilter
+	var filter filter.ContactUsFilter
 	if filterParam != "" {
 		err := json.Unmarshal([]byte(filterParam), &filter)
 		if err != nil {
@@ -65,24 +65,24 @@ func (l *FlightTicketRequestHandler) GetAll(w http.ResponseWriter, r *http.Reque
 			return err
 		}
 	}
-	result, err := l.flightTicketRequestsvcs.GetAll(ctx, filter)
+	result, err := l.contactUssvcs.GetAll(ctx, filter)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *FlightTicketRequestHandler) Add(w http.ResponseWriter, r *http.Request) error {
+func (l *ContactUsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.FlightTicketRequestDto
+	var data models.ContactUsDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 
-	err := l.flightTicketRequestsvcs.Add(ctx, &data)
+	err := l.contactUssvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
@@ -90,10 +90,10 @@ func (l *FlightTicketRequestHandler) Add(w http.ResponseWriter, r *http.Request)
 	return nil
 }
 
-func (l *FlightTicketRequestHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+func (l *ContactUsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
-	var err = l.flightTicketRequestsvcs.Delete(ctx, id)
+	var err = l.contactUssvcs.Delete(ctx, id)
 
 	if err != nil {
 		return err
@@ -102,17 +102,17 @@ func (l *FlightTicketRequestHandler) Delete(w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-func (l *FlightTicketRequestHandler) Update(w http.ResponseWriter, r *http.Request) error {
+func (l *ContactUsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.FlightTicketRequestDto
+	var data models.ContactUsDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 	id := chi.URLParam(r, "id")
-	err := l.flightTicketRequestsvcs.Update(ctx, id, &data)
+	err := l.contactUssvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}
@@ -120,17 +120,17 @@ func (l *FlightTicketRequestHandler) Update(w http.ResponseWriter, r *http.Reque
 	return nil
 }
 
-func (l *FlightTicketRequestHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
+func (l *ContactUsHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data []models.FlightTicketRequestDto
+	var data []models.ContactUsDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
 	//and validations go here
 
-	err := l.flightTicketRequestsvcs.AddMany(ctx, data)
+	err := l.contactUssvcs.AddMany(ctx, data)
 	if err != nil {
 		return err
 	}

@@ -17,33 +17,33 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type FlightTicketRequestRepo interface {
-	dbrepo.MainRepo[models.FlightTicketRequest]
-	GetOne(ctx context.Context, id string) (*models.FlightTicketRequest, error)
-	GetAll(ctx context.Context, filter filter.FlightTicketRequestFilter) (models.FlightTicketRequestPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.FlightTicketRequestDto) error
+type ContactUsRepo interface {
+	dbrepo.MainRepo[models.ContactUs]
+	GetOne(ctx context.Context, id string) (*models.ContactUs, error)
+	GetAll(ctx context.Context, filter filter.ContactUsFilter) (models.ContactUsPagination, error)
+	Update(ctx context.Context, id primitive.ObjectID, data *models.ContactUsDto) error
 	Delete(ctx context.Context, id string) error
 }
 
-type flightTicketRequestrepo struct {
-	dbrepo.MainRepoImpl[models.FlightTicketRequest]
+type contactUsrepo struct {
+	dbrepo.MainRepoImpl[models.ContactUs]
 
 	db       *mongo.Client
 	collName string
 }
 
-func NewFlightTicketRequestRepo(i *do.Injector) (FlightTicketRequestRepo, error) {
-	return &flightTicketRequestrepo{
-		MainRepoImpl: dbrepo.MainRepoImpl[models.FlightTicketRequest]{
+func NewContactUsRepo(i *do.Injector) (ContactUsRepo, error) {
+	return &contactUsrepo{
+		MainRepoImpl: dbrepo.MainRepoImpl[models.ContactUs]{
 			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "tourismFlightTicketRequest",
+			CollName: "tourismContactUs",
 		},
 		db:       do.MustInvoke[*mongo.Client](i),
-		collName: "tourismFlightTicketRequest",
+		collName: "tourismContactUs",
 	}, nil
 }
 
-func (l *flightTicketRequestrepo) GetOne(ctx context.Context, id string) (*models.FlightTicketRequest, error) {
+func (l *contactUsrepo) GetOne(ctx context.Context, id string) (*models.ContactUs, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
@@ -54,7 +54,7 @@ func (l *flightTicketRequestrepo) GetOne(ctx context.Context, id string) (*model
 	}
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	var data models.FlightTicketRequest
+	var data models.ContactUs
 	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
 		return nil, err
 	}
@@ -62,11 +62,11 @@ func (l *flightTicketRequestrepo) GetOne(ctx context.Context, id string) (*model
 
 }
 
-func (l *flightTicketRequestrepo) GetAll(ctx context.Context, filter filter.FlightTicketRequestFilter) (models.FlightTicketRequestPagination, error) {
+func (l *contactUsrepo) GetAll(ctx context.Context, filter filter.ContactUsFilter) (models.ContactUsPagination, error) {
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return models.FlightTicketRequestPagination{}, err
+		return models.ContactUsPagination{}, err
 	}
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
@@ -76,7 +76,7 @@ func (l *flightTicketRequestrepo) GetAll(ctx context.Context, filter filter.Flig
 	// Count total documents matching the filter
 	totalCount, err := coll.CountDocuments(ctx, filterBody)
 	if err != nil {
-		return models.FlightTicketRequestPagination{}, err
+		return models.ContactUsPagination{}, err
 	}
 
 	// Pagination defaults and limits
@@ -96,12 +96,12 @@ func (l *flightTicketRequestrepo) GetAll(ctx context.Context, filter filter.Flig
 
 	cur, err := coll.Find(ctx, filterBody, findOptions)
 	if err != nil {
-		return models.FlightTicketRequestPagination{}, err
+		return models.ContactUsPagination{}, err
 	}
 
-	var programs []models.FlightTicketRequest
+	var programs []models.ContactUs
 	if err := cur.All(ctx, &programs); err != nil {
-		return models.FlightTicketRequestPagination{}, err
+		return models.ContactUsPagination{}, err
 	}
 
 	// Prepare pagination result
@@ -110,8 +110,8 @@ func (l *flightTicketRequestrepo) GetAll(ctx context.Context, filter filter.Flig
 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
 	}
 
-	result := models.FlightTicketRequestPagination{
-		FlightTicketRequest: programs,
+	result := models.ContactUsPagination{
+		ContactUs: programs,
 		Pagination: common.Pagination{
 			TotalPages: totalPages,
 			PerPage:    int64(size),
@@ -122,7 +122,7 @@ func (l *flightTicketRequestrepo) GetAll(ctx context.Context, filter filter.Flig
 	return result, nil
 }
 
-func (l *flightTicketRequestrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.FlightTicketRequestDto) error {
+func (l *contactUsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.ContactUsDto) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
@@ -130,38 +130,31 @@ func (l *flightTicketRequestrepo) Update(ctx context.Context, id primitive.Objec
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	preFlightTicketRequest, err := l.GetOne(ctx, id.Hex())
+	preContactUs, err := l.GetOne(ctx, id.Hex())
 	if err != nil {
 		return err
 	}
 
-	flightTicketRequest := &models.FlightTicketRequest{
-		FlightTicketRequestDto: models.FlightTicketRequestDto{
-			DestinationFrom:        data.DestinationFrom,
-			DestinationTo:          data.DestinationTo,
-			TripType:               data.TripType,
-			TravelClass:            data.TravelClass,
-			NumberOfAdults:         data.NumberOfAdults,
-			NumberOfChildren:       data.NumberOfChildren,
-			NumberOfInfants:        data.NumberOfInfants,
-			BestDepartureTime:      data.BestDepartureTime,
-			StopoverPreferences:    data.StopoverPreferences,
-			PreferredContactMethod: data.PreferredContactMethod,
-			PreferredAirlines:      data.PreferredAirlines,
-			ExtraLuggage:           data.ExtraLuggage,
-			SpecialMeals:           data.SpecialMeals,
+	contactUs := &models.ContactUs{
+		ContactUsDto: models.ContactUsDto{
+			FullName:        data.FullName,
+			EmailAddress:    data.EmailAddress,
+			PhoneNumber:     data.PhoneNumber,
+			HowDidYouFindUs: data.HowDidYouFindUs,
+			Message:         data.Message,
 		},
+		
 
 		Id:        id,
 		Trash:     false,
-		CreatedAt: preFlightTicketRequest.CreatedAt,
-		CreatedBy: preFlightTicketRequest.CreatedBy,
+		CreatedAt: preContactUs.CreatedAt,
+		CreatedBy: preContactUs.CreatedBy,
 		UpdatedBy: cfg.User.Id,
 		UpdatedAt: time.Now(),
 	}
 
 	filter := bson.M{"_id": id}
-	update := bson.M{"$set": flightTicketRequest}
+	update := bson.M{"$set": contactUs}
 
 	upsert := false
 	after := options.After
@@ -170,19 +163,19 @@ func (l *flightTicketRequestrepo) Update(ctx context.Context, id primitive.Objec
 		Upsert:         &upsert,
 	}
 
-	var updatedFlightTicketRequest models.FlightTicketRequest
+	var updatedContactUs models.ContactUs
 	if err := coll.FindOneAndUpdate(
 		ctx,
 		filter,
 		update,
 		opts,
-	).Decode(&updatedFlightTicketRequest); err != nil {
+	).Decode(&updatedContactUs); err != nil {
 		return err
 	}
 
 	return nil
 }
-func (l *flightTicketRequestrepo) Delete(ctx context.Context, id string) error {
+func (l *contactUsrepo) Delete(ctx context.Context, id string) error {
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {

@@ -12,18 +12,18 @@ import (
 func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
 
-	do.Provide(i, home.NewFlightTicketRequestSvcs)
+	do.Provide(i, home.NewContactUsSvcs)
 
 
 	//repos
 
 
-	do.Provide(i, repo.NewFlightTicketRequestRepo)
+	do.Provide(i, repo.NewContactUsRepo)
 
 
 	//handlers
 
-	handler.NewFlightTicketRequestHandler(i, r)
+	handler.NewContactUsHandler(i, r)
 
 
 	return i
