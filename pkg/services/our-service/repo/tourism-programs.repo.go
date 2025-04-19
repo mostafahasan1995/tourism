@@ -55,38 +55,20 @@ func (l *tourismProgramrepo) GetOne(ctx context.Context, id string) (*models.Tou
 }
 
 func (l *tourismProgramrepo) GetAll(ctx context.Context, filter filter.TourismProgramFilter) (models.TourismProgramPagination, error) {
+
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return  models.TourismProgramPagination{}, err
+		return models.TourismProgramPagination{}, err
 	}
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	// Build dynamic filter
-	filterConditions := []bson.M{
-		{"trash": bson.M{"$ne": true}}, // simplifies condition
-	}
-
-	// Add dynamic filters
-	if filter.Destination != "" {
-		filterConditions = append(filterConditions, bson.M{"destination": filter.Destination})
-	}
-	if filter.TravelType != "" {
-		filterConditions = append(filterConditions, bson.M{"travelType": filter.TravelType})
-	}
-	if filter.Duration != 0 {
-		filterConditions = append(filterConditions, bson.M{"duration": filter.Duration})
-	}
-	if filter.GroupSize != "" {
-		filterConditions = append(filterConditions, bson.M{"groupSize": filter.GroupSize})
-	}
-
-	filterBody := bson.M{"$and": filterConditions}
+	filterBody := filter.ToBsonFilter()
 
 	// Count total documents matching the filter
 	totalCount, err := coll.CountDocuments(ctx, filterBody)
 	if err != nil {
-		return  models.TourismProgramPagination{}, err
+		return models.TourismProgramPagination{}, err
 	}
 
 	// Pagination defaults and limits
@@ -106,12 +88,12 @@ func (l *tourismProgramrepo) GetAll(ctx context.Context, filter filter.TourismPr
 
 	cur, err := coll.Find(ctx, filterBody, findOptions)
 	if err != nil {
-		return  models.TourismProgramPagination{}, err
+		return models.TourismProgramPagination{}, err
 	}
 
 	var programs []models.TourismProgram
 	if err := cur.All(ctx, &programs); err != nil {
-		return  models.TourismProgramPagination{}, err
+		return models.TourismProgramPagination{}, err
 	}
 
 	// Prepare pagination result
@@ -120,9 +102,8 @@ func (l *tourismProgramrepo) GetAll(ctx context.Context, filter filter.TourismPr
 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
 	}
 
-
 	result := models.TourismProgramPagination{
-		TourismProgram : programs,
+		TourismProgram: programs,
 		Pagination: common.Pagination{
 			TotalPages: totalPages,
 			PerPage:    int64(size),
@@ -146,7 +127,7 @@ func (l *tourismProgramrepo) Add(ctx context.Context, data *models.TourismProgra
 			Duration:    data.Duration,
 			TravelType:  data.TravelType,
 			GroupSize:   data.GroupSize,
-			Image:  data.Image,
+			Image:       data.Image,
 		},
 		Id:        primitive.NewObjectID(),
 		CreatedAt: time.Now(),
@@ -184,8 +165,7 @@ func (l *tourismProgramrepo) Update(ctx context.Context, id primitive.ObjectID, 
 			Duration:    data.Duration,
 			TravelType:  data.TravelType,
 			GroupSize:   data.GroupSize,
-			Image:  data.Image,
-
+			Image:       data.Image,
 		},
 		Id:        id,
 		CreatedAt: preTourismProgram.CreatedAt,

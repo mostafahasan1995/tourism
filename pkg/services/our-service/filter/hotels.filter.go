@@ -86,10 +86,7 @@ type CheckInAndCheckOutFilter struct {
 	To   time.Time `bson:"to" json:"to"`
 }
 
-type PriceRangeFilter struct {
-	From int `bson:"from" json:"from"`
-	To   int `bson:"to" json:"to"`
-}
+
 
 type DistanceFromCityCenterFilter struct {
 	LessThan    int `bson:"lessThan" json:"lessThan"`
