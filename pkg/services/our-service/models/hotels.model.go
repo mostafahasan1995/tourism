@@ -39,7 +39,7 @@ type OverviewPage struct {
 type RoomsAndSuitesPage struct {
 	StartingText   string               `bson:"startingText" json:"startingText"`
 	Advantages     []Advantages         `bson:"advantages" json:"advantages"`
-	RoomCategories []primitive.ObjectID `bson:"roomCategories" json:"roomCategories"`
+	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
 	RoomType      string   `bson:"roomType" json:"roomType"`
