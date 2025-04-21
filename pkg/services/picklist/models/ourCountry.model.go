@@ -10,8 +10,11 @@ import (
 )
 
 type OurCountryDto struct {
-	Name string          `bson:"name" json:"name"`
-	Image   types.FileField `bson:"image" json:"image"`
+	Name        string            `bson:"name" json:"name"`
+	Image       types.FileField   `bson:"image" json:"image"`
+	Icon       types.FileField   `bson:"icon" json:"icon"`
+	Galeres     []types.FileField `bson:"galeres" json:"galeres"`
+	Description string            `bson:"description" json:"description"`
 }
 
 type OurCountry struct {

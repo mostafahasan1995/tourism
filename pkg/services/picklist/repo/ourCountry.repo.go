@@ -139,9 +139,11 @@ func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data
 
 	ourCountry := &models.OurCountry{
 		OurCountryDto: models.OurCountryDto{
-			Name:                          data.Name,
-			Image:                          data.Image,
-
+			Name:        data.Name,
+			Image:       data.Image,
+			Icon:        data.Icon,
+			Galeres:     data.Galeres,
+			Description: data.Description,
 		},
 		Id:        id,
 		Trash:     false,

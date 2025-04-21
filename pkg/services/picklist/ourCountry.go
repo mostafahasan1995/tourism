@@ -54,8 +54,11 @@ func (l *ourCountrysvcs) Add(ctx context.Context, data *models.OurCountryDto) er
 	}
 	ourCountry := &models.OurCountry{
 		OurCountryDto: models.OurCountryDto{
-			Name: data.Name,
-			Image:   data.Image,
+			Name:        data.Name,
+			Image:       data.Image,
+			Icon:        data.Icon,
+			Galeres:     data.Galeres,
+			Description: data.Description,
 		},
 		Id:        primitive.NewObjectID(),
 		Trash:     false,
