@@ -14,6 +14,7 @@ import (
 
 	gateway "larsa-tourism-microservices/pkg/gatway"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
+	testimonial "larsa-tourism-microservices/pkg/services/testimonial/di"
 
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 
@@ -79,21 +80,16 @@ func Start() error {
 
 	// validator
 	do.ProvideValue(injector, validateInstance)
+	//getway
+	do.Provide(injector, gateway.NewUsersGw)
+	//db
+	dbsvcs.Init(injector, r)
 
 	home.Init(injector, r)
 	ourService.Init(injector, r)
 	picklist.Init(injector, r)
 	request.Init(injector, r)
-
-	//message.Init(injector, r)
-	//whatsapp.Init(injector, r)
-	//leads
-
-	//db
-	dbsvcs.Init(injector, r)
-
-	//getway
-	do.Provide(injector, gateway.NewUsersGw)
+	testimonial.Init(injector, r)
 
 	fmt.Println("start server")
 

@@ -13,6 +13,7 @@ type MainRepo[T any] interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*T, error)
 	Aggregate(ctx context.Context, pipeline any, callback func(cur *mongo.Cursor) error) error
 	Add(ctx context.Context, data *T) error
+	AddMany(ctx context.Context, data []any) error
 	Patch(ctx context.Context, filter, update bson.M, ops ...*options.FindOneAndUpdateOptions) (*T, error)
 	BulkWrite(ctx context.Context, writeOps []mongo.WriteModel) (*mongo.BulkWriteResult, error)
 }
@@ -30,6 +31,19 @@ func (m *MainRepoImpl[T]) Add(ctx context.Context, data *T) error {
 	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
 
 	if _, err := coll.InsertOne(ctx, data); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *MainRepoImpl[T]) AddMany(ctx context.Context, data []any) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+
+	if _, err := coll.InsertMany(ctx, data); err != nil {
 		return err
 	}
 	return nil
