@@ -13,8 +13,8 @@ import (
 	request "larsa-tourism-microservices/pkg/services/request/di"
 
 	gateway "larsa-tourism-microservices/pkg/gatway"
+	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
-	testimonial "larsa-tourism-microservices/pkg/services/testimonial/di"
 
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 
@@ -89,7 +89,7 @@ func Start() error {
 	ourService.Init(injector, r)
 	picklist.Init(injector, r)
 	request.Init(injector, r)
-	testimonial.Init(injector, r)
+	interactions.Init(injector, r)
 
 	fmt.Println("start server")
 

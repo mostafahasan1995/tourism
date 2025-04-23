@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/testimonial"
-	"larsa-tourism-microservices/pkg/services/testimonial/models"
+	"larsa-tourism-microservices/pkg/services/interactions"
+	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
@@ -14,12 +14,12 @@ import (
 )
 
 type TestimonialHandler struct {
-	testimonialSvcs testimonial.TestimonialService
+	testimonialsvcs interactions.TestimonialSvcs
 }
 
 func NewTestimonialHandler(i *do.Injector, r *chi.Mux) {
 	h := &TestimonialHandler{
-		testimonialSvcs: do.MustInvoke[testimonial.TestimonialService](i),
+		testimonialsvcs: do.MustInvoke[interactions.TestimonialSvcs](i),
 	}
 
 	r.Route("/testimonials", func(r chi.Router) {
@@ -32,7 +32,7 @@ func NewTestimonialHandler(i *do.Injector, r *chi.Mux) {
 func (h *TestimonialHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.testimonialSvcs.All(ctx)
+	result, err := h.testimonialsvcs.All(ctx)
 	if err != nil {
 		return err
 	}
@@ -48,7 +48,7 @@ func (h *TestimonialHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return helpers.InvalidJSON()
 	}
 
-	result, err := h.testimonialSvcs.Add(ctx, &data)
+	result, err := h.testimonialsvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}

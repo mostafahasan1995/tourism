@@ -1,9 +1,9 @@
-package testimonial
+package interactions
 
 import (
 	"context"
-	"larsa-tourism-microservices/pkg/services/testimonial/models"
-	"larsa-tourism-microservices/pkg/services/testimonial/repo"
+	"larsa-tourism-microservices/pkg/services/interactions/models"
+	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/util"
 	"time"
 
@@ -13,16 +13,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type TestimonialService interface {
+type TestimonialSvcs interface {
 	All(ctx context.Context) ([]models.Testimonial, error)
-	Add(ctx context.Context, testimonial *models.TestimonialDto) (*models.Testimonial, error)
+	Add(ctx context.Context, data *models.TestimonialDto) (*models.Testimonial, error)
 }
 
 type testimonialsvcs struct {
 	repo repo.TestimonialRepo
 }
 
-func NewTestimonialService(i *do.Injector) (TestimonialService, error) {
+func NewTestimonialSvcs(i *do.Injector) (TestimonialSvcs, error) {
 	return &testimonialsvcs{
 		repo: do.MustInvoke[repo.TestimonialRepo](i),
 	}, nil

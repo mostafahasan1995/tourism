@@ -10,15 +10,14 @@ import (
 )
 
 type TourismProgramDto struct {
-	Name        string            `bson:"name" json:"name"`
-	Destination string            `bson:"destination" json:"destination"`
-	Description string            `bson:"description" json:"description"`
-	TravelType  string            `bson:"travelType" json:"travelType"`
-	Duration    int               `bson:"duration" json:"duration"`
-	Price                         int                           `bson:"price" json:"price"`
-	Interests []string            `bson:"interests" json:"interests"`
+	Name        string   `bson:"name" json:"name"`
+	Destination string   `bson:"destination" json:"destination"`
+	Description string   `bson:"description" json:"description"`
+	TravelType  string   `bson:"travelType" json:"travelType"`
+	Duration    string   `bson:"duration" json:"duration"`
+	Price       int      `bson:"price" json:"price"`
+	Interests   []string `bson:"interests" json:"interests"`
 
-	
 	GroupSize   string            `bson:"groupSize" json:"groupSize"`
 	Image       types.FileField   `bson:"image" json:"image"`
 	Gallery     []types.FileField `bson:"gallery" json:"gallery"`

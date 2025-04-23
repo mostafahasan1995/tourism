@@ -75,14 +75,17 @@ func (m *MainRepoImpl[T]) Patch(ctx context.Context, filter, update bson.M, ops 
 
 	upsert := false
 	after := options.After
-	opts := &options.FindOneAndUpdateOptions{
-		Upsert:         &upsert,
-		ReturnDocument: &after,
+
+	opts := []*options.FindOneAndUpdateOptions{
+		{
+			Upsert:         &upsert,
+			ReturnDocument: &after,
+		},
 	}
 
-	ops = append(ops, opts)
+	opts = append(opts, ops...)
 
-	res := coll.FindOneAndUpdate(ctx, filter, update, ops...)
+	res := coll.FindOneAndUpdate(ctx, filter, update, opts...)
 
 	var result T
 	if err := res.Decode(&result); err != nil {
