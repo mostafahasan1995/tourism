@@ -25,6 +25,7 @@ func NewDiaryHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/diaries", func(r chi.Router) {
 		r.Get("/all", helpers.Make(h.GetAll))
+		r.Get("/", helpers.Make(h.Get))
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 	})
@@ -35,6 +36,22 @@ func (h *DiaryHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	result, err := h.diarysvcs.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *DiaryHandler) Get(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, errGetPaginate := util.Paginate(r)
+	if errGetPaginate != nil {
+		return errGetPaginate
+	}
+
+	result, err := h.diarysvcs.Get(ctx, skip, limit)
 	if err != nil {
 		return err
 	}

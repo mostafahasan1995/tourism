@@ -4,7 +4,9 @@ import (
 	"context"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"time"
 
 	"github.com/samber/do"
@@ -16,6 +18,7 @@ import (
 type DiarySvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Diary, error)
 	GetAll(ctx context.Context) ([]models.Diary, error)
+	Get(ctx context.Context, skip, limit int64) (*models.DiaryWithPagination, error)
 	Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error)
 }
 
@@ -59,6 +62,44 @@ func (d *diarysvcs) GetAll(ctx context.Context) ([]models.Diary, error) {
 	}
 
 	return result, nil
+}
+
+func (d *diarysvcs) Get(ctx context.Context, skip, limit int64) (*models.DiaryWithPagination, error) {
+	match := bson.M{"trash": false}
+
+	count, err := d.repo.Count(ctx, match)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+		{"$sort": bson.M{"_id": -1}},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+	var result []models.Diary
+	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.DiaryWithPagination{
+		Diaries:    result,
+		Pagination: pagination,
+	}, nil
 }
 
 func (d *diarysvcs) Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error) {

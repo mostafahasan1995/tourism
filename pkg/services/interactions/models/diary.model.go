@@ -27,3 +27,8 @@ type Diary struct {
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 	UpdatedBy primitive.ObjectID `bson:"updated_by" json:"updated_by"`
 }
+
+type DiaryWithPagination struct {
+	Diaries    []Diary          `bson:"diaries"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
