@@ -51,6 +51,11 @@ type TourismProgram struct {
 	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 }
 
+type TourismProgramRes struct {
+	TourismProgram `bson:",inline"`
+	IsFav          bool `bson:"isFav" json:"isFav"`
+}
+
 type TourismProgramPagination struct {
 	TourismProgram []TourismProgram `bson:"tourismProgram" json:"tourismProgram"`
 

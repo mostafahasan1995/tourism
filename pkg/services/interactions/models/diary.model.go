@@ -7,11 +7,13 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+//todo : diary must connect with program
+
 type DiaryDto struct {
 	Name           string            `bson:"name" json:"name"`
 	Destination    []string          `bson:"destination" json:"destination"`
 	Title          string            `bson:"title" json:"title"`
-	FaveActivities []string          `bson:"faveActivities" json:"faveActivities"`
+	FaveActivities []string          `bson:"faveActivities" json:"faveActivities"` //todo: maybe add images
 	Bio            string            `bson:"bio" json:"bio"`
 	Videos         []types.FileField `bson:"videos" json:"videos"`
 	Images         []types.FileField `bson:"images" json:"images"`

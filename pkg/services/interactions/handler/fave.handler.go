@@ -33,7 +33,7 @@ func (h *FaveHandler) GetAllByType(w http.ResponseWriter, r *http.Request) error
 
 	t := chi.URLParam(r, "type")
 
-	result, err := h.favesvcs.GetAllByType(ctx, t)
+	result, err := h.favesvcs.GetAllByType(ctx, models.FaveType(t))
 	if err != nil {
 		return err
 	}
