@@ -146,7 +146,7 @@ func (m *mysteryboxsvcs) OpenBox(ctx context.Context, mysteryBoxId, boxId string
 		}
 
 		if selectedBox == nil {
-			return nil, nil
+			return &models.Box{}, nil
 		}
 
 		return selectedBox, nil
