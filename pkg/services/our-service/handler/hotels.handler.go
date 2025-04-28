@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/our-service"
+	ourService "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -87,6 +87,7 @@ func (l *HotelsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
+
 func (l *HotelsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")

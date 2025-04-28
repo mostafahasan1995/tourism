@@ -27,7 +27,6 @@ type HotelsRepo interface {
 
 type hotelsrepo struct {
 	dbrepo.MainRepoImpl[models.Hotels]
-
 	db       *mongo.Client
 	collName string
 }
@@ -110,16 +109,14 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
 	}
 
-
-	result := models.HotelsPagination {
-		Hotels:programs,
+	result := models.HotelsPagination{
+		Hotels: programs,
 		Pagination: common.Pagination{
 			TotalPages: totalPages,
 			PerPage:    int64(size),
 			TotalCount: totalCount,
 		},
 	}
-
 
 	return result, nil
 }
@@ -187,6 +184,7 @@ func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mo
 
 	return nil
 }
+
 func (l *hotelsrepo) Delete(ctx context.Context, id string) error {
 
 	cfg, err := util.GetReqAppCfg(ctx)

@@ -11,7 +11,7 @@ import (
 
 type HotelsDto struct {
 	Name                          string                        `bson:"name" json:"name"`
-	HotelType                    string                        `bson:"hotelType" json:"hotelType"`
+	HotelType                     string                        `bson:"hotelType" json:"hotelType"`
 	Location                      string                        `bson:"location" json:"location"`
 	CheckInAndCheckOut            CheckInAndCheckOut            `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
 	Price                         int                           `bson:"price" json:"price"`
@@ -37,8 +37,8 @@ type OverviewPage struct {
 }
 
 type RoomsAndSuitesPage struct {
-	StartingText   string               `bson:"startingText" json:"startingText"`
-	Advantages     []Advantages         `bson:"advantages" json:"advantages"`
+	StartingText   string         `bson:"startingText" json:"startingText"`
+	Advantages     []Advantages   `bson:"advantages" json:"advantages"`
 	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
@@ -107,20 +107,21 @@ type BookingAndPoliciesPage struct {
 
 type Hotels struct {
 	HotelsDto `bson:",inline"`
-
-	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-
-	Trash bool `bson:"trash" json:"trash"`
-
+	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Trash     bool               `bson:"trash" json:"trash"`
 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 }
 
-type HotelsPagination struct {
-	Hotels []Hotels `bson:"hotels" json:"hotels"`
+type HotelsRes struct {
+	Hotels `bson:",inline"`
+	IsFav  bool `bson:"isFav" json:"isFav"`
+}
 
+type HotelsPagination struct {
+	Hotels     []Hotels          `bson:"hotels" json:"hotels"`
 	Pagination common.Pagination `bson:"pagination" json:"pagination"`
 }
 

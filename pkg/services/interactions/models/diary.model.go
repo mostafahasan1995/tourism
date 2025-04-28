@@ -10,8 +10,9 @@ import (
 //todo : diary must connect with program
 
 type DiaryDto struct {
+	Type           string            `bson:"type" json:"type"` //family - luxury - honeymoon - adventure
 	Name           string            `bson:"name" json:"name"`
-	Destination    []string          `bson:"destination" json:"destination"`
+	Destinations   []string          `bson:"destinations" json:"destinations"`
 	Title          string            `bson:"title" json:"title"`
 	FaveActivities []string          `bson:"faveActivities" json:"faveActivities"` //todo: maybe add images
 	Bio            string            `bson:"bio" json:"bio"`
@@ -28,6 +29,11 @@ type Diary struct {
 	CreatedBy primitive.ObjectID `bson:"created_by" json:"created_by"`
 	UpdatedAt time.Time          `bson:"updated_at" json:"updated_at"`
 	UpdatedBy primitive.ObjectID `bson:"updated_by" json:"updated_by"`
+}
+
+type DiaryRes struct {
+	Diary `bson:",inline"`
+	IsFav bool `bson:"isFav" json:"isFav"`
 }
 
 type DiaryWithPagination struct {

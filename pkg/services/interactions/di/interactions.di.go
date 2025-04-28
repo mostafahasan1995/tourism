@@ -13,14 +13,18 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, interactions.NewFaveSvcs)
 	do.Provide(i, interactions.NewTestimonialSvcs)
 	do.Provide(i, interactions.NewDiarySvcs)
+	do.Provide(i, interactions.NewMysteryBoxSvcs)
 
 	do.Provide(i, repo.NewFaveRepo)
 	do.Provide(i, repo.NewTestimonialRepo)
 	do.Provide(i, repo.NewDiaryRepo)
+	do.Provide(i, repo.NewMysteryBoxRepo)
+	do.Provide(i, repo.NewBoxTrackingRepo)
 
 	handler.NewFaveHandler(i, r)
 	handler.NewTestimonialHandler(i, r)
 	handler.NewDiaryHandler(i, r)
+	handler.NewMysteryBoxHandler(i, r)
 
 	return i
 }
