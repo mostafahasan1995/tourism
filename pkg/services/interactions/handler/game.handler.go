@@ -24,6 +24,7 @@ func NewGameHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/game", func(r chi.Router) {
 		r.Get("/", helpers.Make(h.GetGame))
+		r.With(middleware.Auth("authenticate")).Get("/customers", helpers.Make(h.GetCustomers))
 		r.With(middleware.Auth("authenticate")).Patch("/boxes/{boxId}", helpers.Make(h.UpdateBox))
 		r.With(middleware.Auth("authenticate")).Post("/boxes/{boxid}/open", helpers.Make(h.OpenBox))
 		r.With(middleware.Auth("authenticate")).Patch("/settings", helpers.Make(h.UpdateSettings))
@@ -34,6 +35,17 @@ func (h *GameHandler) GetGame(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	result, err := h.gameSvcs.GetGame(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *GameHandler) GetCustomers(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.gameSvcs.GetCustomers(ctx)
 	if err != nil {
 		return err
 	}

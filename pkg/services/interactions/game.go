@@ -3,6 +3,7 @@ package interactions
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/util"
@@ -19,6 +20,7 @@ type GameSvcs interface {
 	UpdateBox(ctx context.Context, boxId string, data models.MysteryBox) (*models.Game, error)
 	UpdateSettings(ctx context.Context, data *models.Attempts) (*models.Game, error)
 	OpenBox(ctx context.Context, boxId string) (*models.MysteryBox, error)
+	GetCustomers(ctx context.Context) (any, error)
 }
 
 type gamesvcs struct {
@@ -190,6 +192,21 @@ func (g *gamesvcs) OpenBox(ctx context.Context, boxId string) (*models.MysteryBo
 	if err != nil {
 		return nil, err
 	}
+
+	//check if already won
+	_, errW := g.gamecustomerrepo.GetByFilter(ctx, bson.M{
+		"userId": cfg.User.Id,
+		"won":    true,
+	})
+
+	if errW == nil {
+		return nil, errors.New("already won")
+	} else {
+		if !errors.Is(errW, mongo.ErrNoDocuments) {
+			return nil, errors.New("error check for prev won")
+		}
+	}
+
 	_id, err := primitive.ObjectIDFromHex(boxId)
 	if err != nil {
 		return nil, err
@@ -280,12 +297,17 @@ func (g *gamesvcs) OpenBox(ctx context.Context, boxId string) (*models.MysteryBo
 		return nil, errors.New("box not found")
 	}
 
+	won := selectedBox.Discount.Value > 0
+
 	rec := &models.GameCustomer{
-		Id:     primitive.NewObjectID(),
-		UserId: cfg.User.Id,
-		Email:  cfg.User.UserData.Email,
-		Box:    *selectedBox,
-		Date:   time.Now(),
+		Id:       primitive.NewObjectID(),
+		UserId:   cfg.User.Id,
+		Email:    cfg.User.UserData.Email,
+		BoxId:    selectedBox.Id,
+		Discount: fmt.Sprintf("%d%s", selectedBox.Discount.Value, selectedBox.Discount.Unit),
+		Validity: fmt.Sprintf("%d%s", selectedBox.ValidityPeriod.Value, selectedBox.ValidityPeriod.Unit),
+		Won:      won,
+		Date:     time.Now(),
 	}
 
 	if err := g.gamecustomerrepo.Add(ctx, rec); err != nil {
@@ -294,4 +316,66 @@ func (g *gamesvcs) OpenBox(ctx context.Context, boxId string) (*models.MysteryBo
 
 	return selectedBox, nil
 
+}
+
+func (g *gamesvcs) GetCustomers(ctx context.Context) (any, error) {
+	pipeline := []bson.M{
+		{"$match": bson.M{}},
+		{"$group": bson.M{
+			"_id":   "$userId",
+			"email": bson.M{"$first": "$email"},
+			"attempts": bson.M{
+				"$sum": 1,
+			},
+			"won": bson.M{
+				"$sum": bson.M{
+					"$cond": bson.M{
+						"if":   "$won",
+						"then": 1,
+						"else": 0,
+					},
+				},
+			},
+			"discount": bson.M{
+				"$max": bson.M{
+					"$cond": bson.M{
+						"if":   "$won",
+						"then": "$discount",
+						"else": "",
+					},
+				},
+			},
+			"validity": bson.M{
+				"$max": bson.M{
+					"$cond": bson.M{
+						"if":   "$won",
+						"then": "$validity",
+						"else": "",
+					},
+				},
+			},
+		}},
+	}
+
+	type aux struct {
+		Id       primitive.ObjectID `bson:"_id" json:"_id"`
+		Email    string             `bson:"email" json:"email"`
+		Attempts int                `bson:"attempts" json:"attempts"`
+		Won      int                `bson:"won" json:"won"`
+		Discount string             `bson:"discount" json:"discount"`
+		Validity string             `bson:"validity" json:"validity"`
+	}
+
+	var result []aux
+	err := g.gamecustomerrepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
