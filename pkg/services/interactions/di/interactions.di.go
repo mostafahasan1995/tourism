@@ -19,6 +19,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewTestimonialRepo)
 	do.Provide(i, repo.NewDiaryRepo)
 	do.Provide(i, repo.NewGameRepo)
+	do.Provide(i, repo.NewGameCustomerRepo)
 
 	handler.NewFaveHandler(i, r)
 	handler.NewTestimonialHandler(i, r)

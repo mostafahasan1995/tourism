@@ -10,16 +10,16 @@ type ValidityUnit string
 
 const (
 	ValidityUnitDay   ValidityUnit = "day"
+	ValidityUnitWeek  ValidityUnit = "week"
 	ValidityUnitMonth ValidityUnit = "month"
-	ValidityUnitYear  ValidityUnit = "year"
 )
 
 type AttemptsUnit string
 
 const (
-	AttemptsUnitDay   AttemptsUnit = "day"
-	AttemptsUnitMonth AttemptsUnit = "month"
-	AttemptsUnitYear  AttemptsUnit = "year"
+	AttemptsUnitPerDay   AttemptsUnit = "perday"
+	AttemptsUnitPerWeek  AttemptsUnit = "perweek"
+	AttemptsUnitPerMonth AttemptsUnit = "permonth"
 )
 
 type MysteryBox struct {

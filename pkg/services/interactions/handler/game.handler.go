@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/interactions"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -23,8 +24,9 @@ func NewGameHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/game", func(r chi.Router) {
 		r.Get("/", helpers.Make(h.GetGame))
-		r.Patch("/box/{boxId}", helpers.Make(h.UpdateBox))
-		r.Patch("/settings", helpers.Make(h.UpdateSettings))
+		r.With(middleware.Auth("authenticate")).Patch("/boxes/{boxId}", helpers.Make(h.UpdateBox))
+		r.With(middleware.Auth("authenticate")).Post("/boxes/{boxid}/open", helpers.Make(h.OpenBox))
+		r.With(middleware.Auth("authenticate")).Patch("/settings", helpers.Make(h.UpdateSettings))
 	})
 }
 
@@ -66,6 +68,19 @@ func (h *GameHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) err
 	}
 
 	result, err := h.gameSvcs.UpdateSettings(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *GameHandler) OpenBox(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	boxid := chi.URLParam(r, "boxid")
+
+	result, err := h.gameSvcs.OpenBox(ctx, boxid)
 	if err != nil {
 		return err
 	}
