@@ -1,0 +1,193 @@
+package handler
+
+import (
+	"encoding/json"
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/services/interactions"
+	"larsa-tourism-microservices/pkg/services/interactions/models"
+	"larsa-tourism-microservices/pkg/util"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/samber/do"
+)
+
+type TravelExperHandler struct {
+	travelexpersvcs interactions.TravelExperSvcs
+}
+
+func NewTravelExperHandler(i *do.Injector, r *chi.Mux) {
+	h := &TravelExperHandler{
+		travelexpersvcs: do.MustInvoke[interactions.TravelExperSvcs](i),
+	}
+
+	r.Route("/travel-exper", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Get("/traveler-stories/{id}", helpers.Make(h.GetTravelerStory))
+		r.With(middleware.Auth("authenticate")).Get("/traveler-stories/", helpers.Make(h.GetTravelerStories))
+		r.With(middleware.Auth("authenticate")).Post("/traveler-stories/", helpers.Make(h.AddTravelerStory))
+		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/status", helpers.Make(h.SetTravelerStoryStatus))
+		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/feedback", helpers.Make(h.SendFeedback))
+		r.With(middleware.Auth("authenticate")).Put("/traveler-stories/{id}/", helpers.Make(h.UpdateTravelerStory))
+		r.With(middleware.Auth("authenticate")).Delete("/traveler-stories/{id}/", helpers.Make(h.DeleteTravelerStory))
+		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/restore", helpers.Make(h.RestoreTravelerStory))
+		//
+		r.With(middleware.Auth("authenticate")).Get("/client-stories/", helpers.Make(h.GetClientStories))
+		r.With(middleware.Auth("authenticate")).Post("/client-stories/", helpers.Make(h.AddClientStory))
+
+	})
+}
+
+func (h *TravelExperHandler) GetTravelerStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id") // story id
+
+	result, err := h.travelexpersvcs.GetTravelerStory(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) GetTravelerStories(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, errGetPaginate := util.Paginate(r)
+	if errGetPaginate != nil {
+		return errGetPaginate
+	}
+
+	result, err := h.travelexpersvcs.GetTravelerStories(ctx, skip, limit)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) AddTravelerStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.TravelerStoryDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.AddTravelerStory(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) SetTravelerStoryStatus(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	var data models.TravelerStoryStatusDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.SetTravelerStoryStatus(ctx, id, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) SendFeedback(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	var data models.TravelerStoryFeedback
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.SendFeedback(ctx, id, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) UpdateTravelerStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	var data models.TravelerStoryDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.UpdateTravelerStory(ctx, id, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) DeleteTravelerStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	err := h.travelexpersvcs.DeleteTravlerStory(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
+}
+
+func (h *TravelExperHandler) RestoreTravelerStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	err := h.travelexpersvcs.RestoreTravlerStory(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
+}
+
+//client
+
+func (h *TravelExperHandler) GetClientStories(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, errGetPaginate := util.Paginate(r)
+	if errGetPaginate != nil {
+		return errGetPaginate
+	}
+
+	result, err := h.travelexpersvcs.GetClientStories(ctx, skip, limit)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) AddClientStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.ClientStoryDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.AddClientStory(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
