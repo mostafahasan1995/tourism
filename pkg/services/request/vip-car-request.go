@@ -67,7 +67,7 @@ func (l *vipCarRequestsvcs) Add(ctx context.Context, data *models.VipCarRequestD
 			EndTime:               data.EndTime,
 			CarTypeId:             data.CarTypeId,
 		},
-		
+
 		Id:        primitive.NewObjectID(),
 		Trash:     false,
 		CreatedAt: time.Now(),
@@ -101,7 +101,7 @@ func (l *vipCarRequestsvcs) AddMany(ctx context.Context, data []models.VipCarReq
 				StartTime:             flr.StartTime,
 				EndTime:               flr.EndTime,
 				CarTypeId:             flr.CarTypeId,
-			},			
+			},
 			Id:        primitive.NewObjectID(),
 			Trash:     false,
 			CreatedAt: time.Now(),
@@ -132,6 +132,5 @@ func (a *vipCarRequestsvcs) Update(ctx context.Context, id string, data *models.
 }
 
 func (a *vipCarRequestsvcs) Delete(ctx context.Context, id string) error {
-
 	return a.repo.Delete(ctx, id)
 }

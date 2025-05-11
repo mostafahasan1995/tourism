@@ -27,7 +27,6 @@ type VipCarRequestRepo interface {
 
 type vipCarRequestrepo struct {
 	dbrepo.MainRepoImpl[models.VipCarRequest]
-
 	db       *mongo.Client
 	collName string
 }
