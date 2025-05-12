@@ -2,6 +2,7 @@ package request
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/request/filter"
@@ -22,6 +23,8 @@ type VipCarRequestSvcs interface {
 	AddMany(ctx context.Context, data []models.VipCarRequestDto) error
 	Update(ctx context.Context, id string, data *models.VipCarRequestDto) error
 	Delete(ctx context.Context, id string) error
+	//
+	AddReq(ctx context.Context, data json.RawMessage) error
 }
 
 type vipCarRequestsvcs struct {
@@ -133,4 +136,12 @@ func (a *vipCarRequestsvcs) Update(ctx context.Context, id string, data *models.
 
 func (a *vipCarRequestsvcs) Delete(ctx context.Context, id string) error {
 	return a.repo.Delete(ctx, id)
+}
+
+//implement typeSvcs interface
+
+func (a *vipCarRequestsvcs) AddReq(ctx context.Context, data json.RawMessage) error {
+
+	return nil
+
 }

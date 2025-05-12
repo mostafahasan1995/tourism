@@ -8,7 +8,7 @@ import (
 )
 
 type TypeSvcs interface {
-	Add(ctx context.Context, data json.RawMessage) error // todo: return uniform response
+	AddReq(ctx context.Context, data json.RawMessage) error // todo: return uniform response
 }
 
 type ServiceType struct {
