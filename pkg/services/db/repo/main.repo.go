@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	"larsa-tourism-microservices/pkg/util"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -16,7 +17,7 @@ type MainRepo[T any] interface {
 	AddMany(ctx context.Context, data []any) error
 	Patch(ctx context.Context, filter, update bson.M, ops ...*options.FindOneAndUpdateOptions) (*T, error)
 	BulkWrite(ctx context.Context, writeOps []mongo.WriteModel) (*mongo.BulkWriteResult, error)
-	Count(ctx context.Context, filter bson.M, opts ...*options.CountOptions) (int64, error)
+	Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error)
 }
 
 type MainRepoImpl[T any] struct {
@@ -132,7 +133,7 @@ func (m *MainRepoImpl[T]) BulkWrite(ctx context.Context, writeOps []mongo.WriteM
 	return result, nil
 }
 
-func (m *MainRepoImpl[T]) Count(ctx context.Context, filter bson.M, opts ...*options.CountOptions) (int64, error) {
+func (m *MainRepoImpl[T]) Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return 0, err
@@ -140,10 +141,29 @@ func (m *MainRepoImpl[T]) Count(ctx context.Context, filter bson.M, opts ...*opt
 
 	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
 
-	count, err := coll.CountDocuments(ctx, filter, opts...)
-	if err != nil {
-		return 0, err
+	switch f := filter.(type) {
+	case bson.M:
+		count, err := coll.CountDocuments(ctx, f, opts...)
+		if err != nil {
+			return 0, err
+		}
+		return count, nil
+	case []bson.M:
+		pipeline := append(f, bson.M{"$count": "count"})
+		var result []struct {
+			Count int64 `bson:"count"`
+		}
+		err := m.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+			return cur.All(ctx, &result)
+		})
+		if err != nil {
+			return 0, err
+		}
+		if len(result) == 0 {
+			return 0, nil
+		}
+		return result[0].Count, nil
+	default:
+		return 0, fmt.Errorf("unsupported filter type: %T", filter)
 	}
-
-	return count, nil
 }

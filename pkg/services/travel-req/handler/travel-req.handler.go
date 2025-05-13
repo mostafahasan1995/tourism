@@ -52,7 +52,9 @@ func (h *TravelReqHandler) GetTravelReqs(w http.ResponseWriter, r *http.Request)
 		return errGetPaginate
 	}
 
-	result, err := h.travelreqsvcs.Get(ctx, skip, limit)
+	query := r.URL.Query().Get("query")
+
+	result, err := h.travelreqsvcs.Get(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}

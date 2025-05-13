@@ -44,7 +44,10 @@ func (b *businessmansvcs) Add(ctx context.Context, data json.RawMessage) (*model
 	}
 
 	return &models.ReqAddData{
-		Id: req.Id,
+		Id:            req.Id,
+		CustomerName:  req.ClientName,
+		CustomerPhone: req.ClientPhone,
+		CustomerEmail: req.ClientEmail,
 	}, nil
 }
 

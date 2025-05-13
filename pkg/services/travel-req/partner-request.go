@@ -44,7 +44,10 @@ func (p *partnerRequestSvcs) Add(ctx context.Context, data json.RawMessage) (*mo
 	}
 
 	return &models.ReqAddData{
-		Id: req.Id,
+		Id:            req.Id,
+		CustomerName:  req.ContactDetail.FullName,
+		CustomerPhone: req.ContactDetail.PhoneNumber,
+		CustomerEmail: req.ContactDetail.Email,
 	}, nil
 }
 

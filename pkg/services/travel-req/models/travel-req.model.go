@@ -9,15 +9,15 @@ import (
 )
 
 type TravelReq struct {
-	Id          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	ReqId       string             `bson:"reqId" json:"reqId"`
-	Package     primitive.ObjectID `bson:"package" json:"package"`
-	Program     primitive.ObjectID `bson:"program" json:"program"`
-	ServiceType enums.ServiceType  `bson:"serviceType" json:"serviceType"`
-	Date        time.Time          `bson:"date" json:"date"`
-	Customer    primitive.ObjectID `bson:"customer" json:"customer"`
-	Status      enums.Status       `bson:"status" json:"status"`
-	Ref         primitive.ObjectID `bson:"ref" json:"ref"`
+	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	ReqId        string             `bson:"reqId" json:"reqId"`
+	Package      primitive.ObjectID `bson:"package" json:"package"`
+	Program      primitive.ObjectID `bson:"program" json:"program"`
+	ServiceType  enums.ServiceType  `bson:"serviceType" json:"serviceType"`
+	Date         time.Time          `bson:"date" json:"date"`
+	CustomerName string             `bson:"customerName" json:"customerName"`
+	Status       enums.Status       `bson:"status" json:"status"`
+	Ref          primitive.ObjectID `bson:"ref" json:"ref"`
 }
 
 type TravelReqWithPagination struct {
@@ -26,5 +26,8 @@ type TravelReqWithPagination struct {
 }
 
 type ReqAddData struct {
-	Id primitive.ObjectID
+	Id            primitive.ObjectID
+	CustomerName  string
+	CustomerPhone string
+	CustomerEmail string
 }

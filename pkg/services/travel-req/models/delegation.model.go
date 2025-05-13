@@ -10,6 +10,7 @@ type Delegation struct {
 	OrganizationName    string             `bson:"organizationName" json:"organizationName"`
 	TripCoordinatorName string             `bson:"tripCoordinatorName" json:"tripCoordinatorName"`
 	Phone               string             `bson:"phone" json:"phone"`
+	Email               string             `bson:"email" json:"email"`
 	Nationality         string             `bson:"nationality" json:"nationality"`
 	TripDuration        int                `bson:"tripDuration" json:"tripDuration"`
 	Destinations        []CFDestination    `bson:"destinations" json:"destinations"`

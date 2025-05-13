@@ -8,6 +8,7 @@ import (
 	"larsa-tourism-microservices/pkg/db"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/travel-req/enums"
+	"larsa-tourism-microservices/pkg/services/travel-req/filters"
 	"larsa-tourism-microservices/pkg/services/travel-req/models"
 	"larsa-tourism-microservices/pkg/services/travel-req/repo"
 	"larsa-tourism-microservices/pkg/types"
@@ -22,7 +23,7 @@ import (
 
 type TravelReqSvcs interface {
 	GetRelatedReq(ctx context.Context, id string) (any, error)
-	Get(ctx context.Context, skip, limit int64) (*models.TravelReqWithPagination, error)
+	Get(ctx context.Context, skip, limit int64, query string) (*models.TravelReqWithPagination, error)
 	GetAll(ctx context.Context) ([]models.TravelReq, error)
 	Add(ctx context.Context, reqType string, data json.RawMessage) (*models.TravelReq, error)
 }
@@ -62,20 +63,35 @@ func (t *travelreqsvcs) GetRelatedReq(ctx context.Context, id string) (any, erro
 	return relatedReq, nil
 }
 
-func (t *travelreqsvcs) Get(ctx context.Context, skip, limit int64) (*models.TravelReqWithPagination, error) {
+func (t *travelreqsvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.TravelReqWithPagination, error) {
 	match := bson.M{}
 
-	count, err := t.repo.Count(ctx, match)
+	filters, err := filters.NewTravelReqFilters(query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.repo.Count(ctx, countPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	pipeline := []bson.M{
-		{"$match": match},
-		{"$sort": bson.M{"_id": -1}},
-		{"$skip": skip},
-		{"$limit": limit},
-	}
+	// pipeline := []bson.M{
+	// 	{"$match": match},
+	// 	{"$sort": bson.M{"_id": -1}},
+	// 	{"$skip": skip},
+	// 	{"$limit": limit},
+	// }
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
 	var result []models.TravelReq
 	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
@@ -144,12 +160,13 @@ func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMe
 		reqId := fmt.Sprintf("RQ-%d-%d", time.Now().Year(), seq)
 
 		travelReq := &models.TravelReq{
-			Id:          primitive.NewObjectID(),
-			ReqId:       reqId,
-			ServiceType: reqType,
-			Date:        time.Now(),
-			Status:      enums.StatusPending,
-			Ref:         result.Id,
+			Id:           primitive.NewObjectID(),
+			ReqId:        reqId,
+			ServiceType:  reqType,
+			Date:         time.Now(),
+			CustomerName: result.CustomerName,
+			Status:       enums.StatusPending,
+			Ref:          result.Id,
 		}
 
 		if err := t.repo.Add(ctx, travelReq); err != nil {
