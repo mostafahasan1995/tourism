@@ -2,9 +2,9 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/services/travel-req/enums"
+	"larsa-tourism-microservices/pkg/types"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -21,8 +21,8 @@ type TravelReq struct {
 }
 
 type TravelReqWithPagination struct {
-	TravelReqs []TravelReq       `bson:"travelReqs" json:"travelReqs"`
-	Pagination common.Pagination `bson:"pagination" json:"pagination"`
+	TravelReqs []TravelReq      `bson:"travelReqs" json:"travelReqs"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
 
 type ReqAddData struct {

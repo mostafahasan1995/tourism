@@ -23,6 +23,7 @@ func NewTravelReqHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/travel-requests", func(r chi.Router) {
 		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetRelatedReq))
+		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.GetTravelReqs))
 		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/{reqtype}", helpers.Make(h.Add))
 
@@ -36,6 +37,22 @@ func (h *TravelReqHandler) GetRelatedReq(w http.ResponseWriter, r *http.Request)
 
 	result, err := h.travelreqsvcs.GetRelatedReq(ctx, id)
 
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelReqHandler) GetTravelReqs(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, errGetPaginate := util.Paginate(r)
+	if errGetPaginate != nil {
+		return errGetPaginate
+	}
+
+	result, err := h.travelreqsvcs.Get(ctx, skip, limit)
 	if err != nil {
 		return err
 	}

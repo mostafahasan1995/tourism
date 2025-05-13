@@ -10,6 +10,8 @@ import (
 	"larsa-tourism-microservices/pkg/services/travel-req/enums"
 	"larsa-tourism-microservices/pkg/services/travel-req/models"
 	"larsa-tourism-microservices/pkg/services/travel-req/repo"
+	"larsa-tourism-microservices/pkg/types"
+	"math"
 	"time"
 
 	"github.com/samber/do"
@@ -20,6 +22,7 @@ import (
 
 type TravelReqSvcs interface {
 	GetRelatedReq(ctx context.Context, id string) (any, error)
+	Get(ctx context.Context, skip, limit int64) (*models.TravelReqWithPagination, error)
 	GetAll(ctx context.Context) ([]models.TravelReq, error)
 	Add(ctx context.Context, reqType string, data json.RawMessage) (*models.TravelReq, error)
 }
@@ -57,6 +60,44 @@ func (t *travelreqsvcs) GetRelatedReq(ctx context.Context, id string) (any, erro
 	}
 
 	return relatedReq, nil
+}
+
+func (t *travelreqsvcs) Get(ctx context.Context, skip, limit int64) (*models.TravelReqWithPagination, error) {
+	match := bson.M{}
+
+	count, err := t.repo.Count(ctx, match)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+		{"$sort": bson.M{"_id": -1}},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+	var result []models.TravelReq
+	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.TravelReqWithPagination{
+		TravelReqs: result,
+		Pagination: pagination,
+	}, nil
 }
 
 func (t *travelreqsvcs) GetAll(ctx context.Context) ([]models.TravelReq, error) {
