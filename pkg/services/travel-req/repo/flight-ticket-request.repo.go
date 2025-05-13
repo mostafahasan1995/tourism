@@ -20,7 +20,7 @@ func NewFlightTicketRequestRepo(i *do.Injector) (FlightTicketRequestRepo, error)
 	return &flightTicketRequestrepo{
 		MainRepoImpl: dbrepo.MainRepoImpl[models.FlightTicketRequest]{
 			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "tourismFlightTicketRequest",
+			CollName: "tourismFlightTicketRequests",
 		},
 	}, nil
 }

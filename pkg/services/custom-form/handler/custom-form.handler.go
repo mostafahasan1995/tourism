@@ -12,6 +12,7 @@ import (
 	"github.com/samber/do"
 )
 
+// deprecated - moved to travel-req service
 type CustomFormHandler struct {
 	cfsvcs customform.CustomFormSvcs
 }

@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/travel-req/enums"
 	"larsa-tourism-microservices/pkg/services/travel-req/models"
 	"larsa-tourism-microservices/pkg/services/travel-req/repo"
 	"time"
@@ -22,16 +25,18 @@ type TravelReqSvcs interface {
 }
 
 type travelreqsvcs struct {
-	repo     repo.TravelReqRepo
-	reqTypes ReqTypes
-	withtxn  *db.WithTxn
+	repo        repo.TravelReqRepo
+	reqTypes    ReqTypes
+	sortingsvcs dbsvcs.SortingSvcs
+	withtxn     *db.WithTxn
 }
 
 func NewTravelReqSvcs(i *do.Injector) (TravelReqSvcs, error) {
 	return &travelreqsvcs{
-		repo:     do.MustInvoke[repo.TravelReqRepo](i),
-		reqTypes: do.MustInvoke[ReqTypes](i),
-		withtxn:  do.MustInvoke[*db.WithTxn](i),
+		repo:        do.MustInvoke[repo.TravelReqRepo](i),
+		reqTypes:    do.MustInvoke[ReqTypes](i),
+		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
+		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -77,6 +82,9 @@ func (t *travelreqsvcs) GetAll(ctx context.Context) ([]models.TravelReq, error) 
 
 func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMessage) (*models.TravelReq, error) {
 	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+
+		reqType := enums.ServiceType(reqType)
+
 		reqTypeSvcs, ok := t.reqTypes[reqType]
 		if !ok {
 			return nil, errors.New("invalid request type")
@@ -87,12 +95,19 @@ func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMe
 			return nil, err
 		}
 
+		seq, err := t.sortingsvcs.GetAndUpdateSourceSeq(ctx, "travelreq")
+		if err != nil {
+			return nil, err
+		}
+
+		reqId := fmt.Sprintf("RQ-%d-%d", time.Now().Year(), seq)
+
 		travelReq := &models.TravelReq{
 			Id:          primitive.NewObjectID(),
-			ReqId:       "req-0001",
+			ReqId:       reqId,
 			ServiceType: reqType,
 			Date:        time.Now(),
-			Status:      "pending",
+			Status:      enums.StatusPending,
 			Ref:         result.Id,
 		}
 
@@ -110,3 +125,12 @@ func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMe
 
 	return result.(*models.TravelReq), nil
 }
+
+// func (t *travelreqsvcs) Update(ctx context.Context, id string, data json.RawMessage) (*models.TravelReq, error) {
+
+// 	t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+
+// 		return nil, nil
+// 	})
+
+// }

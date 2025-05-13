@@ -20,7 +20,7 @@ func NewPartnerRequestRepo(i *do.Injector) (PartnerRequestRepo, error) {
 	return &partnerRequestrepo{
 		MainRepoImpl: dbrepo.MainRepoImpl[models.PartnerRequest]{
 			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "tourismPartnerRequest",
+			CollName: "tourismPartnerRequests",
 		},
 	}, nil
 }

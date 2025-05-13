@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/services/travel-req/enums"
 	"time"
 
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
@@ -12,10 +13,10 @@ type TravelReq struct {
 	ReqId       string             `bson:"reqId" json:"reqId"`
 	Package     primitive.ObjectID `bson:"package" json:"package"`
 	Program     primitive.ObjectID `bson:"program" json:"program"`
-	ServiceType string             `bson:"serviceType" json:"serviceType"`
+	ServiceType enums.ServiceType  `bson:"serviceType" json:"serviceType"`
 	Date        time.Time          `bson:"date" json:"date"`
 	Customer    primitive.ObjectID `bson:"customer" json:"customer"`
-	Status      string             `bson:"status" json:"status"`
+	Status      enums.Status       `bson:"status" json:"status"`
 	Ref         primitive.ObjectID `bson:"ref" json:"ref"`
 }
 

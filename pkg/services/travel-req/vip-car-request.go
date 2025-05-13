@@ -12,8 +12,9 @@ import (
 )
 
 type VipCarRequestSvcs interface {
-	Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error)
 	GetByFilter(ctx context.Context, filter bson.M) (any, error)
+	Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error)
+	Update(ctx context.Context, id string, data json.RawMessage) error
 }
 
 type vipCarRequestsvcs struct {
@@ -48,4 +49,8 @@ func (v *vipCarRequestsvcs) Add(ctx context.Context, data json.RawMessage) (*mod
 
 func (v *vipCarRequestsvcs) GetByFilter(ctx context.Context, filter bson.M) (any, error) {
 	return v.repo.GetByFilter(ctx, filter)
+}
+
+func (v *vipCarRequestsvcs) Update(ctx context.Context, id string, data json.RawMessage) error {
+	return nil
 }

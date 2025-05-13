@@ -2,11 +2,7 @@ module larsa-tourism-microservices
 
 go 1.22.0
 
-require (
-	git.larsa.io/mahdawi/microservices-commons.git v0.2.3
-	github.com/go-redis/redis/v8 v8.8.3
-	github.com/mitchellh/mapstructure v1.5.0
-)
+require git.larsa.io/mahdawi/microservices-commons.git v0.2.3
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
@@ -14,6 +10,7 @@ require (
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
+	github.com/go-redis/redis/v8 v8.8.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/leodido/go-urn v1.4.0 // indirect
 	github.com/montanaflynn/stats v0.0.0-20171201202039-1bf9dbcd8cbe // indirect
