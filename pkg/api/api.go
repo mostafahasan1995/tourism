@@ -13,7 +13,6 @@ import (
 	travelreq "larsa-tourism-microservices/pkg/services/travel-req/di"
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
-	customform "larsa-tourism-microservices/pkg/services/custom-form/di"
 	customer "larsa-tourism-microservices/pkg/services/customer/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
@@ -92,7 +91,6 @@ func Start() error {
 	picklist.Init(injector, r)
 	//request.Init(injector, r)
 	interactions.Init(injector, r)
-	customform.Init(injector, r)
 	travelreq.Init(injector, r)
 	customer.Init(injector, r)
 
