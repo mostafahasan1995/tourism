@@ -7,7 +7,9 @@ import (
 )
 
 type HotelsFilter struct {
-	SearchWord             string                       `bson:"searchWord" json:"searchWord"`
+	SearchWord             string `bson:"searchWord" json:"searchWord"`
+	IsDisplayInPerfectStay *bool `bson:"isDisplayInPerfectStay" json:"isDisplayInPerfectStay"`
+
 	HotelTypes             []string                     `bson:"hotelTypes" json:"hotelTypes"`
 	RoomAmenities          []string                     `bson:"roomAmenities" json:"roomAmenities"`
 	NearbyAttractions      []string                     `bson:"nearbyAttractions" json:"nearbyAttractions"`
@@ -27,7 +29,7 @@ func (f *HotelsFilter) ToBsonFilter() bson.M {
 	if f.SearchWord != "" {
 		filterConditions = append(filterConditions, bson.M{
 			"name": bson.M{
-				"$regex": f.SearchWord,
+				"$regex":   f.SearchWord,
 				"$options": "i",
 			},
 		})
@@ -39,6 +41,9 @@ func (f *HotelsFilter) ToBsonFilter() bson.M {
 
 	if len(f.Locations) > 0 {
 		filterConditions = append(filterConditions, bson.M{"location": bson.M{"$in": f.Locations}})
+	}
+	if f.IsDisplayInPerfectStay != nil {
+		filterConditions = append(filterConditions, bson.M{"isDisplayInPerfectStay": *f.IsDisplayInPerfectStay})
 	}
 
 	// if f.CheckInAndCheckOut != "" {
@@ -85,8 +90,6 @@ type CheckInAndCheckOutFilter struct {
 	From time.Time `bson:"from" json:"from"`
 	To   time.Time `bson:"to" json:"to"`
 }
-
-
 
 type DistanceFromCityCenterFilter struct {
 	LessThan    int `bson:"lessThan" json:"lessThan"`

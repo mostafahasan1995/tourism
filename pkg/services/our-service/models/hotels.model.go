@@ -15,6 +15,7 @@ type HotelsDto struct {
 	Location                      string                        `bson:"location" json:"location"`
 	CheckInAndCheckOut            CheckInAndCheckOut            `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
 	Price                         int                           `bson:"price" json:"price"`
+	IsDisplayInPerfectStay        bool                          `bson:"isDisplayInPerfectStay" json:"isDisplayInPerfectStay"`
 	Ratings                       int                           `bson:"ratings" json:"ratings"`
 	Image                         types.FileField               `bson:"image" json:"image"`
 	RoomAmenities                 []string                      `bson:"roomAmenities" json:"roomAmenities"`
@@ -31,9 +32,10 @@ type HotelsDto struct {
 }
 
 type OverviewPage struct {
-	OverviewText  string   `bson:"overviewText" json:"overviewText"`
-	WhyStayWithUs []string `bson:"whyStayWithUs" json:"whyStayWithUs"`
-	QuickFacts    []string `bson:"quickFacts" json:"quickFacts"`
+	OverviewText  string          `bson:"overviewText" json:"overviewText"`
+	WhyStayWithUs []string        `bson:"whyStayWithUs" json:"whyStayWithUs"`
+	QuickFacts    []string        `bson:"quickFacts" json:"quickFacts"`
+	Logo          types.FileField `bson:"logo" json:"logo"`
 }
 
 type RoomsAndSuitesPage struct {
@@ -79,9 +81,12 @@ type LocationNearbyAttractionsPage struct {
 }
 
 type AttractionsNearby struct {
-	Title string          `bson:"title" json:"title"`
-	Body  string          `bson:"body" json:"body"`
-	Image types.FileField `bson:"image" json:"image"`
+	Title       string          `bson:"title" json:"title"`
+	Body        string          `bson:"body" json:"body"`
+	Image       types.FileField `bson:"image" json:"image"`
+	Longitude   string          `bson:"longitude" json:"longitude"`
+	Latitude    string          `bson:"latitude" json:"latitude"`
+	FullAddress string          `bson:"fullAddress" json:"fullAddress"`
 }
 
 type ReviewsAndRatingsPage struct {

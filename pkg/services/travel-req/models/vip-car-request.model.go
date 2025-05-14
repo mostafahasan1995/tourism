@@ -10,7 +10,7 @@ import (
 )
 
 type VipCarRequestDto struct {
-	Location              string   `bson:"location" json:"location"`
+	Locations              []primitive.ObjectID   `bson:"locations" json:"locations"`
 	Capacity              string   `bson:"capacity" json:"capacity"`
 	DriverLanguagesSpoken []string `bson:"driverLanguagesSpoken" json:"driverLanguagesSpoken"`
 	LuxuryFeatures        []string `bson:"luxuryFeatures" json:"luxuryFeatures"`
