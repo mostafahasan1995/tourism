@@ -21,6 +21,7 @@ type CustomerDto struct {
 	CoordinatorEmail    string            `bson:"coordinatorEmail" json:"coordinatorEmail"`
 	SocialMedia         []SocialMedia     `bson:"socialMedia" json:"socialMedia"`
 	Email               string            `bson:"email" json:"email"`
+	NewPassword         string            `bson:"newPassword" json:"newPassword"`
 }
 
 type SocialMedia struct {
@@ -29,7 +30,7 @@ type SocialMedia struct {
 }
 
 type Customer struct {
-	Id          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Id          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` //same as user id
 	CustomerId  string             `bson:"customerId,omitempty" json:"customerId,omitempty"`
 	CustomerDto `bson:",inline"`
 	Trash       bool               `bson:"trash" json:"trash"`

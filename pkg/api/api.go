@@ -12,7 +12,7 @@ import (
 	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
 	travelreq "larsa-tourism-microservices/pkg/services/travel-req/di"
 
-	gateway "larsa-tourism-microservices/pkg/gatway"
+	gateway "larsa-tourism-microservices/pkg/gateway/di"
 	customform "larsa-tourism-microservices/pkg/services/custom-form/di"
 	customer "larsa-tourism-microservices/pkg/services/customer/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
@@ -83,8 +83,8 @@ func Start() error {
 	// validator
 	do.ProvideValue(injector, validateInstance)
 	//getway
-	do.Provide(injector, gateway.NewUsersGw)
-	//db
+	gateway.Init(injector)
+	//db service
 	dbsvcs.Init(injector, r)
 
 	home.Init(injector, r)

@@ -3,18 +3,26 @@ package gateway
 import (
 	"context"
 	"encoding/json"
+	"errors"
+
 	// "errors"
 
-
 	"fmt"
-	// "larsa-crm-microservice/pkg/types"
+	"larsa-tourism-microservices/pkg/gateway/models"
 	"larsa-tourism-microservices/pkg/util"
+
 	// "net/url"
 
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
-	
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
+
+var ErrUserNotFound = errors.New("user not found")
+var ErrDupliateEmail = errors.New("duplicated email")
+var ErrUnKnowen = errors.New("unknowen error")
+var ErrUnauthorized = errors.New("unauthorized")
+var ErrForbidden = errors.New("forbidden")
 
 type UsersGw struct{}
 
@@ -22,64 +30,110 @@ func NewUsersGw(i *do.Injector) (*UsersGw, error) {
 	return &UsersGw{}, nil
 }
 
-// func (ugw *UsersGw) AddUser(ctx context.Context, user *types.PostUserData) (addedUserId primitive.ObjectID, errAdd error) {
+func (ugw *UsersGw) AddUser(ctx context.Context, user *models.PostUserData) (addedUserId primitive.ObjectID, errAdd error) {
 
-// 	zeroId := primitive.NilObjectID
+	zeroId := primitive.NilObjectID
 
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return zeroId, err
-// 	}
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return zeroId, err
+	}
 
-// 	newUserReqOp := &common.RequestParams{
-// 		Service: "users",
-// 		Path:    "users/",
-// 		Method:  "POST",
-// 		Data: map[string]interface{}{
-// 			"firstName":    user.FirstName,
-// 			"lastName":     user.LastName,
-// 			"email":        user.Email,
-// 			"password":     user.Password,
-// 			"roles":        user.Roles,
-// 			"capabilities": user.Capabilities,
-// 		},
-// 		Header: cfg.Hp,
-// 	}
+	newUserReqOp := &common.RequestParams{
+		Service: "users",
+		Path:    "users/",
+		Method:  "POST",
+		Data: map[string]interface{}{
+			"firstName":    user.FirstName,
+			"lastName":     user.LastName,
+			"email":        user.Email,
+			"password":     user.Password,
+			"roles":        user.Roles,
+			"capabilities": user.Capabilities,
+		},
+		Header: cfg.Hp,
+	}
 
-// 	res, err := common.CallService(newUserReqOp)
+	res, err := common.CallService(newUserReqOp)
 
-// 	if err != nil {
-// 		return zeroId, errors.New("something went wrong")
-// 	} else if res.StatusCode != 200 {
+	if err != nil {
+		return zeroId, errors.New("error adding user")
+	} else if res.StatusCode != 200 {
 
-// 		switch res.StatusCode {
-// 		case 409:
-// 			return zeroId, types.ErrDupliateEmail
-// 		case 401:
-// 			return zeroId, types.ErrUnauthorized
-// 		case 403:
-// 			return zeroId, types.ErrForbidden
-// 		default:
-// 			return zeroId, err
-// 		}
+		switch res.StatusCode {
+		case 409:
+			return zeroId, ErrDupliateEmail
+		case 401:
+			return zeroId, ErrUnauthorized
+		case 403:
+			return zeroId, ErrForbidden
+		default:
+			return zeroId, errors.New("error adding user")
+		}
 
-// 	}
+	}
 
-// 	type TempUser struct {
-// 		Id primitive.ObjectID `json:"_id"`
-// 	}
+	type TempUser struct {
+		Id primitive.ObjectID `json:"_id"`
+	}
 
-// 	type AddedUser struct {
-// 		User TempUser `json:"user"`
-// 	}
+	type AddedUser struct {
+		User TempUser `json:"user"`
+	}
 
-// 	var data AddedUser
-// 	if errDec := json.NewDecoder(res.Body).Decode(&data); errDec != nil {
-// 		return zeroId, errDec
-// 	}
+	var data AddedUser
+	if errDec := json.NewDecoder(res.Body).Decode(&data); errDec != nil {
+		return zeroId, errDec
+	}
 
-// 	return data.User.Id, nil
-// }
+	return data.User.Id, nil
+}
+
+func (ugw *UsersGw) UpdateUser(ctx context.Context, userId string, user *models.PostUserData) (UpdatedUserId primitive.ObjectID, errUpdate error) {
+
+	zeroId := primitive.NilObjectID
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return zeroId, err
+	}
+
+	updateUserReqOp := &common.RequestParams{
+		Service: "users",
+		Path:    fmt.Sprintf("users/%s", userId),
+		Method:  "PATCH",
+		Data: map[string]interface{}{
+			"firstName":    user.FirstName,
+			"lastName":     user.LastName,
+			"email":        user.Email,
+			"password":     user.Password,
+			"roles":        user.Roles,
+			"capabilities": user.Capabilities,
+		},
+		Header: cfg.Hp,
+	}
+
+	res, err := common.CallService(updateUserReqOp)
+
+	if err != nil || res.StatusCode != 200 {
+		return zeroId, errors.New("error updating user")
+	}
+
+	type TempUser struct {
+		Id primitive.ObjectID `json:"_id"`
+	}
+
+	type UpdatedUser struct {
+		User TempUser `json:"user"`
+	}
+
+	var data UpdatedUser
+	if errDec := json.NewDecoder(res.Body).Decode(&data); errDec != nil {
+		return zeroId, errDec
+	}
+
+	return data.User.Id, nil
+}
 
 // func (ugw *UsersGw) UpdateUserRoles(ctx context.Context, userId primitive.ObjectID, roles []primitive.ObjectID) error {
 // 	if userId == primitive.NilObjectID || len(roles) == 0 {
@@ -225,7 +279,6 @@ func (ugw *UsersGw) GetUserById(ctx context.Context, id string) (*common.User, e
 // 		}
 
 // 	}
-
 
 // 	return  nil
 // }
