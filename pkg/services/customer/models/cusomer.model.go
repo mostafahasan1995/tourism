@@ -38,3 +38,8 @@ type Customer struct {
 	UpdatedAt   time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 	UpdatedBy   primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
+
+type CustomerWithPagination struct {
+	Customers  []Customer       `bson:"customers" json:"customers"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}

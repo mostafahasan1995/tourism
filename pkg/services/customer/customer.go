@@ -2,12 +2,16 @@ package customer
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/services/customer/filters"
 	"larsa-tourism-microservices/pkg/services/customer/models"
 	"larsa-tourism-microservices/pkg/services/customer/repo"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"time"
 
 	"github.com/samber/do"
@@ -17,8 +21,11 @@ import (
 )
 
 type CustomerSvcs interface {
+	GetOne(ctx context.Context, customerId string) (*models.Customer, error)
+	Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error)
 	Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
 	Update(ctx context.Context, customerId string, data *models.CustomerDto) (*models.Customer, error)
+	Delete(ctx context.Context, customerId string) error
 }
 
 type customerSvcs struct {
@@ -32,6 +39,59 @@ func NewCustomerSvcs(i *do.Injector) (CustomerSvcs, error) {
 		repo:        do.MustInvoke[repo.CustomerRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
+	}, nil
+}
+
+func (c *customerSvcs) GetOne(ctx context.Context, customerId string) (*models.Customer, error) {
+	_id, err := primitive.ObjectIDFromHex(customerId)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+
+}
+
+func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error) {
+	match := bson.M{"trash": false}
+
+	filters, err := filters.NewCustomerFilter(query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := c.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Customer
+	errAg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.CustomerWithPagination{
+		Customers:  result,
+		Pagination: pagination,
 	}, nil
 }
 
@@ -108,4 +168,30 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 
 	return result.(*models.Customer), nil
 
+}
+
+func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(customerId)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{
+		"trash":     true,
+		"updatedAt": time.Now(),
+		"updatedBy": cfg.User.Id,
+	}}
+
+	_, err = c.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
