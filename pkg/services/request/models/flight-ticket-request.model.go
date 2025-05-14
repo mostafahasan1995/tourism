@@ -15,6 +15,9 @@ type FlightTicketRequestDto struct {
 	TripType        string `bson:"tripType" json:"tripType"`
 	TravelClass     string `bson:"travelClass" json:"travelClass"`
 
+	DepartureDate time.Time `bson:"departureDate" json:"departureDate"`
+	ReturnDate    time.Time `bson:"returnDate" json:"returnDate"`
+
 	NumberOfAdults   int `bson:"numberOfAdults" json:"numberOfAdults"`
 	NumberOfChildren int `bson:"numberOfChildren" json:"numberOfChildren"`
 	NumberOfInfants  int `bson:"numberOfInfants" json:"numberOfInfants"`

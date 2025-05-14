@@ -61,7 +61,7 @@ type CustomForm struct {
 }
 
 type BFDestination struct {
-	Name           string          `bson:"name" json:"name"`
+	Id           primitive.ObjectID           `bson:"id" json:"id"`
 	TripDetails    TripDetails     `bson:"tripDetails" json:"tripDetails"`
 	Accommodation  []Accommodation `bson:"accommodation" json:"accommodation"`
 	FlightTickets  FlightTicket    `bson:"flightTickets" json:"flightTickets"`

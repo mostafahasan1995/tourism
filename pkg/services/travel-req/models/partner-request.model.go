@@ -1,9 +1,9 @@
 package models
 
 import (
-	"time"
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"time"
 )
 
 type PartnerRequestDto struct {
@@ -12,6 +12,7 @@ type PartnerRequestDto struct {
 	Website         string        `bson:"website" json:"website"`
 	CompanyLocation string        `bson:"companyLocation" json:"companyLocation"`
 	ContactDetail   ContactDetail `bson:"contactDetail" json:"contactDetail"`
+	Message         string        `bson:"message" json:"message"`
 }
 
 type ContactDetail struct {
