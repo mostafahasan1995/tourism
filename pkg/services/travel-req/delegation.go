@@ -45,7 +45,7 @@ func (d *delegationSvcs) Add(ctx context.Context, data json.RawMessage) (*models
 
 	return &models.ReqAddData{
 		Id:            req.Id,
-		CustomerName:  req.OrganizationName,
+		CustomerName:  req.TripCoordinatorName,
 		CustomerPhone: req.Phone,
 		CustomerEmail: req.Email,
 	}, nil
