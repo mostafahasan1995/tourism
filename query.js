@@ -1,7 +1,7 @@
 
 
 var travelReq = encodeURIComponent(JSON.stringify({
-    customerName: "raya"
+    Name: "1"
 }))
 
 

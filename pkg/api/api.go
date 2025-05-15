@@ -75,6 +75,8 @@ func Start() error {
 
 	r.Use(common.ClientSubscriptionInstance.CheckSubscription)
 
+	//ORDER MATTERS . DO NOT CHANGE
+
 	//database
 	do.ProvideValue(injector, conn)
 	do.Provide(injector, db.NewWithTxn)
@@ -89,10 +91,9 @@ func Start() error {
 	home.Init(injector, r)
 	ourService.Init(injector, r)
 	picklist.Init(injector, r)
-	//request.Init(injector, r)
 	interactions.Init(injector, r)
-	travelreq.Init(injector, r)
 	customer.Init(injector, r)
+	travelreq.Init(injector, r)
 
 	fmt.Println("start server")
 

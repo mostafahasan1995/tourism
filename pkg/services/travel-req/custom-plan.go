@@ -48,6 +48,7 @@ func (c *customPlanSvcs) Add(ctx context.Context, data json.RawMessage) (*models
 		CustomerName:  req.ClientName,
 		CustomerPhone: req.Phone,
 		CustomerEmail: req.Email,
+		Nationality:   req.Nationality,
 	}, nil
 }
 

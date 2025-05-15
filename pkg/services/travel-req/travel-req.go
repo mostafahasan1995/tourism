@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/services/customer"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/travel-req/enums"
 	"larsa-tourism-microservices/pkg/services/travel-req/filters"
@@ -29,18 +30,20 @@ type TravelReqSvcs interface {
 }
 
 type travelreqsvcs struct {
-	repo        repo.TravelReqRepo
-	reqTypes    ReqTypes
-	sortingsvcs dbsvcs.SortingSvcs
-	withtxn     *db.WithTxn
+	repo         repo.TravelReqRepo
+	reqTypes     ReqTypes
+	sortingsvcs  dbsvcs.SortingSvcs
+	customersvcs customer.CustomerSvcs
+	withtxn      *db.WithTxn
 }
 
 func NewTravelReqSvcs(i *do.Injector) (TravelReqSvcs, error) {
 	return &travelreqsvcs{
-		repo:        do.MustInvoke[repo.TravelReqRepo](i),
-		reqTypes:    do.MustInvoke[ReqTypes](i),
-		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		repo:         do.MustInvoke[repo.TravelReqRepo](i),
+		reqTypes:     do.MustInvoke[ReqTypes](i),
+		sortingsvcs:  do.MustInvoke[dbsvcs.SortingSvcs](i),
+		customersvcs: do.MustInvoke[customer.CustomerSvcs](i),
+		withtxn:      do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -192,3 +195,10 @@ func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMe
 // 	})
 
 // }
+
+func (t *travelreqsvcs) AddCustomer(ctx context.Context, data *models.ReqAddData) error {
+
+	//customer, err := t.customersvcs.GetOne(ctx, bson.M{"email": data.CustomerEmail,})
+
+	return nil
+}

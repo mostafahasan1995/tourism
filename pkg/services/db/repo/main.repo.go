@@ -13,8 +13,8 @@ import (
 type MainRepo[T any] interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*T, error)
 	Aggregate(ctx context.Context, pipeline any, callback func(cur *mongo.Cursor) error) error
-	Add(ctx context.Context, data *T) error
-	AddMany(ctx context.Context, data []any) error
+	Add(ctx context.Context, data *T, opts ...*options.InsertOneOptions) error
+	AddMany(ctx context.Context, data []any, opts ...*options.InsertManyOptions) error
 	Patch(ctx context.Context, filter, update bson.M, ops ...*options.FindOneAndUpdateOptions) (*T, error)
 	BulkWrite(ctx context.Context, writeOps []mongo.WriteModel) (*mongo.BulkWriteResult, error)
 	Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error)
@@ -25,27 +25,27 @@ type MainRepoImpl[T any] struct {
 	CollName string
 }
 
-func (m *MainRepoImpl[T]) Add(ctx context.Context, data *T) error {
+func (m *MainRepoImpl[T]) Add(ctx context.Context, data *T, opts ...*options.InsertOneOptions) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
 	}
 	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
 
-	if _, err := coll.InsertOne(ctx, data); err != nil {
+	if _, err := coll.InsertOne(ctx, data, opts...); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m *MainRepoImpl[T]) AddMany(ctx context.Context, data []any) error {
+func (m *MainRepoImpl[T]) AddMany(ctx context.Context, data []any, opts ...*options.InsertManyOptions) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
 	}
 	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
 
-	if _, err := coll.InsertMany(ctx, data); err != nil {
+	if _, err := coll.InsertMany(ctx, data, opts...); err != nil {
 		return err
 	}
 	return nil

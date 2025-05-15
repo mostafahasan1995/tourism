@@ -30,4 +30,5 @@ type ReqAddData struct {
 	CustomerName  string
 	CustomerPhone string
 	CustomerEmail string
+	Nationality   string
 }
