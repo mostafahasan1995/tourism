@@ -57,6 +57,7 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
 		return nil, err
 	}
+	data.CalculateAverageRating()
 	return &data, nil
 
 }
@@ -109,6 +110,9 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
 	}
 
+	for _, p := range programs {
+		p.CalculateAverageRating()
+	}
 	result := models.HotelsPagination{
 		Hotels: programs,
 		Pagination: common.Pagination{
