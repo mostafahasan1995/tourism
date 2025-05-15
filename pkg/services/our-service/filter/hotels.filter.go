@@ -8,15 +8,25 @@ import (
 
 type HotelsFilter struct {
 	SearchWord             string `bson:"searchWord" json:"searchWord"`
-	IsDisplayInPerfectStay *bool `bson:"isDisplayInPerfectStay" json:"isDisplayInPerfectStay"`
-
+	IsDisplayInPerfectStay *bool  `bson:"isDisplayInPerfectStay" json:"isDisplayInPerfectStay"`
+	//
+	SortBy      []string `bson:"sortBy" json:"sortBy"`
+	ReviewScore int `bson:"reviewScore" json:"reviewScore"`
+	MealOptions      []string `bson:"mealOptions" json:"mealOptions"`
+	BedType      []string `bson:"bedType" json:"bedType"`
+	HotelDacilities []string `bson:"hotelDacilities" json:"hotelDacilities"`
+	RoomType      []string `bson:"roomType" json:"roomType"`
+	PetFriendly      string `bson:"petFriendly" json:"petFriendly"`
+	
+	
+	//
 	HotelTypes             []string                     `bson:"hotelTypes" json:"hotelTypes"`
 	RoomAmenities          []string                     `bson:"roomAmenities" json:"roomAmenities"`
 	NearbyAttractions      []string                     `bson:"nearbyAttractions" json:"nearbyAttractions"`
 	Locations              []string                     `bson:"locations" json:"locations"`
 	CheckInAndCheckOut     CheckInAndCheckOutFilter     `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
 	PriceRange             PriceRangeFilter             `bson:"priceRange" json:"priceRange"`
-	Ratings                float64                          `bson:"ratings" json:"ratings"`
+	Ratings                float64                      `bson:"ratings" json:"ratings"`
 	Page                   int                          `bson:"page" json:"page"`
 	Size                   int                          `bson:"size" json:"size"`
 	DistanceFromCityCenter DistanceFromCityCenterFilter `bson:"distanceFromCityCenter" json:"distanceFromCityCenter"`
