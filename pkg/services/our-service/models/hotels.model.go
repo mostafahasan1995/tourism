@@ -29,6 +29,15 @@ type HotelsDto struct {
 	ReviewsAndRatingsPage         ReviewsAndRatingsPage         `bson:"reviewsAndRatingsPage" json:"reviewsAndRatingsPage"`
 	BookingAndPoliciesPage        BookingAndPoliciesPage        `bson:"bookingAndPoliciesPage" json:"bookingAndPoliciesPage"`
 	PositionOnMap                 string                        `bson:"positionOnMap" json:"positionOnMap"`
+	Contacts                      Contacts                      `bson:"contacts" json:"contacts"`
+}
+type Contacts struct {
+	Phone     string `bson:"phone" json:"phone"`
+	Email     string `bson:"email" json:"email"`
+	Web       string `bson:"web" json:"web"`
+	Facebook  string `bson:"facebook" json:"facebook"`
+	Instagram string `bson:"instagram" json:"instagram"`
+	Linkedin  string `bson:"linkedin" json:"linkedin"`
 }
 
 type OverviewPage struct {
@@ -75,15 +84,15 @@ type AmenitiesDetail struct {
 
 type LocationNearbyAttractionsPage struct {
 	StartingText                   string              `bson:"startingText" json:"startingText"`
-	HotelAddress                   HotelAddress           `bson:"hotelAddress" json:"hotelAddress"`
+	HotelAddress                   HotelAddress        `bson:"hotelAddress" json:"hotelAddress"`
 	TopAttractionsNearby           []AttractionsNearby `bson:"topAttractionsNearby" json:"topAttractionsNearby"`
 	TransportationAndAccessibility []string            `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
 }
 
 type HotelAddress struct {
-	Longitude   string          `bson:"longitude" json:"longitude"`
-	Latitude    string          `bson:"latitude" json:"latitude"`
-	FullAddress string          `bson:"fullAddress" json:"fullAddress"`
+	Longitude   string `bson:"longitude" json:"longitude"`
+	Latitude    string `bson:"latitude" json:"latitude"`
+	FullAddress string `bson:"fullAddress" json:"fullAddress"`
 }
 
 type AttractionsNearby struct {
