@@ -35,10 +35,14 @@ type Contacts struct {
 	Phone     string `bson:"phone" json:"phone"`
 	Email     string `bson:"email" json:"email"`
 	Web       string `bson:"web" json:"web"`
+	Social	[]Social `bson:"social" json:"social"`
+}
+type Social struct {
 	Facebook  string `bson:"facebook" json:"facebook"`
 	Instagram string `bson:"instagram" json:"instagram"`
 	Linkedin  string `bson:"linkedin" json:"linkedin"`
 }
+
 
 type OverviewPage struct {
 	OverviewText  string          `bson:"overviewText" json:"overviewText"`
