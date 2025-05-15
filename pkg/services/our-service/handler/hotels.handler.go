@@ -80,12 +80,11 @@ func (l *HotelsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 
 	//and validations go here
 
-	err := l.hotelssvcs.Add(ctx, &data)
+	result, err := l.hotelssvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (l *HotelsHandler) Delete(w http.ResponseWriter, r *http.Request) error {

@@ -16,7 +16,7 @@ import (
 type HotelsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
 	GetAll(ctx context.Context,filter filter.HotelsFilter) (models.HotelsPagination, error)
-	Add(ctx context.Context, data *models.HotelsDto) error
+	Add(ctx context.Context, data *models.HotelsDto) (any,error) 
 	Update(ctx context.Context, id string, data *models.HotelsDto) error
 	Delete(ctx context.Context, id string) error
 }
@@ -47,10 +47,10 @@ func (l *hotelssvcs) GetAll(ctx context.Context,filter filter.HotelsFilter) (mod
 	return data, nil
 }
 
-func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) error {
+func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) (any,error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil,err
 	}
 	hotels := &models.Hotels{
 		HotelsDto: models.HotelsDto{
@@ -80,10 +80,10 @@ func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) error {
 		UpdatedBy: cfg.User.Id,
 	}
 	if err := l.repo.Add(ctx, hotels); err != nil {
-		return err
+		return nil,err
 	}
 
-	return nil
+	return hotels,nil
 
 }
 
