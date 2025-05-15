@@ -84,13 +84,6 @@ func (t *travelreqsvcs) Get(ctx context.Context, skip, limit int64, query string
 		return nil, err
 	}
 
-	// pipeline := []bson.M{
-	// 	{"$match": match},
-	// 	{"$sort": bson.M{"_id": -1}},
-	// 	{"$skip": skip},
-	// 	{"$limit": limit},
-	// }
-
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})

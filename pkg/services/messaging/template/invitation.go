@@ -1,0 +1,53 @@
+package template
+
+import (
+	"bytes"
+	"context"
+	"errors"
+	"fmt"
+	"html/template"
+)
+
+type InvitationTpl struct {
+	Subject string `bson:"subject" json:"subject"`
+	Message string `bson:"message" json:"message"`
+}
+
+type InvetationTplData struct {
+	CompanyName    string
+	PlatformName   string
+	EmpName        string
+	Email          string
+	Password       string
+	SenderName     string
+	SenderPosition string
+	RegisterLink   string
+}
+
+func (i *InvitationTpl) Construct(ctx context.Context, data any) (string, string, error) {
+	d, ok := data.(*InvetationTplData)
+	if !ok {
+		return "", "", errors.New("invalid data type")
+	}
+
+	temp := new(bytes.Buffer)
+	t := template.New("t")
+	t, errParse := t.Parse(i.Message)
+
+	if errParse != nil {
+		return "", "", errParse
+	}
+
+	if errEx := t.Execute(temp, d); errEx != nil {
+		return "", "", errEx
+	}
+
+	message := new(bytes.Buffer)
+	t2, errParse := template.ParseFiles("public/emailTemplate.html")
+	if errParse != nil {
+		return "", "", errParse
+	}
+	t2.Execute(message, template.HTML(temp.String()))
+
+	return message.String(), fmt.Sprintf("Welcome to %s on %s", d.CompanyName, d.PlatformName), nil
+}

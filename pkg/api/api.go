@@ -9,6 +9,7 @@ import (
 	"larsa-tourism-microservices/pkg/nats"
 
 	home "larsa-tourism-microservices/pkg/services/home/di"
+	messaging "larsa-tourism-microservices/pkg/services/messaging/di"
 	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
 	travelreq "larsa-tourism-microservices/pkg/services/travel-req/di"
 
@@ -83,6 +84,9 @@ func Start() error {
 
 	// validator
 	do.ProvideValue(injector, validateInstance)
+
+	//messaging
+	messaging.Init(injector, r)
 	//getway
 	gateway.Init(injector)
 	//db service
