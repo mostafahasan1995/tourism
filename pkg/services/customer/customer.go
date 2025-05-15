@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/gateway"
+	gwmodels "larsa-tourism-microservices/pkg/gateway/models"
 	"larsa-tourism-microservices/pkg/services/customer/filters"
 	"larsa-tourism-microservices/pkg/services/customer/models"
 	"larsa-tourism-microservices/pkg/services/customer/repo"
@@ -31,6 +33,7 @@ type CustomerSvcs interface {
 type customerSvcs struct {
 	repo        repo.CustomerRepo
 	sortingsvcs dbsvcs.SortingSvcs
+	usersgw     *gateway.UsersGw
 	withtxn     *db.WithTxn
 }
 
@@ -38,6 +41,7 @@ func NewCustomerSvcs(i *do.Injector) (CustomerSvcs, error) {
 	return &customerSvcs{
 		repo:        do.MustInvoke[repo.CustomerRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
+		usersgw:     do.MustInvoke[*gateway.UsersGw](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -101,20 +105,25 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 		return nil, err
 	}
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		customer := &models.Customer{
+			CustomerDto: *data,
+			CreatedAt:   time.Now(),
+			CreatedBy:   cfg.User.Id,
+		}
+
+		userId, err := c.AddCustomerCredentials(ctx, customer)
+		if err != nil {
+			return nil, err
+		}
+
+		customer.Id = userId
+
 		seq, err := c.sortingsvcs.GetAndUpdateSourceSeq(ctx, "customer")
 		if err != nil {
 			return nil, err
 		}
 
-		customerId := fmt.Sprintf("CUSTOMER-%d", seq)
-
-		customer := &models.Customer{
-			Id:          primitive.NewObjectID(),
-			CustomerId:  customerId,
-			CustomerDto: *data,
-			CreatedAt:   time.Now(),
-			CreatedBy:   cfg.User.Id,
-		}
+		customer.CustomerId = fmt.Sprintf("CUSTOMER-%d", seq)
 
 		if err := c.repo.Add(ctx, customer); err != nil {
 			return nil, err
@@ -136,18 +145,22 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 		return nil, err
 	}
 
-	_id, err := primitive.ObjectIDFromHex(customerId)
+	_id, err := primitive.ObjectIDFromHex(customerId) //same as user id
 	if err != nil {
 		return nil, err
 	}
 
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
-
 		customer := &models.Customer{
 			Id:          _id,
 			CustomerDto: *data,
 			UpdatedAt:   time.Now(),
 			UpdatedBy:   cfg.User.Id,
+		}
+
+		_, err := c.UpdateCustomerCredentials(ctx, customer)
+		if err != nil {
+			return nil, err
 		}
 
 		filter := bson.M{"_id": _id}
@@ -194,4 +207,36 @@ func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
 	}
 
 	return nil
+}
+
+func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
+	password := data.NewPassword
+	if password == "" {
+		password = util.GeneratePassword(8, 2, 2, 2)
+	}
+
+	user := &gwmodels.PostUserData{
+		FirstName: data.CustomerName,
+		LastName:  "-",
+		Email:     data.Email,
+		Password:  password,
+		// Roles:        []primitive.ObjectID{}, //empty for default role
+		// Capabilities: []primitive.ObjectID{},
+	}
+
+	return c.usersgw.AddUser(ctx, user)
+}
+
+func (c *customerSvcs) UpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
+	user := &gwmodels.PostUserData{
+		FirstName: data.CustomerName,
+		LastName:  "-",
+		Email:     data.Email,
+	}
+
+	if data.NewPassword != "" {
+		user.Password = data.NewPassword
+	}
+
+	return c.usersgw.UpdateUser(ctx, data.Id.Hex(), user)
 }
