@@ -75,9 +75,15 @@ type AmenitiesDetail struct {
 
 type LocationNearbyAttractionsPage struct {
 	StartingText                   string              `bson:"startingText" json:"startingText"`
-	HotelAddress                   []string            `bson:"hotelAddress" json:"hotelAddress"`
+	HotelAddress                   HotelAddress           `bson:"hotelAddress" json:"hotelAddress"`
 	TopAttractionsNearby           []AttractionsNearby `bson:"topAttractionsNearby" json:"topAttractionsNearby"`
 	TransportationAndAccessibility []string            `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
+}
+
+type HotelAddress struct {
+	Longitude   string          `bson:"longitude" json:"longitude"`
+	Latitude    string          `bson:"latitude" json:"latitude"`
+	FullAddress string          `bson:"fullAddress" json:"fullAddress"`
 }
 
 type AttractionsNearby struct {
