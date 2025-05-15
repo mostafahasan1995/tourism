@@ -38,9 +38,9 @@ type Contacts struct {
 	Social	[]Social `bson:"social" json:"social"`
 }
 type Social struct {
-	Facebook  string `bson:"facebook" json:"facebook"`
-	Instagram string `bson:"instagram" json:"instagram"`
-	Linkedin  string `bson:"linkedin" json:"linkedin"`
+	Key  string `bson:"key" json:"key"`
+	Value  string `bson:"value" json:"value"`
+
 }
 
 
@@ -55,6 +55,7 @@ type RoomsAndSuitesPage struct {
 	StartingText   string         `bson:"startingText" json:"startingText"`
 	Advantages     []Advantages   `bson:"advantages" json:"advantages"`
 	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
+
 }
 type RoomCategory struct {
 	RoomType      string   `bson:"roomType" json:"roomType"`
@@ -65,8 +66,24 @@ type RoomCategory struct {
 	ViewType      string   `bson:"viewType" json:"viewType"`
 	RoomAmenities []string `bson:"roomAmenities" json:"roomAmenities"`
 	Features      []string `bson:"features" json:"features"`
+	Images []types.FileField `bson:"images" json:"images"`
+	Pricing  Pricing      `bson:"pricing" json:"pricing"`
+
 }
 
+type Pricing struct {
+	NightlyRateBase int      `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	ExtraPersonCharge int      `bson:"extraPersonCharge" json:"extraPersonCharge"`
+	IsIncludeBreakFast int      `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
+
+}
+type SeasonPricing struct {
+	NightlyRateBase int      `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	ExtraPersonCharge int      `bson:"extraPersonCharge" json:"extraPersonCharge"`
+	IsIncludeBreakFast int      `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
+	SeasonName      string   `bson:"seasonName" json:"seasonName"`
+ 
+}
 type Advantages struct {
 	Text string          `bson:"text" json:"text"`
 	Icon types.FileField `bson:"icon" json:"icon"`
