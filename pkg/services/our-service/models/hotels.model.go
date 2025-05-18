@@ -30,7 +30,7 @@ type HotelsDto struct {
 	BookingAndPoliciesPage        BookingAndPoliciesPage        `bson:"bookingAndPoliciesPage" json:"bookingAndPoliciesPage"`
 	PositionOnMap                 string                        `bson:"positionOnMap" json:"positionOnMap"`
 	Contacts                      Contacts                      `bson:"contacts" json:"contacts"`
-	CloseReservations             CloseReservations             `bson:"closeReservations" json:"closeReservations"`
+	CloseReservations             []CloseReservations             `bson:"closeReservations" json:"closeReservations"`
 	RatingObjects                 []RatingObject                `bson:"ratingObjects" json:"ratingObjects"`
 	OfferAndDiscount              []OfferAndDiscount            `bson:"offerAndDiscount" json:"offerAndDiscount"`
 	PoliciesPage                  PoliciesPage                  `bson:"policiesPage" json:"policiesPage"`
