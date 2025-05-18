@@ -144,7 +144,14 @@ type LocationNearbyAttractionsPage struct {
 	StartingText                   string              `bson:"startingText" json:"startingText"`
 	HotelAddress                   HotelAddress        `bson:"hotelAddress" json:"hotelAddress"`
 	TopAttractionsNearby           []AttractionsNearby `bson:"topAttractionsNearby" json:"topAttractionsNearby"`
-	TransportationAndAccessibility []string            `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
+	TransportationAndAccessibility []TransportationAndAccessibility            `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
+}
+
+type TransportationAndAccessibility struct {
+	Title                   string              `bson:"title" json:"title"`
+	Description                   string              `bson:"description" json:"description"`
+	Availability                   bool              `bson:"availability" json:"availability"`
+
 }
 
 type HotelAddress struct {
