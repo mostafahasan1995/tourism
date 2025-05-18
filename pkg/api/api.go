@@ -14,8 +14,8 @@ import (
 	travelreq "larsa-tourism-microservices/pkg/services/travel-req/di"
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
-	customer "larsa-tourism-microservices/pkg/services/customer/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
+	member "larsa-tourism-microservices/pkg/services/member/di"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
 
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
@@ -96,7 +96,7 @@ func Start() error {
 	ourService.Init(injector, r)
 	picklist.Init(injector, r)
 	interactions.Init(injector, r)
-	customer.Init(injector, r)
+	member.Init(injector, r)
 	travelreq.Init(injector, r)
 
 	fmt.Println("start server")

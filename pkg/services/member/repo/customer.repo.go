@@ -1,8 +1,8 @@
 package repo
 
 import (
-	"larsa-tourism-microservices/pkg/services/customer/models"
 	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
+	"larsa-tourism-microservices/pkg/services/member/models"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/mongo"

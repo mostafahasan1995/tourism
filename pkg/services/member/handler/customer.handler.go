@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/customer"
-	"larsa-tourism-microservices/pkg/services/customer/models"
+	"larsa-tourism-microservices/pkg/services/member"
+	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
@@ -14,12 +14,12 @@ import (
 )
 
 type CustomerHandler struct {
-	customersvcs customer.CustomerSvcs
+	customersvcs member.CustomerSvcs
 }
 
 func NewCustomerHandler(i *do.Injector, r *chi.Mux) {
 	h := &CustomerHandler{
-		customersvcs: do.MustInvoke[customer.CustomerSvcs](i),
+		customersvcs: do.MustInvoke[member.CustomerSvcs](i),
 	}
 
 	r.Route("/customers", func(r chi.Router) {
