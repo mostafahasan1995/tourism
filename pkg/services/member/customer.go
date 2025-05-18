@@ -1,4 +1,4 @@
-package customer
+package member
 
 import (
 	"context"
@@ -7,10 +7,10 @@ import (
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/gateway"
 	gwmodels "larsa-tourism-microservices/pkg/gateway/models"
-	"larsa-tourism-microservices/pkg/services/customer/filters"
-	"larsa-tourism-microservices/pkg/services/customer/models"
-	"larsa-tourism-microservices/pkg/services/customer/repo"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/member/filters"
+	"larsa-tourism-microservices/pkg/services/member/models"
+	"larsa-tourism-microservices/pkg/services/member/repo"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -23,6 +23,7 @@ import (
 )
 
 type CustomerSvcs interface {
+	GetByFilter(ctx context.Context, filter bson.M) (*models.Customer, error)
 	GetOne(ctx context.Context, customerId string) (*models.Customer, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error)
 	Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
@@ -53,7 +54,10 @@ func (c *customerSvcs) GetOne(ctx context.Context, customerId string) (*models.C
 	}
 
 	return c.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+}
 
+func (c *customerSvcs) GetByFilter(ctx context.Context, filter bson.M) (*models.Customer, error) {
+	return c.repo.GetByFilter(ctx, filter)
 }
 
 func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error) {

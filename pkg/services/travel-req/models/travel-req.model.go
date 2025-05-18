@@ -16,6 +16,7 @@ type TravelReq struct {
 	ServiceType  enums.ServiceType  `bson:"serviceType" json:"serviceType"`
 	Date         time.Time          `bson:"date" json:"date"`
 	CustomerName string             `bson:"customerName" json:"customerName"`
+	CustomerId   primitive.ObjectID `bson:"customerId" json:"customerId"`
 	Status       enums.Status       `bson:"status" json:"status"`
 	Ref          primitive.ObjectID `bson:"ref" json:"ref"`
 }

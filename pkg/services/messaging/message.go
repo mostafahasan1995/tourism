@@ -98,6 +98,7 @@ func (m *messagesvcs) SendEmail(ctx context.Context, msg *models.Message) error 
 	return nil
 }
 
+// must use in all places where we need to send email
 func (m *messagesvcs) GetTemplateMessage(ctx context.Context, msgType enums.MsgTyps, data any) (message string, subject string, err error) {
 	tpl, ok := template.Templates[msgType]
 	if !ok {

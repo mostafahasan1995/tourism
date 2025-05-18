@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
-	"larsa-tourism-microservices/pkg/services/customer"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/travel-req/enums"
 	"larsa-tourism-microservices/pkg/services/travel-req/filters"
 	"larsa-tourism-microservices/pkg/services/travel-req/models"
 	"larsa-tourism-microservices/pkg/services/travel-req/repo"
 	"larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
 
@@ -30,20 +30,19 @@ type TravelReqSvcs interface {
 }
 
 type travelreqsvcs struct {
-	repo         repo.TravelReqRepo
-	reqTypes     ReqTypes
-	sortingsvcs  dbsvcs.SortingSvcs
-	customersvcs customer.CustomerSvcs
-	withtxn      *db.WithTxn
+	repo        repo.TravelReqRepo
+	reqTypes    ReqTypes
+	sortingsvcs dbsvcs.SortingSvcs
+
+	withtxn *db.WithTxn
 }
 
 func NewTravelReqSvcs(i *do.Injector) (TravelReqSvcs, error) {
 	return &travelreqsvcs{
-		repo:         do.MustInvoke[repo.TravelReqRepo](i),
-		reqTypes:     do.MustInvoke[ReqTypes](i),
-		sortingsvcs:  do.MustInvoke[dbsvcs.SortingSvcs](i),
-		customersvcs: do.MustInvoke[customer.CustomerSvcs](i),
-		withtxn:      do.MustInvoke[*db.WithTxn](i),
+		repo:        do.MustInvoke[repo.TravelReqRepo](i),
+		reqTypes:    do.MustInvoke[ReqTypes](i),
+		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
+		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -134,6 +133,11 @@ func (t *travelreqsvcs) GetAll(ctx context.Context) ([]models.TravelReq, error) 
 }
 
 func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMessage) (*models.TravelReq, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 
 		reqType := enums.ServiceType(reqType)
@@ -161,6 +165,7 @@ func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMe
 			ServiceType:  reqType,
 			Date:         time.Now(),
 			CustomerName: result.CustomerName,
+			CustomerId:   cfg.User.Id, // same as customer id
 			Status:       enums.StatusPending,
 			Ref:          result.Id,
 		}
@@ -188,10 +193,3 @@ func (t *travelreqsvcs) Add(ctx context.Context, reqType string, data json.RawMe
 // 	})
 
 // }
-
-func (t *travelreqsvcs) AddCustomer(ctx context.Context, data *models.ReqAddData) error {
-
-	//customer, err := t.customersvcs.GetOne(ctx, bson.M{"email": data.CustomerEmail,})
-
-	return nil
-}
