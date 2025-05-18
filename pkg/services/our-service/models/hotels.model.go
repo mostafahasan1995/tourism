@@ -33,7 +33,7 @@ type HotelsDto struct {
 	CloseReservations             CloseReservations             `bson:"closeReservations" json:"closeReservations"`
 	RatingObjects                 []RatingObject                `bson:"ratingObjects" json:"ratingObjects"`
 	OfferAndDiscount              []OfferAndDiscount            `bson:"offerAndDiscount" json:"offerAndDiscount"`
-	PoliciesPage                  PoliciesPage                        `bson:"policiesPage" json:"policiesPage"`
+	PoliciesPage                  PoliciesPage                  `bson:"policiesPage" json:"policiesPage"`
 }
 
 // CalculateAverageRating calculates the average rating from RatingObjects
@@ -183,11 +183,11 @@ type BookingAndPoliciesPage struct {
 	TransportationAndAdditionalServices []string `bson:"transportationAndAdditionalServices" json:"transportationAndAdditionalServices"`
 }
 type PoliciesPage struct {
-	CheckInCheckOut                  map[string]string
-	PaymentPolicies                  map[string]string
-	CancellationPolicy               map[string]string
-	HotelRulesPolicies               map[string]string
-	TransportationAdditionalServices map[string]string
+	CheckInCheckOut                  map[string]string `bson:"checkInCheckOut" json:"checkInCheckOut"`
+	PaymentPolicies                  map[string]string `bson:"paymentPolicies" json:"paymentPolicies"`
+	CancellationPolicy               map[string]string `bson:"cancellationPolicy" json:"cancellationPolicy"`
+	HotelRulesPolicies               map[string]string `bson:"hotelRulesPolicies" json:"hotelRulesPolicies"`
+	TransportationAdditionalServices map[string]string `bson:"transportationAdditionalServices" json:"transportationAdditionalServices"`
 }
 
 type Hotels struct {
