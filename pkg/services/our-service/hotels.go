@@ -77,6 +77,7 @@ func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) (any,error
 			CloseReservations:             data.CloseReservations,
 			RatingObjects:                 data.RatingObjects,
 			OfferAndDiscount:              data.OfferAndDiscount,
+			PoliciesPage:                  data.PoliciesPage, // <-- Missing field added
 		},
 		
 		Id:        primitive.NewObjectID(),
