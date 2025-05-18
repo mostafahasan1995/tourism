@@ -16,7 +16,7 @@ type HotelsDto struct {
 	CheckInAndCheckOut            CheckInAndCheckOut            `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
 	Price                         int                           `bson:"price" json:"price"`
 	IsDisplayInPerfectStay        bool                          `bson:"isDisplayInPerfectStay" json:"isDisplayInPerfectStay"`
-	Ratings                       float64                           `bson:"ratings" json:"ratings"`
+	Ratings                       float64                       `bson:"ratings" json:"ratings"`
 	Image                         types.FileField               `bson:"image" json:"image"`
 	RoomAmenities                 []string                      `bson:"roomAmenities" json:"roomAmenities"`
 	DistanceFromCityCenter        int                           `bson:"distanceFromCityCenter" json:"distanceFromCityCenter"`
@@ -30,15 +30,16 @@ type HotelsDto struct {
 	BookingAndPoliciesPage        BookingAndPoliciesPage        `bson:"bookingAndPoliciesPage" json:"bookingAndPoliciesPage"`
 	PositionOnMap                 string                        `bson:"positionOnMap" json:"positionOnMap"`
 	Contacts                      Contacts                      `bson:"contacts" json:"contacts"`
-	CloseReservations                      CloseReservations                      `bson:"closeReservations" json:"closeReservations"`
-	RatingObjects                   []RatingObject `bson:"ratingObjects" json:"ratingObjects"`
+	CloseReservations             CloseReservations             `bson:"closeReservations" json:"closeReservations"`
+	RatingObjects                 []RatingObject                `bson:"ratingObjects" json:"ratingObjects"`
 	OfferAndDiscount              []OfferAndDiscount            `bson:"offerAndDiscount" json:"offerAndDiscount"`
-	
+	PoliciesPage                  PoliciesPage                        `bson:"policiesPage" json:"policiesPage"`
 }
+
 // CalculateAverageRating calculates the average rating from RatingObjects
-func (h *HotelsDto) CalculateAverageRating()  {
+func (h *HotelsDto) CalculateAverageRating() {
 	if len(h.RatingObjects) == 0 {
-		return 
+		return
 	}
 	var total float64
 	for _, rating := range h.RatingObjects {
@@ -47,20 +48,18 @@ func (h *HotelsDto) CalculateAverageRating()  {
 	h.Ratings = total / float64(len(h.RatingObjects))
 }
 
-
 type RatingObject struct {
-	Username        string    `bson:"username" json:"username"`
-	UserImg        types.FileField       `bson:"userImg" json:"userImg"`
-	Value        float64    `bson:"value" json:"value"`
-	Text        string    `bson:"text" json:"text"`
-	Status string    `bson:"status" json:"status"`
-	Replies []string `bson:"replies" json:"replies"`
+	Username string          `bson:"username" json:"username"`
+	UserImg  types.FileField `bson:"userImg" json:"userImg"`
+	Value    float64         `bson:"value" json:"value"`
+	Text     string          `bson:"text" json:"text"`
+	Status   string          `bson:"status" json:"status"`
+	Replies  []string        `bson:"replies" json:"replies"`
 }
 
 type CloseReservations struct {
-
-	StartDate   time.Time `bson:"startDate" json:"startDate"`
-	EndDate     time.Time `bson:"endDate" json:"endDate"`
+	StartDate time.Time `bson:"startDate" json:"startDate"`
+	EndDate   time.Time `bson:"endDate" json:"endDate"`
 }
 
 type OfferAndDiscount struct {
@@ -71,14 +70,12 @@ type OfferAndDiscount struct {
 	Description string    `bson:"description" json:"description"`
 }
 
-
 type Phone struct {
-	Pre  string   `bson:"pre" json:"pre"`
-	Content  string   `bson:"content" json:"content"`
-
+	Pre     string `bson:"pre" json:"pre"`
+	Content string `bson:"content" json:"content"`
 }
 type Contacts struct {
-	Phone  Phone   `bson:"phone" json:"phone"`
+	Phone  Phone    `bson:"phone" json:"phone"`
 	Email  string   `bson:"email" json:"email"`
 	Web    string   `bson:"web" json:"web"`
 	Social []Social `bson:"social" json:"social"`
@@ -184,6 +181,13 @@ type BookingAndPoliciesPage struct {
 	CancellationPolicy                  []string `bson:"cancellationPolicy" json:"cancellationPolicy"`
 	HotelRulesAndPolicies               []string `bson:"hotelRulesAndPolicies" json:"hotelRulesAndPolicies"`
 	TransportationAndAdditionalServices []string `bson:"transportationAndAdditionalServices" json:"transportationAndAdditionalServices"`
+}
+type PoliciesPage struct {
+	CheckInCheckOut                  map[string]string
+	PaymentPolicies                  map[string]string
+	CancellationPolicy               map[string]string
+	HotelRulesPolicies               map[string]string
+	TransportationAdditionalServices map[string]string
 }
 
 type Hotels struct {
