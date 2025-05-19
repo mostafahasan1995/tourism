@@ -15,21 +15,21 @@ type AgentDto struct {
 	Bio         string            `bson:"bio" json:"bio"`
 	Image       []types.FileField `bson:"image" json:"image"`
 	Countries   []string          `bson:"countries" json:"countries"`
-	Contact     AgentContact      `bson:"contact" json:"contact"`
-	Security    AgentSecurity     `bson:"security" json:"security"`
+	Contact     MemberContact     `bson:"contact" json:"contact"`
+	Security    MemberSecurity    `bson:"security" json:"security"`
 	Financial   AgentFinancial    `bson:"financial" json:"financial"`
 }
 
-type AgentSecurity struct {
-	Email       string `bson:"email" json:"email"`
-	NewPassword string `bson:"newPassword" json:"newPassword"`
-}
+// type AgentSecurity struct {
+// 	Email       string `bson:"email" json:"email"`
+// 	NewPassword string `bson:"newPassword" json:"newPassword"`
+// }
 
-type AgentContact struct {
-	Email   string `bson:"email" json:"email"`
-	Mobile  string `bson:"mobile" json:"mobile"`
-	Website string `bson:"website" json:"website"`
-}
+// type AgentContact struct {
+// 	Email   string `bson:"email" json:"email"`
+// 	Mobile  string `bson:"mobile" json:"mobile"`
+// 	Website string `bson:"website" json:"website"`
+// }
 
 type AgentFinancial struct {
 	Stays           FinancialUnit `bson:"stays" json:"stays"`

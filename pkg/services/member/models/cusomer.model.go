@@ -8,20 +8,16 @@ import (
 )
 
 type CustomerDto struct {
-	CustomerName        string            `bson:"customerName" json:"customerName"`
+	Name                string            `bson:"name" json:"name"`
 	Nationality         string            `bson:"nationality" json:"nationality"`
 	Company             string            `bson:"company" json:"company"`
+	TripCoordinatorName string            `bson:"tripCoordinatorName" json:"tripCoordinatorName"`
 	About               string            `bson:"about" json:"about"`
-	Photo               []types.FileField `bson:"photo" json:"photo"`
-	ClientMobile        string            `bson:"clientMobile" json:"clientMobile"`
-	ClientWhatsapp      string            `bson:"clientWhatsapp" json:"clientWhatsapp"`
-	ClientEmail         string            `bson:"clientEmail" json:"clientEmail"`
-	CoordinatorMobile   string            `bson:"coordinatorMobile" json:"coordinatorMobile"`
-	CoordinatorWhatsapp string            `bson:"coordinatorWhatsapp" json:"coordinatorWhatsapp"`
-	CoordinatorEmail    string            `bson:"coordinatorEmail" json:"coordinatorEmail"`
+	Image               []types.FileField `bson:"image" json:"image"`
+	ClientContact       MemberContact     `bson:"clientContact" json:"clientContact"`
+	CoordinatorContact  MemberContact     `bson:"coordinatorContact" json:"coordinatorContact"`
 	SocialMedia         []SocialMedia     `bson:"socialMedia" json:"socialMedia"`
-	Email               string            `bson:"email" json:"email"`
-	NewPassword         string            `bson:"newPassword" json:"newPassword"`
+	Security            MemberSecurity    `bson:"security" json:"security"`
 }
 
 type SocialMedia struct {
@@ -33,6 +29,7 @@ type Customer struct {
 	Id          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` //same as user id
 	CustomerId  string             `bson:"customerId,omitempty" json:"customerId,omitempty"`
 	CustomerDto `bson:",inline"`
+	Status      string             `bson:"status" json:"status"`
 	Trash       bool               `bson:"trash" json:"trash"`
 	CreatedAt   time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy   primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`

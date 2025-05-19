@@ -214,15 +214,15 @@ func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
 }
 
 func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
-	password := data.NewPassword
+	password := data.Security.NewPassword
 	if password == "" {
 		password = util.GeneratePassword(8, 2, 2, 2)
 	}
 
 	user := &gwmodels.PostUserData{
-		FirstName: data.CustomerName,
+		FirstName: data.Name,
 		LastName:  "-",
-		Email:     data.Email,
+		Email:     data.Security.Email,
 		Password:  password,
 		// Roles:        []primitive.ObjectID{}, //empty for default role
 		// Capabilities: []primitive.ObjectID{},
@@ -233,13 +233,13 @@ func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.
 
 func (c *customerSvcs) UpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
 	user := &gwmodels.PostUserData{
-		FirstName: data.CustomerName,
+		FirstName: data.Name,
 		LastName:  "-",
-		Email:     data.Email,
+		Email:     data.Security.Email,
 	}
 
-	if data.NewPassword != "" {
-		user.Password = data.NewPassword
+	if data.Security.NewPassword != "" {
+		user.Password = data.Security.NewPassword
 	}
 
 	return c.usersgw.UpdateUser(ctx, data.Id.Hex(), user)
