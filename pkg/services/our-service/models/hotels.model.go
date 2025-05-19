@@ -30,7 +30,7 @@ type HotelsDto struct {
 	BookingAndPoliciesPage        BookingAndPoliciesPage        `bson:"bookingAndPoliciesPage" json:"bookingAndPoliciesPage"`
 	PositionOnMap                 string                        `bson:"positionOnMap" json:"positionOnMap"`
 	Contacts                      Contacts                      `bson:"contacts" json:"contacts"`
-	CloseReservations             CloseReservations             `bson:"closeReservations" json:"closeReservations"`
+	CloseReservations             []CloseReservations             `bson:"closeReservations" json:"closeReservations"`
 	RatingObjects                 []RatingObject                `bson:"ratingObjects" json:"ratingObjects"`
 	OfferAndDiscount              []OfferAndDiscount            `bson:"offerAndDiscount" json:"offerAndDiscount"`
 	PoliciesPage                  PoliciesPage                  `bson:"policiesPage" json:"policiesPage"`
@@ -190,11 +190,11 @@ type BookingAndPoliciesPage struct {
 	TransportationAndAdditionalServices []string `bson:"transportationAndAdditionalServices" json:"transportationAndAdditionalServices"`
 }
 type PoliciesPage struct {
-	CheckInCheckOut                  map[string]string `bson:"checkInCheckOut" json:"checkInCheckOut"`
-	PaymentPolicies                  map[string]string `bson:"paymentPolicies" json:"paymentPolicies"`
-	CancellationPolicy               map[string]string `bson:"cancellationPolicy" json:"cancellationPolicy"`
-	HotelRulesPolicies               map[string]string `bson:"hotelRulesPolicies" json:"hotelRulesPolicies"`
-	TransportationAdditionalServices map[string]string `bson:"transportationAdditionalServices" json:"transportationAdditionalServices"`
+	CheckInCheckOut                  *map[string]any `bson:"checkInCheckOut,omitempty" json:"checkInCheckOut,omitempty"`
+	PaymentPolicies                  *map[string]any `bson:"paymentPolicies,omitempty" json:"paymentPolicies,omitempty"`
+	CancellationPolicy               *map[string]any `bson:"cancellationPolicy,omitempty" json:"cancellationPolicy,omitempty"`
+	HotelRulesPolicies               *map[string]any `bson:"hotelRulesPolicies,omitempty" json:"hotelRulesPolicies,omitempty"`
+	TransportationAdditionalServices *map[string]any `bson:"transportationAdditionalServices,omitempty" json:"transportationAdditionalServices,omitempty"`
 }
 
 type Hotels struct {
