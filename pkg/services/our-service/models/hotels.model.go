@@ -190,11 +190,11 @@ type BookingAndPoliciesPage struct {
 	TransportationAndAdditionalServices []string `bson:"transportationAndAdditionalServices" json:"transportationAndAdditionalServices"`
 }
 type PoliciesPage struct {
-	CheckInCheckOut                  *map[string]string `bson:"checkInCheckOut,omitempty" json:"checkInCheckOut,omitempty"`
-	PaymentPolicies                  *map[string]string `bson:"paymentPolicies,omitempty" json:"paymentPolicies,omitempty"`
-	CancellationPolicy               *map[string]string `bson:"cancellationPolicy,omitempty" json:"cancellationPolicy,omitempty"`
-	HotelRulesPolicies               *map[string]string `bson:"hotelRulesPolicies,omitempty" json:"hotelRulesPolicies,omitempty"`
-	TransportationAdditionalServices *map[string]string `bson:"transportationAdditionalServices,omitempty" json:"transportationAdditionalServices,omitempty"`
+	CheckInCheckOut                  *map[string]any `bson:"checkInCheckOut,omitempty" json:"checkInCheckOut,omitempty"`
+	PaymentPolicies                  *map[string]any `bson:"paymentPolicies,omitempty" json:"paymentPolicies,omitempty"`
+	CancellationPolicy               *map[string]any `bson:"cancellationPolicy,omitempty" json:"cancellationPolicy,omitempty"`
+	HotelRulesPolicies               *map[string]any `bson:"hotelRulesPolicies,omitempty" json:"hotelRulesPolicies,omitempty"`
+	TransportationAdditionalServices *map[string]any `bson:"transportationAdditionalServices,omitempty" json:"transportationAdditionalServices,omitempty"`
 }
 
 type Hotels struct {
