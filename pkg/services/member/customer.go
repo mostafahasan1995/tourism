@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/gateway"
-	gwmodels "larsa-tourism-microservices/pkg/gateway/models"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -126,7 +125,7 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			CreatedBy:   cfg.User.Id,
 		}
 
-		userId, err := c.AddCustomerCredentials(ctx, customer, "")
+		userId, err := c.AddUpdateCustomerCredentials(ctx, customer)
 		if err != nil {
 			return nil, err
 		}
@@ -173,7 +172,7 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			UpdatedBy:   cfg.User.Id,
 		}
 
-		_, err := c.UpdateCustomerCredentials(ctx, customer, "")
+		_, err := c.AddUpdateCustomerCredentials(ctx, customer)
 		if err != nil {
 			return nil, err
 		}
@@ -224,29 +223,20 @@ func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
 	return nil
 }
 
-// func (c *customerSvcs) AddCustomerCredentials2(ctx context.Context, data *models.Customer, serviceToken string) (userId primitive.ObjectID, err error) {
-// 	password := data.Security.NewPassword
-// 	if password == "" {
-// 		password = util.GeneratePassword(8, 2, 2, 2)
-// 	}
-
-// 	user := &gwmodels.PostUserData{
-// 		FirstName: data.Name,
-// 		LastName:  "-",
-// 		Email:     data.Security.Email,
-// 		Password:  password,
-// 		// Roles:        []primitive.ObjectID{}, //empty for default role
-// 		// Capabilities: []primitive.ObjectID{},
-// 	}
-
-// 	return c.usersgw.AddUser(ctx, user, serviceToken)
-// }
-
-func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.Customer, serviceToken string) (userId primitive.ObjectID, err error) {
+func (c *customerSvcs) AddUpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
 	zeroId := primitive.NilObjectID
 
+	var path, method string
+	if data.Id == primitive.NilObjectID {
+		path = "users/"
+		method = "POST"
+	} else {
+		path = "users/" + data.Id.Hex()
+		method = "PUT"
+	}
+
 	password := data.Security.NewPassword
-	if password == "" {
+	if method == "POST" && password == "" {
 		password = util.GeneratePassword(8, 2, 2, 2)
 	}
 
@@ -257,7 +247,7 @@ func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.
 		"password":  password,
 	}
 
-	resp, err := c.gateway.Request(ctx, "users", "users/", "POST", serviceToken, user)
+	resp, err := c.gateway.Request(ctx, "users", path, method, "", user)
 
 	if err != nil {
 		return zeroId, errors.New("error adding user")
@@ -289,20 +279,6 @@ func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.
 	}
 
 	return _data.User.Id, nil
-}
-
-func (c *customerSvcs) UpdateCustomerCredentials(ctx context.Context, data *models.Customer, serviceToken string) (userId primitive.ObjectID, err error) {
-	user := &gwmodels.PostUserData{
-		FirstName: data.Name,
-		LastName:  "-",
-		Email:     data.Security.Email,
-	}
-
-	if data.Security.NewPassword != "" {
-		user.Password = data.Security.NewPassword
-	}
-
-	return c.usersgw.UpdateUser(ctx, data.Id.Hex(), user)
 }
 
 func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
