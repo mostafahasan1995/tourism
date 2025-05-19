@@ -26,6 +26,7 @@ func NewCustomerHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.Get))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+		r.Post("/register", helpers.Make(h.Register))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
@@ -71,6 +72,22 @@ func (h *CustomerHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.customersvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) Register(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.CustomerDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.customersvcs.RegisterAsCustomer(ctx, &data)
 	if err != nil {
 		return err
 	}

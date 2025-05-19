@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
@@ -22,6 +23,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var ErrUserNotFound = errors.New("user not found")
+var ErrDupliateEmail = errors.New("duplicated email")
+var ErrUnKnowen = errors.New("unknowen error")
+var ErrUnauthorized = errors.New("unauthorized")
+var ErrForbidden = errors.New("forbidden")
+
 type CustomerSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Customer, error)
 	GetOne(ctx context.Context, customerId string) (*models.Customer, error)
@@ -29,12 +36,15 @@ type CustomerSvcs interface {
 	Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
 	Update(ctx context.Context, customerId string, data *models.CustomerDto) (*models.Customer, error)
 	Delete(ctx context.Context, customerId string) error
+	//
+	RegisterAsCustomer(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
 }
 
 type customerSvcs struct {
 	repo        repo.CustomerRepo
 	sortingsvcs dbsvcs.SortingSvcs
 	usersgw     *gateway.UsersGw
+	gateway     gateway.Gateway
 	withtxn     *db.WithTxn
 }
 
@@ -43,6 +53,7 @@ func NewCustomerSvcs(i *do.Injector) (CustomerSvcs, error) {
 		repo:        do.MustInvoke[repo.CustomerRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
 		usersgw:     do.MustInvoke[*gateway.UsersGw](i),
+		gateway:     do.MustInvoke[gateway.Gateway](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -115,7 +126,7 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			CreatedBy:   cfg.User.Id,
 		}
 
-		userId, err := c.AddCustomerCredentials(ctx, customer)
+		userId, err := c.AddCustomerCredentials(ctx, customer, "")
 		if err != nil {
 			return nil, err
 		}
@@ -162,7 +173,7 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			UpdatedBy:   cfg.User.Id,
 		}
 
-		_, err := c.UpdateCustomerCredentials(ctx, customer)
+		_, err := c.UpdateCustomerCredentials(ctx, customer, "")
 		if err != nil {
 			return nil, err
 		}
@@ -213,25 +224,74 @@ func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
 	return nil
 }
 
-func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
+// func (c *customerSvcs) AddCustomerCredentials2(ctx context.Context, data *models.Customer, serviceToken string) (userId primitive.ObjectID, err error) {
+// 	password := data.Security.NewPassword
+// 	if password == "" {
+// 		password = util.GeneratePassword(8, 2, 2, 2)
+// 	}
+
+// 	user := &gwmodels.PostUserData{
+// 		FirstName: data.Name,
+// 		LastName:  "-",
+// 		Email:     data.Security.Email,
+// 		Password:  password,
+// 		// Roles:        []primitive.ObjectID{}, //empty for default role
+// 		// Capabilities: []primitive.ObjectID{},
+// 	}
+
+// 	return c.usersgw.AddUser(ctx, user, serviceToken)
+// }
+
+func (c *customerSvcs) AddCustomerCredentials(ctx context.Context, data *models.Customer, serviceToken string) (userId primitive.ObjectID, err error) {
+	zeroId := primitive.NilObjectID
+
 	password := data.Security.NewPassword
 	if password == "" {
 		password = util.GeneratePassword(8, 2, 2, 2)
 	}
 
-	user := &gwmodels.PostUserData{
-		FirstName: data.Name,
-		LastName:  "-",
-		Email:     data.Security.Email,
-		Password:  password,
-		// Roles:        []primitive.ObjectID{}, //empty for default role
-		// Capabilities: []primitive.ObjectID{},
+	user := map[string]any{
+		"firstName": data.Name,
+		"lastName":  "-",
+		"email":     data.Security.Email,
+		"password":  password,
 	}
 
-	return c.usersgw.AddUser(ctx, user)
+	resp, err := c.gateway.Request(ctx, "users", "users/", "POST", serviceToken, user)
+
+	if err != nil {
+		return zeroId, errors.New("error adding user")
+	} else if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 409:
+			return zeroId, ErrDupliateEmail
+		case 401:
+			return zeroId, ErrUnauthorized
+		case 403:
+			return zeroId, ErrForbidden
+		default:
+			return zeroId, errors.New("error adding user")
+		}
+
+	}
+
+	type TempUser struct {
+		Id primitive.ObjectID `json:"_id"`
+	}
+
+	type AddedUser struct {
+		User TempUser `json:"user"`
+	}
+
+	var _data AddedUser
+	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
+		return zeroId, errDec
+	}
+
+	return _data.User.Id, nil
 }
 
-func (c *customerSvcs) UpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
+func (c *customerSvcs) UpdateCustomerCredentials(ctx context.Context, data *models.Customer, serviceToken string) (userId primitive.ObjectID, err error) {
 	user := &gwmodels.PostUserData{
 		FirstName: data.Name,
 		LastName:  "-",
@@ -243,4 +303,84 @@ func (c *customerSvcs) UpdateCustomerCredentials(ctx context.Context, data *mode
 	}
 
 	return c.usersgw.UpdateUser(ctx, data.Id.Hex(), user)
+}
+
+func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
+	zeroId := primitive.NilObjectID
+
+	user := map[string]any{
+		"firstName":            data.Name,
+		"lastName":             "-",
+		"email":                data.Security.Email,
+		"password":             data.Security.NewPassword,
+		"passwordConfirmation": data.Security.NewPassword,
+	}
+
+	resp, err := c.gateway.Request(ctx, "users", "users/register", "POST", "", user)
+
+	if err != nil {
+		return zeroId, errors.New("error adding user")
+	} else if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 409:
+			return zeroId, ErrDupliateEmail
+		case 401:
+			return zeroId, ErrUnauthorized
+		case 403:
+			return zeroId, ErrForbidden
+		default:
+			return zeroId, errors.New("error adding user")
+		}
+
+	}
+
+	type TempUser struct {
+		Id primitive.ObjectID `json:"_id"` //user id
+	}
+
+	var _data TempUser
+	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
+		return zeroId, errDec
+	}
+
+	return _data.Id, nil
+}
+
+func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.CustomerDto) (*models.Customer, error) {
+	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		customer := &models.Customer{
+			CustomerDto: *data,
+			CreatedAt:   time.Now(),
+		}
+
+		if data.Security.NewPassword == "" {
+			return nil, errors.New("password is required")
+		}
+
+		userId, err := c.RegisterCustomerUser(ctx, customer)
+		if err != nil {
+			return nil, err
+		}
+
+		customer.Id = userId
+
+		seq, err := c.sortingsvcs.GetAndUpdateSourceSeq(ctx, "customer")
+		if err != nil {
+			return nil, err
+		}
+
+		customer.CustomerId = fmt.Sprintf("CUSTOMER-%d", seq)
+
+		if err := c.repo.Add(ctx, customer); err != nil {
+			return nil, err
+		}
+
+		return customer, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Customer), nil
 }

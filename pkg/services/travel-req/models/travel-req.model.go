@@ -18,7 +18,7 @@ type TravelReq struct {
 	CustomerName string             `bson:"customerName" json:"customerName"`
 	CustomerId   primitive.ObjectID `bson:"customerId" json:"customerId"`
 	Status       enums.Status       `bson:"status" json:"status"`
-	Ref          primitive.ObjectID `bson:"ref" json:"ref"`
+	Ref          primitive.ObjectID `bson:"ref" json:"ref"` //ref for the custom request that is related to this request
 }
 
 type TravelReqWithPagination struct {

@@ -225,7 +225,7 @@ func (a *agentsvcs) AddAgentCredentials(ctx context.Context, data *models.Agent)
 		Password:  password,
 	}
 
-	return a.usersgw.AddUser(ctx, user)
+	return a.usersgw.AddUser(ctx, user, "")
 }
 
 func (a *agentsvcs) UpdateAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, err error) {

@@ -30,7 +30,8 @@ func NewUsersGw(i *do.Injector) (*UsersGw, error) {
 	return &UsersGw{}, nil
 }
 
-func (ugw *UsersGw) AddUser(ctx context.Context, user *models.PostUserData) (addedUserId primitive.ObjectID, errAdd error) {
+// use service token when there is no access token
+func (ugw *UsersGw) AddUser(ctx context.Context, user *models.PostUserData, serviceToken string) (addedUserId primitive.ObjectID, errAdd error) {
 
 	zeroId := primitive.NilObjectID
 
@@ -38,6 +39,8 @@ func (ugw *UsersGw) AddUser(ctx context.Context, user *models.PostUserData) (add
 	if err != nil {
 		return zeroId, err
 	}
+
+	cfg.Hp.ServiceToken = serviceToken
 
 	newUserReqOp := &common.RequestParams{
 		Service: "users",
@@ -135,81 +138,66 @@ func (ugw *UsersGw) UpdateUser(ctx context.Context, userId string, user *models.
 	return data.User.Id, nil
 }
 
-// func (ugw *UsersGw) UpdateUserRoles(ctx context.Context, userId primitive.ObjectID, roles []primitive.ObjectID) error {
-// 	if userId == primitive.NilObjectID || len(roles) == 0 {
-// 		return errors.New("invalid input: userId or roles are empty")
-// 	}
+func (ugw *UsersGw) Register(ctx context.Context, user *models.PostUserData, serviceToken string) (addedUserId primitive.ObjectID, errAdd error) {
 
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
+	zeroId := primitive.NilObjectID
 
-// 	updateRolesReqOp := &common.RequestParams{
-// 		Service: "users",
-// 		Path:    fmt.Sprintf("users/%s/roles", userId.Hex()),
-// 		Method:  "PATCH",
-// 		Data: map[string]interface{}{
-// 			"roles": roles,
-// 		},
-// 		Header: cfg.Hp,
-// 	}
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return zeroId, err
+	}
 
-// 	res, err := common.CallService(updateRolesReqOp)
-// 	if err != nil {
-// 		return errors.New("something went wrong while calling the service")
-// 	} else if res.StatusCode != 200 {
-// 		switch res.StatusCode {
-// 		case 400:
-// 			return errors.New("bad request: roles array may be empty")
-// 		case 404:
-// 			return errors.New("user not found")
-// 		case 401:
-// 			return types.ErrUnauthorized
-// 		case 403:
-// 			return types.ErrForbidden
-// 		default:
-// 			return errors.New("unknown error occurred")
-// 		}
-// 	}
+	cfg.Hp.ServiceToken = serviceToken
 
-// 	return nil
-// }
+	newUserReqOp := &common.RequestParams{
+		Service: "users",
+		Path:    "users/",
+		Method:  "POST",
+		Data: map[string]interface{}{
+			"firstName":    user.FirstName,
+			"lastName":     user.LastName,
+			"email":        user.Email,
+			"password":     user.Password,
+			"roles":        user.Roles,
+			"capabilities": user.Capabilities,
+		},
+		Header: cfg.Hp,
+	}
 
-// func (ugw *UsersGw) GetUserByEmail(ctx context.Context, email string) (*common.User, error) {
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	//check if user with same email exist
-// 	query := fmt.Sprintf(`{"email":"%s"}`, email)
-// 	params := url.Values{}
-// 	params.Add("query", query)
+	res, err := common.CallService(newUserReqOp)
 
-// 	reqOp := &common.RequestParams{
-// 		Service: "users",
-// 		Path:    "users/all?" + params.Encode(),
-// 		Method:  "GET",
-// 		Data:    map[string]interface{}{},
-// 		Header:  cfg.Hp,
-// 	}
+	if err != nil {
+		return zeroId, errors.New("error adding user")
+	} else if res.StatusCode != 200 {
 
-// 	res, err := common.CallService(reqOp)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+		switch res.StatusCode {
+		case 409:
+			return zeroId, ErrDupliateEmail
+		case 401:
+			return zeroId, ErrUnauthorized
+		case 403:
+			return zeroId, ErrForbidden
+		default:
+			return zeroId, errors.New("error adding user")
+		}
 
-// 	var userlist types.UserList
-// 	if errDec := json.NewDecoder(res.Body).Decode(&userlist); errDec != nil {
-// 		return nil, errDec
-// 	}
+	}
 
-// 	if len(userlist.Users) == 0 {
-// 		return nil, types.ErrUserNotFound
-// 	} else {
-// 		return &userlist.Users[0], nil
-// 	}
-// }
+	type TempUser struct {
+		Id primitive.ObjectID `json:"_id"`
+	}
+
+	type AddedUser struct {
+		User TempUser `json:"user"`
+	}
+
+	var data AddedUser
+	if errDec := json.NewDecoder(res.Body).Decode(&data); errDec != nil {
+		return zeroId, errDec
+	}
+
+	return data.User.Id, nil
+}
 
 func (ugw *UsersGw) GetUserById(ctx context.Context, id string) (*common.User, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
@@ -246,39 +234,3 @@ func (ugw *UsersGw) GetUserById(ctx context.Context, id string) (*common.User, e
 	}
 	return nil, err
 }
-
-// func (ugw *UsersGw) DeleteUser(ctx context.Context, userId string) error {
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	newUserReqOp := &common.RequestParams{
-// 		Service: "users",
-// 		Path:    fmt.Sprintf("users/%s", userId),
-// 		Method:  "DELETE",
-// 		Data:    map[string]interface{}{},
-// 		Header:  cfg.Hp,
-// 	}
-
-// 	res, err := common.CallService(newUserReqOp)
-
-// 	if err != nil {
-// 		return errors.New("something went wrong")
-// 	} else if res.StatusCode != 200 {
-
-// 		switch res.StatusCode {
-// 		case 409:
-// 			return types.ErrDupliateEmail
-// 		case 401:
-// 			return types.ErrUnauthorized
-// 		case 403:
-// 			return types.ErrForbidden
-// 		default:
-// 			return err
-// 		}
-
-// 	}
-
-// 	return  nil
-// }
