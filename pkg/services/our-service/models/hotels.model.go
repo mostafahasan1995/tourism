@@ -112,7 +112,10 @@ type RoomCategory struct {
 
 type Pricing struct {
 	NightlyRateBase    int `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	NightlyRateBaseType    string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
+	
 	ExtraPersonCharge  int `bson:"extraPersonCharge" json:"extraPersonCharge"`
+	ExtraPersonChargeType  int `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
 	IsIncludeBreakFast bool `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 }
 type SeasonPricing struct {
