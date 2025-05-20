@@ -50,6 +50,7 @@ func (h *HotelsDto) CalculateAverageRating() {
 
 type RatingObject struct {
 	Username string          `bson:"username" json:"username"`
+	UserId string          `bson:"userId" json:"userId"`
 	UserImg  types.FileField `bson:"userImg" json:"userImg"`
 	Value    float64         `bson:"value" json:"value"`
 	Text     string          `bson:"text" json:"text"`
@@ -112,7 +113,10 @@ type RoomCategory struct {
 
 type Pricing struct {
 	NightlyRateBase    int `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	NightlyRateBaseType    string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
+	
 	ExtraPersonCharge  int `bson:"extraPersonCharge" json:"extraPersonCharge"`
+	ExtraPersonChargeType  string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
 	IsIncludeBreakFast bool `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 }
 type SeasonPricing struct {

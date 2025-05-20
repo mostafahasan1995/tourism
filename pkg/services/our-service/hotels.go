@@ -77,9 +77,8 @@ func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) (any,error
 			CloseReservations:             data.CloseReservations,
 			RatingObjects:                 data.RatingObjects,
 			OfferAndDiscount:              data.OfferAndDiscount,
-			PoliciesPage:                  data.PoliciesPage, // <-- Missing field added
+			PoliciesPage:                  data.PoliciesPage,
 		},
-		
 		Id:        primitive.NewObjectID(),
 		Trash:     false,
 		CreatedAt: time.Now(),
@@ -87,6 +86,7 @@ func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) (any,error
 		UpdatedAt: time.Now(),
 		UpdatedBy: cfg.User.Id,
 	}
+	
 	if err := l.repo.Add(ctx, hotels); err != nil {
 		return nil,err
 	}
