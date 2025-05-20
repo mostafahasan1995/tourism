@@ -78,6 +78,8 @@ func (l *hotelssvcs) Add(ctx context.Context, data *models.HotelsDto) (any,error
 			RatingObjects:                 data.RatingObjects,
 			OfferAndDiscount:              data.OfferAndDiscount,
 			PoliciesPage:                  data.PoliciesPage,
+			AmenitiesAndFacilitiesPageV2:                  data.AmenitiesAndFacilitiesPageV2,
+			
 		},
 		Id:        primitive.NewObjectID(),
 		Trash:     false,
