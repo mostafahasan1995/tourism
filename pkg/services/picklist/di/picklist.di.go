@@ -13,16 +13,19 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
 
 	do.Provide(i, picklist.NewCarsSvcs)
-	do.Provide(i, picklist.NewOurCountrySvcs)
+	do.Provide(i, picklist.NewOurCountrySvcs) // deprecated
+	do.Provide(i, picklist.NewDestinationSvcs)
 
 	//repos
 	do.Provide(i, repo.NewCarsRepo)
 	do.Provide(i, repo.NewOurCountryRepo)
+	do.Provide(i, repo.NewDestinationRepo)
 
 	//handlers
 
 	handler.NewCarsHandler(i, r)
 	handler.NewOurCountryHandler(i, r)
+	handler.NewDestinationHandler(i, r)
 
 	return i
 }

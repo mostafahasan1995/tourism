@@ -32,23 +32,26 @@ func (b *businessmansvcs) GetByFilter(ctx context.Context, filter bson.M) (any, 
 }
 
 func (b *businessmansvcs) Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error) {
-	var req models.BusinessMan
+	var req models.BusinessManDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, err
 	}
 
-	req.Id = primitive.NewObjectID()
+	businessManReq := &models.BusinessMan{
+		Id:             primitive.NewObjectID(),
+		BusinessManDto: req,
+	}
 
-	if err := b.repo.Add(ctx, &req); err != nil {
+	if err := b.repo.Add(ctx, businessManReq); err != nil {
 		return nil, err
 	}
 
 	return &models.ReqAddData{
-		Id:            req.Id,
-		CustomerName:  req.ClientName,
-		CustomerPhone: req.ClientPhone,
-		CustomerEmail: req.ClientEmail,
-		Nationality:   req.Nationality,
+		Id:            businessManReq.Id,
+		CustomerName:  businessManReq.ClientName,
+		CustomerPhone: businessManReq.ClientPhone,
+		CustomerEmail: businessManReq.ClientEmail,
+		Nationality:   businessManReq.Nationality,
 	}, nil
 }
 
@@ -58,13 +61,16 @@ func (b *businessmansvcs) Update(ctx context.Context, id string, data json.RawMe
 		return err
 	}
 
-	var req models.BusinessMan
+	var req models.BusinessManDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return err
 	}
 
-	req.Id = _id
+	businessManReq := &models.BusinessMan{
+		Id:             _id,
+		BusinessManDto: req,
+	}
 
-	_, err = b.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": req})
+	_, err = b.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": businessManReq})
 	return err
 }

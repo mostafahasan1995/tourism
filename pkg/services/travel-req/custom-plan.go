@@ -32,23 +32,26 @@ func (c *customPlanSvcs) GetByFilter(ctx context.Context, filter bson.M) (any, e
 }
 
 func (c *customPlanSvcs) Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error) {
-	var req models.CustomPlan
+	var req models.CustomPlanDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, err
 	}
 
-	req.Id = primitive.NewObjectID()
+	customPlanReq := &models.CustomPlan{
+		Id:            primitive.NewObjectID(),
+		CustomPlanDto: req,
+	}
 
-	if err := c.repo.Add(ctx, &req); err != nil {
+	if err := c.repo.Add(ctx, customPlanReq); err != nil {
 		return nil, err
 	}
 
 	return &models.ReqAddData{
-		Id:            req.Id,
-		CustomerName:  req.ClientName,
-		CustomerPhone: req.Phone,
-		CustomerEmail: req.Email,
-		Nationality:   req.Nationality,
+		Id:            customPlanReq.Id,
+		CustomerName:  customPlanReq.ClientName,
+		CustomerPhone: customPlanReq.Phone,
+		CustomerEmail: customPlanReq.Email,
+		Nationality:   customPlanReq.Nationality,
 	}, nil
 }
 
@@ -58,13 +61,16 @@ func (c *customPlanSvcs) Update(ctx context.Context, id string, data json.RawMes
 		return err
 	}
 
-	var req models.CustomPlan
+	var req models.CustomPlanDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return err
 	}
 
-	req.Id = _id
+	customPlanReq := &models.CustomPlan{
+		Id:            _id,
+		CustomPlanDto: req,
+	}
 
-	_, err = c.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": req})
+	_, err = c.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": customPlanReq})
 	return err
 }

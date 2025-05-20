@@ -32,23 +32,26 @@ func (d *delegationSvcs) GetByFilter(ctx context.Context, filter bson.M) (any, e
 }
 
 func (d *delegationSvcs) Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error) {
-	var req models.Delegation
+	var req models.DelegationDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, err
 	}
 
-	req.Id = primitive.NewObjectID()
+	delegationReq := &models.Delegation{
+		Id:            primitive.NewObjectID(),
+		DelegationDto: req,
+	}
 
-	if err := d.repo.Add(ctx, &req); err != nil {
+	if err := d.repo.Add(ctx, delegationReq); err != nil {
 		return nil, err
 	}
 
 	return &models.ReqAddData{
-		Id:            req.Id,
-		CustomerName:  req.TripCoordinatorName,
-		CustomerPhone: req.ClientPhone,
-		CustomerEmail: req.ClientEmail,
-		Nationality:   req.Nationality,
+		Id:            delegationReq.Id,
+		CustomerName:  delegationReq.TripCoordinatorName,
+		CustomerPhone: delegationReq.ClientPhone,
+		CustomerEmail: delegationReq.ClientEmail,
+		Nationality:   delegationReq.Nationality,
 	}, nil
 }
 
@@ -58,13 +61,16 @@ func (d *delegationSvcs) Update(ctx context.Context, id string, data json.RawMes
 		return err
 	}
 
-	var req models.Delegation
+	var req models.DelegationDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return err
 	}
 
-	req.Id = _id
+	delegationReq := &models.Delegation{
+		Id:            _id,
+		DelegationDto: req,
+	}
 
-	_, err = d.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": req})
+	_, err = d.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": delegationReq})
 	return err
 }

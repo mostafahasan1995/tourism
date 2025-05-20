@@ -2,8 +2,7 @@ package models
 
 import "go.mongodb.org/mongo-driver/bson/primitive"
 
-type CustomPlan struct {
-	Id              primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+type CustomPlanDto struct {
 	TripType        string             `bson:"tripType" json:"tripType"` //e.g. family - honeymoon - luxury retreat - other
 	ClientName      string             `bson:"clientName" json:"clientName"`
 	Phone           string             `bson:"phone" json:"phone"`
@@ -14,4 +13,8 @@ type CustomPlan struct {
 	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"`
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
+}
+type CustomPlan struct {
+	Id            primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	CustomPlanDto `bson:",inline"`
 }

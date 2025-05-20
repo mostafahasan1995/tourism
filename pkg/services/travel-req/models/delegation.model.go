@@ -4,8 +4,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type Delegation struct {
-	Id                  primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+type DelegationDto struct {
 	DelegationType      string             `bson:"delegationType" json:"delegationType"`
 	OrganizationName    string             `bson:"organizationName" json:"organizationName"`
 	ClientName          string             `bson:"clientName" json:"clientName"`
@@ -18,4 +17,9 @@ type Delegation struct {
 	TripCoordinator     primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"`
 	ContactMethod       []string           `bson:"contactMethod" json:"contactMethod"`
 	SpecialReq          string             `bson:"specialReq" json:"specialReq"`
+}
+
+type Delegation struct {
+	Id            primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	DelegationDto `bson:",inline"`
 }

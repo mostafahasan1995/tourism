@@ -32,19 +32,22 @@ func (f *flightTicketRequestSvcs) GetByFilter(ctx context.Context, filter bson.M
 }
 
 func (f *flightTicketRequestSvcs) Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error) {
-	var req models.FlightTicketRequest
+	var req models.FlightTicketRequestDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, err
 	}
 
-	req.Id = primitive.NewObjectID()
+	flightTicketReq := &models.FlightTicketRequest{
+		Id:                     primitive.NewObjectID(),
+		FlightTicketRequestDto: req,
+	}
 
-	if err := f.repo.Add(ctx, &req); err != nil {
+	if err := f.repo.Add(ctx, flightTicketReq); err != nil {
 		return nil, err
 	}
 
 	return &models.ReqAddData{
-		Id: req.Id,
+		Id: flightTicketReq.Id,
 	}, nil
 }
 
@@ -54,13 +57,16 @@ func (f *flightTicketRequestSvcs) Update(ctx context.Context, id string, data js
 		return err
 	}
 
-	var req models.FlightTicketRequest
+	var req models.FlightTicketRequestDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return err
 	}
 
-	req.Id = _id
+	flightTicketReq := &models.FlightTicketRequest{
+		Id:                     _id,
+		FlightTicketRequestDto: req,
+	}
 
-	_, err = f.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": req})
+	_, err = f.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": flightTicketReq})
 	return err
 }

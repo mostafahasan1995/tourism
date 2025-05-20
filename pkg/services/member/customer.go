@@ -232,7 +232,7 @@ func (c *customerSvcs) AddUpdateCustomerCredentials(ctx context.Context, data *m
 		method = "POST"
 	} else {
 		path = "users/" + data.Id.Hex()
-		method = "PUT"
+		method = "PATCH"
 	}
 
 	password := data.Security.NewPassword

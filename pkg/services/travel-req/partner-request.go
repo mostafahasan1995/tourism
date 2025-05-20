@@ -32,22 +32,25 @@ func (p *partnerRequestSvcs) GetByFilter(ctx context.Context, filter bson.M) (an
 }
 
 func (p *partnerRequestSvcs) Add(ctx context.Context, data json.RawMessage) (*models.ReqAddData, error) {
-	var req models.PartnerRequest
+	var req models.PartnerRequestDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return nil, err
 	}
 
-	req.Id = primitive.NewObjectID()
+	partnerReq := &models.PartnerRequest{
+		Id:                primitive.NewObjectID(),
+		PartnerRequestDto: req,
+	}
 
-	if err := p.repo.Add(ctx, &req); err != nil {
+	if err := p.repo.Add(ctx, partnerReq); err != nil {
 		return nil, err
 	}
 
 	return &models.ReqAddData{
-		Id:            req.Id,
-		CustomerName:  req.ContactDetail.FullName,
-		CustomerPhone: req.ContactDetail.PhoneNumber,
-		CustomerEmail: req.ContactDetail.Email,
+		Id:            partnerReq.Id,
+		CustomerName:  partnerReq.ContactDetail.FullName,
+		CustomerPhone: partnerReq.ContactDetail.PhoneNumber,
+		CustomerEmail: partnerReq.ContactDetail.Email,
 	}, nil
 }
 
@@ -57,13 +60,16 @@ func (p *partnerRequestSvcs) Update(ctx context.Context, id string, data json.Ra
 		return err
 	}
 
-	var req models.PartnerRequest
+	var req models.PartnerRequestDto
 	if err := json.Unmarshal(data, &req); err != nil {
 		return err
 	}
 
-	req.Id = _id
+	partnerReq := &models.PartnerRequest{
+		Id:                _id,
+		PartnerRequestDto: req,
+	}
 
-	_, err = p.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": req})
+	_, err = p.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": partnerReq})
 	return err
 }

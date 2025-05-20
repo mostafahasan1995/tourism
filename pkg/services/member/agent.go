@@ -2,11 +2,11 @@ package member
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/gateway"
-	gwmodels "larsa-tourism-microservices/pkg/gateway/models"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -35,6 +35,7 @@ type agentsvcs struct {
 	repo        repo.AgentRepo
 	sortingsvcs dbsvcs.SortingSvcs
 	usersgw     *gateway.UsersGw
+	gateway     gateway.Gateway
 	withtxn     *db.WithTxn
 }
 
@@ -43,6 +44,7 @@ func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 		repo:        do.MustInvoke[repo.AgentRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
 		usersgw:     do.MustInvoke[*gateway.UsersGw](i),
+		gateway:     do.MustInvoke[gateway.Gateway](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -116,7 +118,7 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			Status:    "pending",
 		}
 
-		userId, err := a.AddAgentCredentials(ctx, agent)
+		userId, err := a.AddUpdateAgentCredentials(ctx, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -163,7 +165,7 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 			UpdatedBy: cfg.User.Id,
 		}
 
-		_, err := a.UpdateAgentCredentials(ctx, agent)
+		_, err := a.AddUpdateAgentCredentials(ctx, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -212,32 +214,60 @@ func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
 	return nil
 }
 
-func (a *agentsvcs) AddAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, err error) {
+func (a *agentsvcs) AddUpdateAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, err error) {
+	zeroId := primitive.NilObjectID
+
+	var path, method string
+	if data.Id == primitive.NilObjectID {
+		path = "users/"
+		method = "POST"
+	} else {
+		path = "users/" + data.Id.Hex()
+		method = "PATCH"
+	}
+
 	password := data.Security.NewPassword
-	if password == "" {
+	if method == "POST" && password == "" {
 		password = util.GeneratePassword(8, 2, 2, 2)
 	}
 
-	user := &gwmodels.PostUserData{
-		FirstName: data.Name,
-		LastName:  "-",
-		Email:     data.Security.Email,
-		Password:  password,
+	user := map[string]any{
+		"firstName": data.Name,
+		"lastName":  "-",
+		"email":     data.Security.Email,
+		"password":  password,
 	}
 
-	return a.usersgw.AddUser(ctx, user, "")
-}
+	resp, err := a.gateway.Request(ctx, "users", path, method, "", user)
 
-func (a *agentsvcs) UpdateAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, err error) {
-	user := &gwmodels.PostUserData{
-		FirstName: data.Name,
-		LastName:  "-",
-		Email:     data.Security.Email,
+	if err != nil {
+		return zeroId, errors.New("error adding user")
+	} else if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 409:
+			return zeroId, ErrDupliateEmail
+		case 401:
+			return zeroId, ErrUnauthorized
+		case 403:
+			return zeroId, ErrForbidden
+		default:
+			return zeroId, errors.New("error adding user")
+		}
+
 	}
 
-	if data.Security.NewPassword != "" {
-		user.Password = data.Security.NewPassword
+	type TempUser struct {
+		Id primitive.ObjectID `json:"_id"`
 	}
 
-	return a.usersgw.UpdateUser(ctx, data.Id.Hex(), user)
+	type AddedUser struct {
+		User TempUser `json:"user"`
+	}
+
+	var _data AddedUser
+	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
+		return zeroId, errDec
+	}
+
+	return _data.User.Id, nil
 }
