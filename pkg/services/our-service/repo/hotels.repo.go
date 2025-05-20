@@ -163,7 +163,7 @@ func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mo
 			CloseReservations:             data.CloseReservations,
 			RatingObjects:                 data.RatingObjects,
 			OfferAndDiscount:              data.OfferAndDiscount,
-			PoliciesPage:                  data.PoliciesPage, // <-- Missing field added
+			PoliciesPage:                  data.PoliciesPage,
 		},
 		
 		Id:        id,
