@@ -43,8 +43,8 @@ type FlightTicket struct {
 	//delegation
 	NumOfPassengers int `bson:"numOfPassengers" json:"numOfPassengers"`
 	//
-	DepartureDate          string `bson:"departureDate" json:"departureDate"`
-	ReturnDate             string `bson:"returnDate" json:"returnDate"`
+	DepartureDate          time.Time `bson:"departureDate" json:"departureDate"`
+	ReturnDate             time.Time `bson:"returnDate" json:"returnDate"`
 	FlexibleTravelDates    string    `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
 	PreferredDepartureTime string    `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
 	LayoverPreferences     string    `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
