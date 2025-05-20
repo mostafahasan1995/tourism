@@ -57,7 +57,7 @@ type RatingObject struct {
 	Text     string          `bson:"text" json:"text"`
 	Status   string          `bson:"status" json:"status"`
 	Date   *time.Time         `bson:"date" json:"date"`
-	Replies  []string        `bson:"replies" json:"replies"`
+	Replies  []Reply        `bson:"replies" json:"replies"`
 }
 type Reply struct {
 	Text     string          `bson:"text" json:"text"`
