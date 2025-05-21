@@ -102,7 +102,7 @@ type OverviewPage struct {
 
 type RoomsAndSuitesPage struct {
 	StartingText   string         `bson:"startingText" json:"startingText"`
-	Advantages     []Advantages   `bson:"advantages" json:"advantages"`
+	Advantages     []string   `bson:"advantages" json:"advantages"`
 	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
