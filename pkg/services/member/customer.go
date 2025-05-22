@@ -244,7 +244,10 @@ func (c *customerSvcs) AddUpdateCustomerCredentials(ctx context.Context, data *m
 		"firstName": data.Name,
 		"lastName":  "-",
 		"email":     data.Security.Email,
-		"password":  password,
+	}
+
+	if password != "" {
+		user["password"] = password
 	}
 
 	resp, err := c.gateway.Request(ctx, "users", path, method, "", user)

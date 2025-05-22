@@ -6,6 +6,46 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Example JSON:
+// {
+//   "destinations": [
+//     {
+//       "destinationFrom": "507f1f77bcf86cd799439011",
+//       "destinationTo": "507f1f77bcf86cd799439012",
+//       "tripType": "round-trip",
+//       "travelClass": "business",
+//       "departureDate": "2024-03-20T08:00:00Z",
+//       "returnDate": "2024-03-25T16:00:00Z",
+//       "numberOfAdults": 2,
+//       "numberOfChildren": 1,
+//       "numberOfInfants": 0,
+//       "bestDepartureTime": "morning",
+//       "stopoverPreferences": "shortest",
+//       "preferredAirlines": "Emirates",
+//       "extraLuggage": true,
+//       "specialMeals": true,
+//       "preferredContactMethod": "email"
+//     },
+//     {
+//       "destinationFrom": "507f1f77bcf86cd799439012",
+//       "destinationTo": "507f1f77bcf86cd799439013",
+//       "tripType": "one-way",
+//       "travelClass": "economy",
+//       "departureDate": "2024-03-26T10:00:00Z",
+//       "returnDate": "2024-03-26T12:00:00Z",
+//       "numberOfAdults": 2,
+//       "numberOfChildren": 1,
+//       "numberOfInfants": 0,
+//       "bestDepartureTime": "morning",
+//       "stopoverPreferences": "cheapest",
+//       "preferredAirlines": "Qatar Airways",
+//       "extraLuggage": false,
+//       "specialMeals": true,
+//       "preferredContactMethod": "phone"
+//     }
+//   ]
+// }
+
 type FlightTicketRequestDto struct {
 	Destinations []FlightTicktDest `bson:"destinations" json:"destinations"`
 }
