@@ -25,12 +25,13 @@ type HotelsDto struct {
 	OverviewPage                  OverviewPage                  `bson:"overviewPage" json:"overviewPage"`
 	RoomsAndSuitesPage            RoomsAndSuitesPage            `bson:"roomsAndSuitesPage" json:"roomsAndSuitesPage"`
 	AmenitiesAndFacilitiesPage    AmenitiesAndFacilitiesPage    `bson:"amenitiesAndFacilitiesPage" json:"amenitiesAndFacilitiesPage"`
+	AmenitiesAndFacilitiesPageV2  AmenitiesAndFacilitiesPageV2  `bson:"amenitiesAndFacilitiesPageV2" json:"amenitiesAndFacilitiesPageV2"`
 	LocationNearbyAttractionsPage LocationNearbyAttractionsPage `bson:"locationNearbyAttractionsPage" json:"locationNearbyAttractionsPage"`
 	ReviewsAndRatingsPage         ReviewsAndRatingsPage         `bson:"reviewsAndRatingsPage" json:"reviewsAndRatingsPage"`
 	BookingAndPoliciesPage        BookingAndPoliciesPage        `bson:"bookingAndPoliciesPage" json:"bookingAndPoliciesPage"`
 	PositionOnMap                 string                        `bson:"positionOnMap" json:"positionOnMap"`
 	Contacts                      Contacts                      `bson:"contacts" json:"contacts"`
-	CloseReservations             []CloseReservations             `bson:"closeReservations" json:"closeReservations"`
+	CloseReservations             []CloseReservations           `bson:"closeReservations" json:"closeReservations"`
 	RatingObjects                 []RatingObject                `bson:"ratingObjects" json:"ratingObjects"`
 	OfferAndDiscount              []OfferAndDiscount            `bson:"offerAndDiscount" json:"offerAndDiscount"`
 	PoliciesPage                  PoliciesPage                  `bson:"policiesPage" json:"policiesPage"`
@@ -50,13 +51,19 @@ func (h *HotelsDto) CalculateAverageRating() {
 
 type RatingObject struct {
 	Username string          `bson:"username" json:"username"`
-	UserId string          `bson:"userId" json:"userId"`
+	UserId   string          `bson:"userId" json:"userId"`
 	UserImg  types.FileField `bson:"userImg" json:"userImg"`
 	Value    float64         `bson:"value" json:"value"`
 	Text     string          `bson:"text" json:"text"`
 	Status   string          `bson:"status" json:"status"`
-	Replies  []string        `bson:"replies" json:"replies"`
+	Date   *time.Time         `bson:"date" json:"date"`
+	Replies  []Reply        `bson:"replies" json:"replies"`
 }
+type Reply struct {
+	Text     string          `bson:"text" json:"text"`
+	Date   *time.Time         `bson:"date" json:"date"`
+}
+
 
 type CloseReservations struct {
 	StartDate time.Time `bson:"startDate" json:"startDate"`
@@ -95,7 +102,7 @@ type OverviewPage struct {
 
 type RoomsAndSuitesPage struct {
 	StartingText   string         `bson:"startingText" json:"startingText"`
-	Advantages     []Advantages   `bson:"advantages" json:"advantages"`
+	Advantages     []string   `bson:"advantages" json:"advantages"`
 	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
@@ -112,17 +119,17 @@ type RoomCategory struct {
 }
 
 type Pricing struct {
-	NightlyRateBase    int `bson:"nightlyRateBase" json:"nightlyRateBase"`
-	NightlyRateBaseType    string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
-	
-	ExtraPersonCharge  int `bson:"extraPersonCharge" json:"extraPersonCharge"`
-	ExtraPersonChargeType  string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
-	IsIncludeBreakFast bool `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
+	NightlyRateBase     int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	NightlyRateBaseType string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
+
+	ExtraPersonCharge     int    `bson:"extraPersonCharge" json:"extraPersonCharge"`
+	ExtraPersonChargeType string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
+	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 }
 type SeasonPricing struct {
 	NightlyRateBase    int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
 	ExtraPersonCharge  int    `bson:"extraPersonCharge" json:"extraPersonCharge"`
-	IsIncludeBreakFast bool    `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
+	IsIncludeBreakFast bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 	SeasonName         string `bson:"seasonName" json:"seasonName"`
 }
 type Advantages struct {
@@ -138,6 +145,16 @@ type AmenitiesAndFacilitiesPage struct {
 	ConvenienceAndServices      []string          `bson:"convenienceAndServices" json:"convenienceAndServices"`
 }
 
+type AmenitiesAndFacilitiesPageV2 struct {
+	RestaurantsCafes       []string `bson:"restaurantsCafes" json:"restaurantsCafes"`
+	PoolsBeaches           []string `bson:"poolsBeaches" json:"poolsBeaches"`
+	SpaGym                 []string `bson:"spaGym" json:"spaGym"`
+	HotelServices          []string `bson:"hotelServices" json:"hotelServices"`
+	BusinessFacilities     []string `bson:"businessFacilities" json:"businessFacilities"`
+	KidsFacilities         []string `bson:"kidsFacilities" json:"kidsFacilities"`
+	RecreationalActivities []string `bson:"recreationalActivities" json:"recreationalActivities"`
+}
+
 type AmenitiesDetail struct {
 	Title string          `bson:"title" json:"title"`
 	Body  string          `bson:"body" json:"body"`
@@ -145,17 +162,16 @@ type AmenitiesDetail struct {
 }
 
 type LocationNearbyAttractionsPage struct {
-	StartingText                   string              `bson:"startingText" json:"startingText"`
-	HotelAddress                   HotelAddress        `bson:"hotelAddress" json:"hotelAddress"`
-	TopAttractionsNearby           []AttractionsNearby `bson:"topAttractionsNearby" json:"topAttractionsNearby"`
-	TransportationAndAccessibility []TransportationAndAccessibility            `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
+	StartingText                   string                           `bson:"startingText" json:"startingText"`
+	HotelAddress                   HotelAddress                     `bson:"hotelAddress" json:"hotelAddress"`
+	TopAttractionsNearby           []AttractionsNearby              `bson:"topAttractionsNearby" json:"topAttractionsNearby"`
+	TransportationAndAccessibility []TransportationAndAccessibility `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
 }
 
 type TransportationAndAccessibility struct {
-	Title                   string              `bson:"title" json:"title"`
-	Description                   string              `bson:"description" json:"description"`
-	Availability                   bool              `bson:"availability" json:"availability"`
-
+	Title        string `bson:"title" json:"title"`
+	Description  string `bson:"description" json:"description"`
+	Availability bool   `bson:"availability" json:"availability"`
 }
 
 type HotelAddress struct {
