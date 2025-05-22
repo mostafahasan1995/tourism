@@ -29,23 +29,31 @@ type AgentSvcs interface {
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
 	Update(ctx context.Context, agentId string, data *models.AgentDto) (*models.Agent, error)
 	Delete(ctx context.Context, agentId string) error
+	//agent join
+	GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error)
+	GetJoinRequests(ctx context.Context, skip, limit int64, query string) (*models.AgentJoinPagination, error)
+	Join(ctx context.Context, data *models.AgentJoinDto) (*models.AgentJoin, error)
+	ConvertToAgent(ctx context.Context, agentId string, data *models.AgentJoinDto) (*models.Agent, error)
+	RejectJoin(ctx context.Context, agentId string) error
 }
 
 type agentsvcs struct {
-	repo        repo.AgentRepo
-	sortingsvcs dbsvcs.SortingSvcs
-	usersgw     *gateway.UsersGw
-	gateway     gateway.Gateway
-	withtxn     *db.WithTxn
+	repo          repo.AgentRepo
+	agentjoinrepo repo.AgentJoinRepo
+	sortingsvcs   dbsvcs.SortingSvcs
+	usersgw       *gateway.UsersGw
+	gateway       gateway.Gateway
+	withtxn       *db.WithTxn
 }
 
 func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 	return &agentsvcs{
-		repo:        do.MustInvoke[repo.AgentRepo](i),
-		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		usersgw:     do.MustInvoke[*gateway.UsersGw](i),
-		gateway:     do.MustInvoke[gateway.Gateway](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		repo:          do.MustInvoke[repo.AgentRepo](i),
+		agentjoinrepo: do.MustInvoke[repo.AgentJoinRepo](i),
+		sortingsvcs:   do.MustInvoke[dbsvcs.SortingSvcs](i),
+		usersgw:       do.MustInvoke[*gateway.UsersGw](i),
+		gateway:       do.MustInvoke[gateway.Gateway](i),
+		withtxn:       do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -105,6 +113,7 @@ func (a *agentsvcs) Get(ctx context.Context, skip, limit int64, query string) (*
 	}, nil
 }
 
+// add from dashboard
 func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -115,7 +124,7 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			AgentDto:  *data,
 			CreatedAt: time.Now(),
 			CreatedBy: cfg.User.Id,
-			Status:    "pending",
+			Status:    "inactive", //active, inactive
 		}
 
 		userId, err := a.AddUpdateAgentCredentials(ctx, agent)
@@ -235,7 +244,10 @@ func (a *agentsvcs) AddUpdateAgentCredentials(ctx context.Context, data *models.
 		"firstName": data.Name,
 		"lastName":  "-",
 		"email":     data.Security.Email,
-		"password":  password,
+	}
+
+	if password != "" {
+		user["password"] = password
 	}
 
 	resp, err := a.gateway.Request(ctx, "users", path, method, "", user)
@@ -270,4 +282,141 @@ func (a *agentsvcs) AddUpdateAgentCredentials(ctx context.Context, data *models.
 	}
 
 	return _data.User.Id, nil
+}
+
+// agent join
+func (a *agentsvcs) GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error) {
+	_id, err := primitive.ObjectIDFromHex(agentJoinId)
+	if err != nil {
+		return nil, err
+	}
+	return a.agentjoinrepo.GetByFilter(ctx, bson.M{"_id": _id})
+}
+
+func (a *agentsvcs) Join(ctx context.Context, data *models.AgentJoinDto) (*models.AgentJoin, error) {
+	agent := &models.AgentJoin{
+		Id:           primitive.NewObjectID(),
+		AgentJoinDto: *data,
+		Status:       "pending",
+	}
+
+	if err := a.agentjoinrepo.Add(ctx, agent); err != nil {
+		return nil, err
+	}
+
+	return agent, nil
+}
+
+func (a *agentsvcs) ConvertToAgent(ctx context.Context, agentId string, data *models.AgentJoinDto) (*models.Agent, error) {
+	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		_id, err := primitive.ObjectIDFromHex(agentId) //agent join id
+		if err != nil {
+			return nil, err
+		}
+
+		agentDto := &models.AgentDto{
+			Name:        data.FullName,
+			Nationality: data.Nationality,
+			SpokenLangs: data.SpokenLangs,
+			Company:     data.CompanyName,
+			CompanyLogo: data.CompanyLogo,
+			Bio:         data.Bio,
+			Countries:   data.Countries,
+			Contact: models.MemberContact{
+				Mobile: data.Phone,
+				Email:  data.Email,
+			},
+			Security: models.MemberSecurity{
+				Email:       data.Email,
+				NewPassword: "",
+			},
+		}
+
+		agent, err := a.Add(ctx, agentDto)
+		if err != nil {
+			return nil, err
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": bson.M{
+			"status": "converted",
+		}}
+
+		_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
+		if errUp != nil {
+			return nil, errUp
+		}
+
+		return agent, nil
+
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Agent), nil
+}
+
+func (a *agentsvcs) RejectJoin(ctx context.Context, agentId string) error {
+	_id, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{
+		"status": "rejected",
+	}}
+
+	_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
+	if errUp != nil {
+		return errUp
+	}
+
+	return nil
+
+}
+
+func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, query string) (*models.AgentJoinPagination, error) {
+	match := bson.M{}
+
+	filter, err := filters.NewAgentJoinFilter(query)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := filter.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := a.agentjoinrepo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.AgentJoin
+	errAg := a.agentjoinrepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.AgentJoinPagination{
+		Agents:     result,
+		Pagination: pagination,
+	}, nil
 }

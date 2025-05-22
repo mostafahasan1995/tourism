@@ -29,6 +29,14 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
+
+	r.Route("/agent-joins", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOneAgentJoin))
+		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.GetJoinRequests))
+		r.Post("/", helpers.Make(h.Join))
+		r.With(middleware.Auth("authenticate")).Post("/{id}/convert", helpers.Make(h.ConvertToAgent))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectJoin))
+	})
 }
 
 func (h *AgentHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -102,6 +110,85 @@ func (h *AgentHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	agentId := chi.URLParam(r, "id")
 
 	if err := h.agentsvcs.Delete(ctx, agentId); err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
+}
+
+// agent join
+
+func (h *AgentHandler) GetOneAgentJoin(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id") //agent join id
+
+	result, err := h.agentsvcs.GetOneAgentJoin(ctx, agentId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) GetJoinRequests(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.agentsvcs.GetJoinRequests(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) Join(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.AgentJoinDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.Join(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) ConvertToAgent(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id") // agent join id
+
+	var data models.AgentJoinDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.ConvertToAgent(ctx, agentId, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) RejectJoin(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id") // agent join id
+
+	if err := h.agentsvcs.RejectJoin(ctx, agentId); err != nil {
 		return err
 	}
 

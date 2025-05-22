@@ -17,7 +17,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//repos
 	do.Provide(i, repo.NewAgentRepo)
 	do.Provide(i, repo.NewCustomerRepo)
-
+	do.Provide(i, repo.NewAgentJoinRepo)
 	//handlers
 	handler.NewAgentHandler(i, r)
 	handler.NewCustomerHandler(i, r)
