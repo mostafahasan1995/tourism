@@ -15,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+// deprecated
 type TourismProgramRepo interface {
 	GetOne(ctx context.Context, id string) (*models.TourismProgram, error)
 	Add(ctx context.Context, data *models.TourismProgramDto) error

@@ -1,4 +1,4 @@
-package ourService
+package ourservice
 
 import (
 	"context"

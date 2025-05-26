@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/our-service"
+	ourservice "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -16,12 +16,12 @@ import (
 )
 
 type TourismProgramHandler struct {
-	tourismProgramsvcs ourService.TourismProgramSvcs
+	tourismProgramsvcs ourservice.TourismProgramSvcs
 }
 
 func NewTourismProgramHandler(i *do.Injector, r *chi.Mux) {
 	h := &TourismProgramHandler{
-		tourismProgramsvcs: do.MustInvoke[ourService.TourismProgramSvcs](i),
+		tourismProgramsvcs: do.MustInvoke[ourservice.TourismProgramSvcs](i),
 	}
 
 	r.Route("/tourism-program", func(r chi.Router) {

@@ -14,6 +14,7 @@ type CustomPlanDto struct {
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
+
 type CustomPlan struct {
 	Id            primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	CustomPlanDto `bson:",inline"`
