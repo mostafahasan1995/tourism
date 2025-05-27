@@ -5,16 +5,17 @@ import (
 	// "larsa-tourism-microservices/pkg/types"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
+	"git.larsa.io/mahdawi/microservices-commons/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ContactUsDto struct {
-	FullName        string `bson:"fullName" json:"fullName"`
-	EmailAddress    string `bson:"emailAddress" json:"emailAddress"`
-	PhoneNumber     string `bson:"phoneNumber" json:"phoneNumber"`
-	HowDidYouFindUs string `bson:"howDidYouFindUs" json:"howDidYouFindUs"`
-	Message         string `bson:"message" json:"message"`
+	FullName         string                 `bson:"fullName" json:"fullName"`
+	EmailAddress     string                 `bson:"emailAddress" json:"emailAddress"`
+	PhoneNumber      string                 `bson:"phoneNumber" json:"phoneNumber"`
+	HowDidYouFindUs  string                 `bson:"howDidYouFindUs" json:"howDidYouFindUs"`
+	Message          string                 `bson:"message" json:"message"`
+	AdditionalFields map[string]interface{} `bson:"additionalFields,omitempty" json:"additionalFields,omitempty"`
 }
 
 type ContactUs struct {
