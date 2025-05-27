@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -8,119 +9,27 @@ import (
 )
 
 type TravelRequestDto struct {
-	ClientInfo  `bson:",inline"`
-	ServiceType string `bson:"serviceType" json:"serviceType"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	//basic information
+	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
+	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
+	ClientEmail  string `bson:"clientEmail" json:"clientEmail" validate:"required, email"`
+	Nationality  string `bson:"nationality" json:"nationality" `
+	TripDuration int    `bson:"tripDuration" json:"tripDuration" validate:"required"`
 	//
-	Delegation          *Delegation          `bson:"delegation,omitempty" json:"delegation,omitempty"`
-	BusinessMan         *BusinessMan         `bson:"businessMan,omitempty" json:"businessMan,omitempty"`
-	VipCar              *VipCar              `bson:"vipCar,omitempty" json:"vipCar,omitempty"`
-	CustomPlan          *CustomPlan          `bson:"customPlan,omitempty" json:"customPlan,omitempty"`
-	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty"`
-	PartnerRequest      *PartnerRequest      `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty"`
+	ServiceType enums.ServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=delegation custom-plan business-man vip-car flight-request partner-request"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	//request
+	Delegation          *Delegation          `bson:"delegation,omitempty" json:"delegation,omitempty" validate:"required_if=ServiceType delegation"`
+	BusinessMan         *BusinessMan         `bson:"businessMan,omitempty" json:"businessMan,omitempty" validate:"required_if=ServiceType business-man"`
+	VipCar              *VipCar              `bson:"vipCar,omitempty" json:"vipCar,omitempty" validate:"required_if=ServiceType vip-car"`
+	CustomPlan          *CustomPlan          `bson:"customPlan,omitempty" json:"customPlan,omitempty" validate:"required_if=ServiceType custom-plan"`
+	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty" validate:"required_if=ServiceType flight-request"`
+	PartnerRequest      *PartnerRequest      `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty" validate:"required_if=ServiceType partner-request"`
 	//
-	Destination     []Destination      `bson:"destination,omitempty" json:"destination,omitempty"`
-	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"`
-	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod"`
+	Destination     []Destination      `bson:"destination,omitempty" json:"destination,omitempty" `
+	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"`
+	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
-
-/*
-Example JSON structure for TravelRequestDto:
-{
-    "clientName": "John Doe",
-    "clientPhone": "+1234567890",
-    "clientEmail": "john.doe@example.com",
-    "serviceType": "custom-plan",
-    "delegation": null,
-    "businessMan": null,
-    "vipCar": null,
-    "customPlan": {
-        "tripType": "luxury",
-        "nationality": "US",
-        "tripDuration": 7,
-        "tripCoordinator": "507f1f77bcf86cd799439011"
-    },
-    "flightTicketRequest": null,
-    "partnerRequest": null,
-    "destination": [
-        {
-            "destination": "507f1f77bcf86cd799439012",
-            "tripDetails": {
-                "startDate": "2024-06-01T00:00:00Z",
-                "endDate": "2024-06-07T00:00:00Z",
-                "days": 7
-            },
-            "accommodation": [
-                {
-                    "city": "Paris",
-                    "preferences": "Luxury hotel",
-                    "specialRequests": ["Ocean view", "King size bed"],
-                    "numOfRooms": 1,
-                    "bedType": "King",
-                    "numOfBeds": 1,
-                    "numOfBathrooms": 1,
-                    "privateMeetingRoom": false
-                }
-            ],
-            "flightTickets": {
-                "arrangeByUs": true,
-                "tripType": "round-trip",
-                "travelClass": "business",
-                "numOfPassengers": 2,
-                "departureDate": "2024-06-01T08:00:00Z",
-                "returnDate": "2024-06-07T16:00:00Z",
-                "flexibleTravelDates": "No",
-                "preferredDepartureTime": "morning",
-                "layoverPreferences": "direct flight preferred",
-                "preferredAirlines": "Emirates",
-                "extraBaggage": true,
-                "specialMeals": true,
-                "travelWithPet": false,
-                "anySpecialReq": "Window seats preferred",
-                "adults": 2,
-                "children": 0,
-                "infant": 0
-            },
-            "transportation": {
-                "trans": "Private car",
-                "driverLangs": ["English", "French"]
-            },
-            "activities": ["City tour", "Museum visits", "Fine dining"],
-            "agenda": {
-                "needAgenda": true,
-                "items": [
-                    "Morning city tour",
-                    "Afternoon museum visit",
-                    "Evening fine dining"
-                ],
-                "files": [
-                    {
-                        "_id": "507f1f77bcf86cd799439013",
-                        "originalName": "itinerary.pdf",
-                        "path": "/uploads/itinerary.pdf",
-                        "service": "file-service",
-                        "expire": "2024-12-31T23:59:59Z",
-                        "variants": []
-                    }
-                ]
-            },
-            "services": {
-                "tourGuide": true,
-                "translator": true,
-                "airportPickup": true,
-                "tourAfterMeeting": false,
-                "photography": true,
-                "airportMeetAndGreet": true,
-                "simCardAndInternet": true
-            }
-        }
-    ],
-    "tripCoordinator": "507f1f77bcf86cd799439014",
-    "contactMethod": ["email", "phone"],
-    "specialReq": "Vegetarian meals preferred"
-}
-*/
-
 type TravelRequest struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	ReqId        string             `bson:"reqId" json:"reqId"`

@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -26,6 +27,125 @@ import (
 // Small Group (مجموعة صغيرة، عادة 4–8 أشخاص)
 // Large Group (مجموعة كبيرة، عادة أكثر من 8 أشخاص)
 
+// Example JSON for a custom business-man program:
+// {
+//   "title": "Business Trip to Dubai",
+//   "serviceType": "business-man",
+//   "package": "507f1f77bcf86cd799439011",
+//   "status": "pending",
+//   "programType": "custom",
+//   "source": "website",
+//   "company": "Tech Corp",
+//   "coordinator": "John Smith",
+//   "purpose": "Business Meeting",
+//   "startDate": "2024-03-20T00:00:00Z",
+//   "endDate": "2024-03-25T00:00:00Z",
+//   "groupSize": "solo",
+//   "customType": {
+//     "businessMan": {
+//       "purpose": "meeting",
+//       "clientIsCoordinator": false,
+//       "coordinatorName": "Sarah Johnson",
+//       "coordinatorPhone": "+1987654321",
+//       "coordinatorEmail": "sarah.j@company.com"
+//     },
+//     "destinations": [
+//       {
+//         "destinationFrom": "507f1f77bcf86cd799439011",
+//         "destinationTo": "507f1f77bcf86cd799439012",
+//         "tripDetails": {
+//           "startDate": "2024-03-20T10:00:00Z",
+//           "endDate": "2024-03-25T14:00:00Z",
+//           "days": 5
+//         },
+//         "accommodation": [
+//           {
+//             "city": "Dubai",
+//             "preferences": "Business hotel in downtown",
+//             "specialRequests": ["High floor", "Quiet room"],
+//             "numOfRooms": 1,
+//             "bedType": "King",
+//             "numOfBeds": 1,
+//             "numOfBathrooms": 1,
+//             "privateMeetingRoom": true,
+//             "pricePerNight": 250.00,
+//             "totalStayCost": 1250.00
+//           }
+//         ],
+//         "flightTickets": {
+//           "arrangeByUs": true,
+//           "tripType": "round-trip",
+//           "travelClass": "business",
+//           "departureDate": "2024-03-20T08:00:00Z",
+//           "returnDate": "2024-03-25T16:00:00Z",
+//           "flexibleTravelDates": "No",
+//           "preferredDepartureTime": "morning",
+//           "layoverPreferences": "short transit time",
+//           "preferredAirlines": "Emirates",
+//           "extraBaggage": true,
+//           "specialMeals": true,
+//           "travelWithPet": false,
+//           "adults": 1,
+//           "children": 0,
+//           "infant": 0,
+//           "totalCost": 1500.00
+//         },
+//         "transportation": {
+//           "transType": "private",
+//           "capacity": "4 passengers",
+//           "driverLanguagesSpoken": ["English", "Arabic"],
+//           "luxuryFeatures": ["Leather seats", "GPS", "Bluetooth", "Climate control"],
+//           "startDate": "2024-03-20T10:00:00Z",
+//           "endDate": "2024-03-25T14:00:00Z",
+//           "startTime": "10:00",
+//           "endTime": "14:00",
+//           "carTypeId": "507f1f77bcf86cd799439013",
+//           "totalCost": 500.00
+//         },
+//         "activities": {
+//           "activities": ["City tour", "Business networking"],
+//           "totalCost": 300.00
+//         },
+//         "agenda": {
+//           "needAgenda": true,
+//           "items": ["Morning meetings", "Afternoon site visits"],
+//           "files": []
+//         },
+//         "services": {
+//           "tourGuide": {
+//             "active": true,
+//             "cost": 200.00
+//           },
+//           "translator": {
+//             "active": true,
+//             "cost": 150.00
+//           },
+//           "airportPickup": {
+//             "active": true,
+//             "cost": 100.00
+//           },
+//           "tourAfterMeeting": {
+//             "active": true,
+//             "cost": 250.00
+//           },
+//           "photography": {
+//             "active": false,
+//             "cost": 0.00
+//           },
+//           "airportMeetAndGreet": {
+//             "active": true,
+//             "cost": 75.00
+//           },
+//           "simCardAndInternet": {
+//             "active": true,
+//             "cost": 50.00
+//           }
+//         }
+//       }
+//     ]
+//   }
+// }
+
 type Program struct {
 	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	ProgramDto `bson:",inline"`
@@ -38,20 +158,20 @@ type Program struct {
 
 type ProgramDto struct {
 	Title       string             `bson:"title" json:"title" validate:"required"` // program title
-	ServiceType string             `bson:"serviceType" json:"serviceType"`         // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	ServiceType enums.ServiceType  `bson:"serviceType" json:"serviceType"`         // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
 	TravelReqId primitive.ObjectID `bson:"travelReqId,omitempty" json:"travelReqId,omitempty"`
 	CustomerId  primitive.ObjectID `bson:"customerId,omitempty" json:"customerId,omitempty"`
-	Status      string             `bson:"status" json:"status"`
+	Status      string             `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
 	Package     primitive.ObjectID `bson:"package" json:"package" validate:"required"`
-	ProgramType string             `bson:"programType" json:"programType" validate:"required"` // general - custom
+	ProgramType string             `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	//
-	Source      string    `bson:"source" json:"source"`
-	Company     string    `bson:"company" json:"company"`         // todo: maybe we need id here
-	Coordinator string    `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
-	Purpose     string    `bson:"purpose" json:"purpose"`
-	StartDate   time.Time `bson:"startDate" json:"startDate"`
-	EndDate     time.Time `bson:"endDate" json:"endDate"`
-	GroupSize   string    `bson:"groupSize" json:"groupSize"` //see group size values above
+	Source      string          `bson:"source" json:"source"`
+	Company     string          `bson:"company" json:"company"`         // todo: maybe we need id here
+	Coordinator string          `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
+	Purpose     string          `bson:"purpose" json:"purpose"`
+	StartDate   time.Time       `bson:"startDate" json:"startDate"`
+	EndDate     time.Time       `bson:"endDate" json:"endDate"`
+	GroupSize   enums.GroupSize `bson:"groupSize" json:"groupSize"` //see group size values above
 	//
 	GeneralType *GeneralProgram `bson:"generalType,omitempty" json:"generalType,omitempty" validate:"required_if=ProgramType general"`
 	CustomType  *CustomProgram  `bson:"customType,omitempty" json:"customType,omitempty" validate:"required_if=ProgramType custom"`
@@ -65,160 +185,3 @@ type ProgramPagination struct {
 	Programs   []Program        `bson:"programs" json:"programs"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
-
-/*
-Example JSON structure for ProgramDto (General Program):
-{
-    "title": "Luxury Paris Experience",
-    "serviceType": "custom-plan",
-    "travelReqId": "507f1f77bcf86cd799439011",
-    "customerId": "507f1f77bcf86cd799439012",
-    "status": "active",
-    "package": "507f1f77bcf86cd799439013",
-    "programType": "general",
-    "source": "website",
-    "company": "Luxury Travel Co.",
-    "coordinator": "John Smith",
-    "purpose": "Luxury Vacation",
-    "startDate": "2024-06-01T00:00:00Z",
-    "endDate": "2024-06-07T00:00:00Z",
-    "groupSize": "Couple",
-    "generalType": {
-        "distinations": ["507f1f77bcf86cd799439014"],
-        "includes": {
-            "accommodation": ["5-star hotel", "Luxury suite"],
-            "transportation": ["Private car", "Airport transfer"],
-            "meals": ["Breakfast", "Welcome dinner"]
-        },
-        "activities": ["507f1f77bcf86cd799439015"],
-        "dailyItinerary": [
-            {
-                "title": "Day 1 - Arrival in Paris",
-                "actions": ["507f1f77bcf86cd799439016"],
-                "images": [
-                    {
-                        "_id": "507f1f77bcf86cd799439017",
-                        "originalName": "welcome-dinner.jpg",
-                        "path": "/uploads/welcome-dinner.jpg",
-                        "service": "file-service",
-                        "expire": "2024-12-31T23:59:59Z",
-                        "variants": ["thumbnail", "medium", "large"]
-                    }
-                ]
-            }
-        ],
-        "pricing": {
-            "person": {
-                "price": 5000,
-                "per": "person",
-                "showInWebsite": true
-            },
-            "children": {
-                "price": 2500,
-                "per": "child",
-                "numOfYears": "2-12",
-                "showInWebsite": true
-            }
-        }
-    }
-}
-
-Example JSON structure for ProgramDto (Custom Program):
-{
-    "title": "Corporate Team Building Retreat",
-    "serviceType": "custom-plan",
-    "travelReqId": "507f1f77bcf86cd799439021",
-    "customerId": "507f1f77bcf86cd799439022",
-    "status": "active",
-    "package": "507f1f77bcf86cd799439023",
-    "programType": "custom",
-    "source": "direct",
-    "company": "Tech Solutions Inc.",
-    "coordinator": "Sarah Johnson",
-    "purpose": "Team Building and Strategy Planning",
-    "startDate": "2024-08-01T00:00:00Z",
-    "endDate": "2024-08-05T00:00:00Z",
-    "groupSize": "Small Group",
-    "customType": {
-        "customPlan": {
-            "tripType": "luxury retreat",
-            "nationality": "American",
-            "tripDuration": 5,
-            "tripCoordinator": "507f1f77bcf86cd799439026"
-        },
-        "destinations": [
-            {
-                "destination": "507f1f77bcf86cd799439024",
-                "tripDetails": {
-                    "startDate": "2024-08-01T10:00:00Z",
-                    "endDate": "2024-08-05T14:00:00Z",
-                    "days": 5
-                },
-                "accommodation": [
-                    {
-                        "city": "Bali",
-                        "preferences": "Resort with meeting facilities",
-                        "specialRequests": ["Ocean view", "Meeting rooms"],
-                        "numOfRooms": 5,
-                        "bedType": "King",
-                        "numOfBeds": 1,
-                        "numOfBathrooms": 1,
-                        "privateMeetingRoom": true
-                    }
-                ],
-                "flightTickets": {
-                    "arrangeByUs": true,
-                    "tripType": "round-trip",
-                    "travelClass": "business",
-                    "numOfPassengers": 8,
-                    "departureDate": "2024-08-01T08:00:00Z",
-                    "returnDate": "2024-08-05T16:00:00Z",
-                    "flexibleTravelDates": "No",
-                    "preferredDepartureTime": "morning",
-                    "layoverPreferences": "short transit time",
-                    "preferredAirlines": "Singapore Airlines",
-                    "extraBaggage": true,
-                    "specialMeals": true,
-                    "travelWithPet": false,
-                    "anySpecialReq": "Group seating preferred",
-                    "adults": 8,
-                    "children": 0,
-                    "infant": 0
-                },
-                "transportation": {
-                    "trans": "Private van",
-                    "driverLangs": ["English", "Indonesian"]
-                },
-                "activities": ["Team building", "Strategy workshop", "Cultural tour"],
-                "agenda": {
-                    "needAgenda": true,
-                    "items": [
-                        "Morning team building",
-                        "Afternoon strategy planning",
-                        "Evening cultural activities"
-                    ],
-                    "files": [
-                        {
-                            "_id": "507f1f77bcf86cd799439025",
-                            "originalName": "team-building-schedule.pdf",
-                            "path": "/uploads/team-building-schedule.pdf",
-                            "service": "file-service",
-                            "expire": "2024-12-31T23:59:59Z",
-                            "variants": []
-                        }
-                    ]
-                },
-                "services": {
-                    "tourGuide": true,
-                    "translator": true,
-                    "airportPickup": true,
-                    "tourAfterMeeting": true,
-                    "photography": true,
-                    "airportMeetAndGreet": true,
-                    "simCardAndInternet": true
-                }
-            }
-        ]
-    }
-}
-*/

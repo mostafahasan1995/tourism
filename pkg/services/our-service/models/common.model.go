@@ -7,21 +7,16 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-type ClientInfo struct {
-	ClientName  string `bson:"clientName" json:"clientName"`
-	ClientPhone string `bson:"clientPhone" json:"clientPhone"`
-	ClientEmail string `bson:"clientEmail" json:"clientEmail"`
-}
-
 type Destination struct {
-	Destination    primitive.ObjectID `bson:"destination" json:"destination"`
-	TripDetails    TripDetails        `bson:"tripDetails" json:"tripDetails"`
-	Accommodation  []Accommodation    `bson:"accommodation" json:"accommodation"`
-	FlightTickets  FlightTicket       `bson:"flightTickets" json:"flightTickets"`
-	Transportation Transportation     `bson:"transportation" json:"transportation"`
-	Activities     []string           `bson:"activities" json:"activities"`
-	Agenda         Agenda             `bson:"agenda" json:"agenda"`
-	Services       Services           `bson:"services" json:"services"`
+	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
+	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
+	TripDetails     TripDetails        `bson:"tripDetails" json:"tripDetails"`
+	Accommodation   []Accommodation    `bson:"accommodation" json:"accommodation"`
+	FlightTickets   FlightTicket       `bson:"flightTickets" json:"flightTickets"`
+	Transportation  Transportation     `bson:"transportation" json:"transportation"`
+	Activities      []string           `bson:"activities" json:"activities"`
+	Agenda          Agenda             `bson:"agenda" json:"agenda"`
+	Services        Services           `bson:"services" json:"services"`
 }
 
 type TripDetails struct {
@@ -43,77 +38,31 @@ type Accommodation struct {
 }
 
 type FlightTicket struct {
-	ArrangeByUs bool   `bson:"arrangeByUs" json:"arrangeByUs"`
-	TripType    string `bson:"tripType" json:"tripType"`       // e.g round-trip - one-way - multi-city
-	TravelClass string `bson:"travelClass" json:"travelClass"` // e.g economy - business - first class
-	//delegation
-	NumOfPassengers int `bson:"numOfPassengers" json:"numOfPassengers"`
-	//
-	DepartureDate          time.Time `bson:"departureDate" json:"departureDate"`
-	ReturnDate             time.Time `bson:"returnDate" json:"returnDate"`
-	FlexibleTravelDates    string    `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
-	PreferredDepartureTime string    `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
-	LayoverPreferences     string    `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
-	PreferredAirlines      string    `bson:"preferredAirlines" json:"preferredAirlines"`           // e.g. franch arilines
-	ExtraBaggage           bool      `bson:"extraBaggage" json:"extraBaggage"`
-	SpecialMeals           bool      `bson:"specialMeals" json:"specialMeals"`
-	TravelWithPet          bool      `bson:"travelWithPet" json:"travelWithPet"`
-	AnySpecialReq          string    `bson:"anySpecialReq" json:"anySpecialReq"`
-	//business man
-	Adults   int `bson:"adults" json:"adults"`
-	Children int `bson:"children" json:"children"`
-	Infant   int `bson:"infant" json:"infant"`
+	ArrangeByUs            bool               `bson:"arrangeByUs" json:"arrangeByUs"`
+	DestinationFrom        primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
+	DestinationTo          primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
+	TripType               string             `bson:"tripType" json:"tripType"`       // e.g round-trip - one-way - multi-city
+	TravelClass            string             `bson:"travelClass" json:"travelClass"` // e.g economy - business - first class
+	StartDate              time.Time          `bson:"startDate" json:"startDate"`
+	EndDate                time.Time          `bson:"endDate" json:"endDate"`
+	FlexibleTravelDates    string             `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
+	DepartureDate          time.Time          `bson:"departureDate" json:"departureDate"`
+	ReturnDate             time.Time          `bson:"returnDate" json:"returnDate"`
+	PreferredDepartureTime string             `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
+	LayoverPreferences     string             `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
+	PreferredAirlines      string             `bson:"preferredAirlines" json:"preferredAirlines"`           // e.g. franch arilines
+	ExtraBaggage           bool               `bson:"extraBaggage" json:"extraBaggage"`
+	SpecialMeals           bool               `bson:"specialMeals" json:"specialMeals"`
+	TravelWithPet          bool               `bson:"travelWithPet" json:"travelWithPet"`
+	Adults                 int                `bson:"adults" json:"adults"`
+	Children               int                `bson:"children" json:"children"`
+	Infant                 int                `bson:"infant" json:"infant"`
+	PreferredContactMethod string             `bson:"preferredContactMethod" json:"preferredContactMethod"`
+	SpecialRequirements    string             `bson:"specialRequirements" json:"specialRequirements"`
 }
 
 type Transportation struct {
-	Trans       string   `bson:"trans" json:"trans"`
-	DriverLangs []string `bson:"driverLangs" json:"driverLangs"`
-}
-
-type Agenda struct {
-	NeedAgenda bool              `bson:"needAgenda" json:"needAgenda"`
-	Items      []string          `bson:"items" json:"items"`
-	Files      []types.FileField `bson:"files" json:"files"`
-}
-
-type Services struct {
-	TourGuide     bool `bson:"tourGuide" json:"tourGuide"`
-	Translator    bool `bson:"translator" json:"translator"`
-	AirportPickup bool `bson:"airportPickup" json:"airportPickup"`
-	//business man
-	TourAfterMeeting bool `bson:"tourAfterMeeting" json:"tourAfterMeeting"`
-	//custom plan
-	Photography         bool `bson:"photography" json:"photography"`
-	AirportMeetAndGreet bool `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
-	SimCardAndInternet  bool `bson:"simCardAndInternet" json:"simCardAndInternet"`
-}
-
-//
-
-type Delegation struct {
-	DelegationType      string `bson:"delegationType" json:"delegationType"`
-	OrganizationName    string `bson:"organizationName" json:"organizationName"`
-	Nationality         string `bson:"nationality" json:"nationality"`
-	TripDuration        int    `bson:"tripDuration" json:"tripDuration"`
-	TripCoordinatorName string `bson:"tripCoordinatorName" json:"tripCoordinatorName"`
-}
-
-type BusinessMan struct {
-	Purpose             string `bson:"purpose" json:"purpose"` //meeting - investment - conference - other
-	ClientIsCoordinator bool   `bson:"clientIsCoordinator" json:"clientIsCoordinator"`
-	CoordinatorName     string `bson:"coordinatorName" json:"coordinatorName"`
-	CoordinatorPhone    string `bson:"coordinatorPhone" json:"coordinatorPhone"`
-	CoordinatorEmail    string `bson:"coordinatorEmail" json:"coordinatorEmail"`
-	Nationality         string `bson:"nationality" json:"nationality"`
-	TripDuration        int    `bson:"tripDuration" json:"tripDuration"`
-}
-
-type VipCar struct {
-	Destinations []VipCarDest `bson:"destinations" json:"destinations"`
-}
-
-type VipCarDest struct {
-	Destination           primitive.ObjectID `bson:"destination" json:"destination"`
+	TransType             string             `bson:"transType" json:"transType"`
 	Capacity              string             `bson:"capacity" json:"capacity"`
 	DriverLanguagesSpoken []string           `bson:"driverLanguagesSpoken" json:"driverLanguagesSpoken"`
 	LuxuryFeatures        []string           `bson:"luxuryFeatures" json:"luxuryFeatures"`
@@ -124,40 +73,81 @@ type VipCarDest struct {
 	CarTypeId             primitive.ObjectID `bson:"carTypeId" json:"carTypeId"`
 }
 
+type Agenda struct {
+	NeedAgenda bool              `bson:"needAgenda" json:"needAgenda"`
+	Items      []string          `bson:"items" json:"items"`
+	Files      []types.FileField `bson:"files" json:"files"`
+}
+
+type Services struct {
+	TourGuide           bool `bson:"tourGuide" json:"tourGuide"`
+	Translator          bool `bson:"translator" json:"translator"`
+	AirportPickup       bool `bson:"airportPickup" json:"airportPickup"`
+	TourAfterMeeting    bool `bson:"tourAfterMeeting" json:"tourAfterMeeting"`
+	Photography         bool `bson:"photography" json:"photography"`
+	AirportMeetAndGreet bool `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
+	SimCardAndInternet  bool `bson:"simCardAndInternet" json:"simCardAndInternet"`
+}
+
+//
+
+type Delegation struct {
+	DelegationType      string `bson:"delegationType" json:"delegationType"`
+	OrganizationName    string `bson:"organizationName" json:"organizationName"`
+	TripCoordinatorName string `bson:"tripCoordinatorName" json:"tripCoordinatorName"`
+}
+
+type BusinessMan struct {
+	Purpose             string `bson:"purpose" json:"purpose"` //meeting - investment - conference - other
+	ClientIsCoordinator bool   `bson:"clientIsCoordinator" json:"clientIsCoordinator"`
+	CoordinatorName     string `bson:"coordinatorName" json:"coordinatorName"`
+	CoordinatorPhone    string `bson:"coordinatorPhone" json:"coordinatorPhone"`
+	CoordinatorEmail    string `bson:"coordinatorEmail" json:"coordinatorEmail"`
+}
+
+type VipCar struct {
+	Destinations []VipCarDest `bson:"destinations" json:"destinations"`
+}
+
+type VipCarDest struct {
+	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
+	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
+	Transportation  `bson:",inline"`
+}
+
 // custom plan
 type CustomPlan struct {
 	TripType        string             `bson:"tripType" json:"tripType"` //e.g. family - honeymoon - luxury retreat - other
-	Nationality     string             `bson:"nationality" json:"nationality"`
-	TripDuration    int                `bson:"tripDuration" json:"tripDuration"`
 	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"`
 }
 
 // flight request
 type FlightTicketRequest struct {
-	Destinations []FlightTicktDest `bson:"destinations" json:"destinations"`
+	Destinations []FlightTicket `bson:"destinations" json:"destinations"`
 }
 
-type FlightTicktDest struct {
-	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
-	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
-	TripType        string             `bson:"tripType" json:"tripType"`
-	TravelClass     string             `bson:"travelClass" json:"travelClass"`
+// type FlightTicktDest struct {
+// 	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
+// 	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
+// 	TripType        string             `bson:"tripType" json:"tripType"`
+// 	TravelClass     string             `bson:"travelClass" json:"travelClass"`
 
-	DepartureDate time.Time `bson:"departureDate" json:"departureDate"`
-	ReturnDate    time.Time `bson:"returnDate" json:"returnDate"`
+// 	DepartureDate time.Time `bson:"departureDate" json:"departureDate"`
+// 	ReturnDate    time.Time `bson:"returnDate" json:"returnDate"`
 
-	NumberOfAdults   int `bson:"numberOfAdults" json:"numberOfAdults"`
-	NumberOfChildren int `bson:"numberOfChildren" json:"numberOfChildren"`
-	NumberOfInfants  int `bson:"numberOfInfants" json:"numberOfInfants"`
+// 	NumberOfAdults   int `bson:"numberOfAdults" json:"numberOfAdults"`
+// 	NumberOfChildren int `bson:"numberOfChildren" json:"numberOfChildren"`
+// 	NumberOfInfants  int `bson:"numberOfInfants" json:"numberOfInfants"`
 
-	BestDepartureTime   string `bson:"bestDepartureTime" json:"bestDepartureTime"`     //morning - afternoon - evening
-	StopoverPreferences string `bson:"stopoverPreferences" json:"stopoverPreferences"` //shortest - cheapest - fastest
-	PreferredAirlines   string `bson:"preferredAirlines" json:"preferredAirlines"`
+// 	BestDepartureTime   string `bson:"bestDepartureTime" json:"bestDepartureTime"`     //morning - afternoon - evening
+// 	StopoverPreferences string `bson:"stopoverPreferences" json:"stopoverPreferences"` //shortest - cheapest - fastest
+// 	PreferredAirlines   string `bson:"preferredAirlines" json:"preferredAirlines"`
 
-	ExtraLuggage           bool   `bson:"extraLuggage" json:"extraLuggage"`
-	SpecialMeals           bool   `bson:"specialMeals" json:"specialMeals"`
-	PreferredContactMethod string `bson:"preferredContactMethod" json:"preferredContactMethod"`
-}
+// 	ExtraLuggage           bool   `bson:"extraLuggage" json:"extraLuggage"`
+// 	SpecialMeals           bool   `bson:"specialMeals" json:"specialMeals"`
+// 	PreferredContactMethod string `bson:"preferredContactMethod" json:"preferredContactMethod"`
+// 	SpecialRequirements    string `bson:"specialRequirements" json:"specialRequirements"`
+// }
 
 // partner request
 type PartnerRequest struct {
@@ -177,22 +167,3 @@ type ContactDetail struct {
 }
 
 //
-
-// type BasicInfo struct {
-// 	Title       string             `bson:"title" json:"title"`
-// 	ServiceType string             `bson:"serviceType" json:"serviceType"`
-// 	TravelReqId primitive.ObjectID `bson:"travelReqId,omitempty" json:"travelReqId,omitempty"`
-// 	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
-// 	Status      string             `bson:"status" json:"status"`
-// 	Package     primitive.ObjectID `bson:"package" json:"package"`
-// 	ProgramType string             `bson:"programType" json:"programType"` // general - custom
-// 	//
-// 	Source      string    `bson:"source" json:"source"`
-// 	Company     string    `bson:"company" json:"company"`         // todo: maybe we need id here
-// 	Coordinator string    `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
-// 	Purpose     string    `bson:"purpose" json:"purpose"`
-// 	StartDate   time.Time `bson:"startDate" json:"startDate"`
-// 	EndDate     time.Time `bson:"endDate" json:"endDate"`
-// 	GroupSize   string    `bson:"groupSize" json:"groupSize"` //see group size values above
-
-// }
