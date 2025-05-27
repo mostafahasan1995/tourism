@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+	"fmt"
 	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
@@ -9,7 +10,7 @@ import (
 
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
+	"git.larsa.io/mahdawi/microservices-commons/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -143,7 +144,6 @@ func (l *contactUsrepo) Update(ctx context.Context, id primitive.ObjectID, data 
 			HowDidYouFindUs: data.HowDidYouFindUs,
 			Message:         data.Message,
 		},
-		
 
 		Id:        id,
 		Trash:     false,
@@ -212,6 +212,29 @@ func (l *contactUsrepo) Delete(ctx context.Context, id string) error {
 	if result.Err() != nil {
 		return result.Err()
 	}
+
+	return nil
+}
+
+func (l *contactUsrepo) Add(ctx context.Context, data *models.ContactUs, opts ...*options.InsertOneOptions) error {
+	fmt.Printf("Starting repo Add method with data: %+v\n", data)
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		fmt.Printf("Error getting config in repo: %v\n", err)
+		return err
+	}
+	fmt.Printf("Got config with DB in repo: %s\n", cfg.Db)
+
+	coll := l.db.Database(cfg.Db).Collection(l.collName)
+	fmt.Printf("Using collection: %s\n", l.collName)
+
+	result, err := coll.InsertOne(ctx, data, opts...)
+	if err != nil {
+		fmt.Printf("Error inserting document: %v\n", err)
+		return err
+	}
+	fmt.Printf("Successfully inserted document with ID: %v\n", result.InsertedID)
 
 	return nil
 }

@@ -3,6 +3,7 @@ package home
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
@@ -51,10 +52,14 @@ func (l *contactUssvcs) GetAll(ctx context.Context, filter filter.ContactUsFilte
 }
 
 func (l *contactUssvcs) Add(ctx context.Context, data *models.ContactUsDto) error {
+	fmt.Printf("Starting Add method with data: %+v\n", data)
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
+		fmt.Printf("Error getting config: %v\n", err)
 		return err
 	}
+	fmt.Printf("Got config with DB: %s\n", cfg.Db)
+
 	contactUs := &models.ContactUs{
 		ContactUsDto: models.ContactUsDto{
 			FullName:        data.FullName,
@@ -71,13 +76,17 @@ func (l *contactUssvcs) Add(ctx context.Context, data *models.ContactUsDto) erro
 		UpdatedAt: time.Now(),
 		UpdatedBy: cfg.User.Id,
 	}
+	fmt.Printf("Created contact us object: %+v\n", contactUs)
+
 	if err := l.repo.Add(ctx, contactUs); err != nil {
+		fmt.Printf("Error adding to repo: %v\n", err)
 		return err
 	}
 
+	fmt.Println("Successfully added contact form submission")
 	return nil
-
 }
+
 func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
