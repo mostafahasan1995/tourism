@@ -10,8 +10,8 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons/common"
-	//"git.larsa.io/mahdawi/microservices-commons.git/common"
+	//"git.larsa.io/mahdawi/microservices-commons/common"
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -24,6 +24,7 @@ type ContactUsSvcs interface {
 	Add(ctx context.Context, data *models.ContactUsDto) error
 	AddMany(ctx context.Context, data []models.ContactUsDto) error
 	Update(ctx context.Context, id string, data *models.ContactUsDto) error
+	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
 }
 
@@ -62,7 +63,10 @@ func (l *contactUssvcs) GetAll(ctx context.Context, filter filter.ContactUsFilte
 	}
 	size := filter.Size
 	if size <= 0 {
-		size = int(totalCount) // return all if invalid
+		size = 10 // Default page size
+	}
+	if size > 100 {
+		size = 100 // Maximum page size limit
 	}
 	skip := int64((page - 1) * size)
 	limit := int64(size)
@@ -70,6 +74,7 @@ func (l *contactUssvcs) GetAll(ctx context.Context, filter filter.ContactUsFilte
 	// Create aggregation pipeline for pagination
 	pipeline := []bson.M{
 		{"$match": filterBody},
+		{"$sort": bson.M{"createdAt": -1}}, // Sort by creation date, newest first
 		{"$skip": skip},
 		{"$limit": limit},
 	}
@@ -83,15 +88,15 @@ func (l *contactUssvcs) GetAll(ctx context.Context, filter filter.ContactUsFilte
 	}
 
 	// Prepare pagination result
-	totalPages := float64(0)
+	totalPages := int64(0)
 	if size > 0 {
-		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
+		totalPages = (totalCount + int64(size) - 1) / int64(size)
 	}
 
 	result := models.ContactUsPagination{
 		ContactUs: programs,
 		Pagination: common.Pagination{
-			TotalPages: totalPages,
+			TotalPages: float64(totalPages),
 			PerPage:    int64(size),
 			TotalCount: totalCount,
 		},
@@ -211,6 +216,63 @@ func (a *contactUssvcs) Update(ctx context.Context, id string, data *models.Cont
 
 	filter := bson.M{"_id": _id}
 	update := bson.M{"$set": contactUs}
+
+	_, err = a.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *contactUssvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return helpers.InvalidObjectId()
+	}
+
+	// Handle case where user is not authenticated (public endpoint)
+	var userId primitive.ObjectID
+	if cfg.User != nil {
+		userId = cfg.User.Id
+	} else {
+		userId = primitive.NilObjectID // Use nil ObjectID for anonymous users
+	}
+
+	// Build the update document with only the fields that are being updated
+	updateDoc := bson.M{
+		"updatedAt": time.Now(),
+		"updatedBy": userId,
+	}
+
+	// Add the specific fields to update
+	for key, value := range updates {
+		switch key {
+		case "status":
+			updateDoc["status"] = value
+		case "fullName":
+			updateDoc["fullName"] = value
+		case "emailAddress":
+			updateDoc["emailAddress"] = value
+		case "phoneNumber":
+			updateDoc["phoneNumber"] = value
+		case "howDidYouFindUs":
+			updateDoc["howDidYouFindUs"] = value
+		case "message":
+			updateDoc["message"] = value
+		default:
+			// Handle additional fields
+			updateDoc["additionalFields."+key] = value
+		}
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": updateDoc}
 
 	_, err = a.repo.Patch(ctx, filter, update)
 	if err != nil {
