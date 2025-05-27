@@ -95,7 +95,7 @@ type TravelRequestDto struct {
 	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty"`
 	PartnerRequest      *PartnerRequest      `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty"`
 	//
-	Destination     *Destination       `bson:"destination,omitempty" json:"destination,omitempty"`
+	Destination     []Destination      `bson:"destination,omitempty" json:"destination,omitempty"`
 	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"`
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`

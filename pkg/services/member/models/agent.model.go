@@ -1,5 +1,76 @@
 package models
 
+/*
+Example JSON structure for Agent:
+{
+    "_id": "507f1f77bcf86cd799439011",
+    "agentId": "AGT123456",
+    "name": "John Smith",
+    "nationality": "United States",
+    "languages": ["English", "Spanish", "French"],
+    "company": "Global Travel Agency",
+    "companyLogo": {
+        "_id": "507f1f77bcf86cd799439013",
+        "originalName": "company-logo.png",
+        "path": "/uploads/company-logo.png",
+        "service": "file-service",
+        "expire": "2024-12-31T23:59:59Z",
+        "variants": ["thumbnail", "medium", "large"]
+    },
+    "bio": "Experienced travel agent with 10 years in the industry",
+    "image": [
+        {
+            "_id": "507f1f77bcf86cd799439014",
+            "originalName": "profile1.jpg",
+            "path": "/uploads/profile1.jpg",
+            "service": "file-service",
+            "expire": "2024-12-31T23:59:59Z",
+            "variants": ["thumbnail", "medium", "large"]
+        }
+    ],
+    "countries": ["USA", "France", "Italy", "Spain"],
+    "contact": {
+        "email": "john.smith@example.com",
+        "phone": "+1234567890",
+        "address": "123 Travel Street, New York, USA"
+    },
+    "security": {
+        "password": "hashedPassword123",
+        "role": "agent"
+    },
+    "financial": {
+        "stays": {
+            "active": true,
+            "cost": 150.50
+        },
+        "tourismPrograms": {
+            "active": true,
+            "cost": 200.75
+        },
+        "vipCars": {
+            "active": false,
+            "cost": 0
+        },
+        "businessManTrip": {
+            "active": true,
+            "cost": 300.25
+        },
+        "delegation": {
+            "active": true,
+            "cost": 250.00
+        }
+    },
+    "status": "active",
+    "isJoinReq": false,
+    "joinStatus": "converted",
+    "trash": false,
+    "createdAt": "2024-03-20T10:00:00Z",
+    "createdBy": "507f1f77bcf86cd799439012",
+    "updatedAt": "2024-03-20T10:00:00Z",
+    "updatedBy": "507f1f77bcf86cd799439012"
+}
+*/
+
 import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"

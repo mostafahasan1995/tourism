@@ -178,21 +178,21 @@ type ContactDetail struct {
 
 //
 
-type BasicInfo struct {
-	Title       string             `bson:"title" json:"title"`
-	ServiceType string             `bson:"serviceType" json:"serviceType"`
-	TravelReqId primitive.ObjectID `bson:"travelReqId,omitempty" json:"travelReqId,omitempty"`
-	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
-	Status      string             `bson:"status" json:"status"`
-	Package     primitive.ObjectID `bson:"package" json:"package"`
-	ProgramType string             `bson:"programType" json:"programType"` // general - custom
-	//
-	Source      string    `bson:"source" json:"source"`
-	Company     string    `bson:"company" json:"company"`         // todo: maybe we need id here
-	Coordinator string    `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
-	Purpose     string    `bson:"purpose" json:"purpose"`
-	StartDate   time.Time `bson:"startDate" json:"startDate"`
-	EndDate     time.Time `bson:"endDate" json:"endDate"`
-	GroupSize   string    `bson:"groupSize" json:"groupSize"` //see group size values above
+// type BasicInfo struct {
+// 	Title       string             `bson:"title" json:"title"`
+// 	ServiceType string             `bson:"serviceType" json:"serviceType"`
+// 	TravelReqId primitive.ObjectID `bson:"travelReqId,omitempty" json:"travelReqId,omitempty"`
+// 	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
+// 	Status      string             `bson:"status" json:"status"`
+// 	Package     primitive.ObjectID `bson:"package" json:"package"`
+// 	ProgramType string             `bson:"programType" json:"programType"` // general - custom
+// 	//
+// 	Source      string    `bson:"source" json:"source"`
+// 	Company     string    `bson:"company" json:"company"`         // todo: maybe we need id here
+// 	Coordinator string    `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
+// 	Purpose     string    `bson:"purpose" json:"purpose"`
+// 	StartDate   time.Time `bson:"startDate" json:"startDate"`
+// 	EndDate     time.Time `bson:"endDate" json:"endDate"`
+// 	GroupSize   string    `bson:"groupSize" json:"groupSize"` //see group size values above
 
-}
+// }
