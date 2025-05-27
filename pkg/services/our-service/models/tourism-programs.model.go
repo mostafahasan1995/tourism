@@ -9,6 +9,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// deprecated
 type TourismProgramDto struct {
 	Name        string   `bson:"name" json:"name"`
 	Destination string   `bson:"destination" json:"destination"`

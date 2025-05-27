@@ -1,5 +1,41 @@
 package models
 
+/*
+Example JSON structure for ClientStory:
+{
+    "_id": "507f1f77bcf86cd799439011",
+    "title": "Amazing Trip to Paris",
+    "country": "France",
+    "city": "Paris",
+    "description": "Our unforgettable journey through the City of Light",
+    "coverImage": [
+        {
+            "_id": "507f1f77bcf86cd799439012",
+            "originalName": "paris-cover.jpg",
+            "path": "/uploads/paris-cover.jpg",
+            "service": "file-service",
+            "expire": "2024-12-31T23:59:59Z",
+            "variants": ["thumbnail", "medium", "large"]
+        }
+    ],
+    "videos": [
+        {
+            "_id": "507f1f77bcf86cd799439013",
+            "originalName": "paris-tour.mp4",
+            "path": "/uploads/paris-tour.mp4",
+            "service": "file-service",
+            "expire": "2024-12-31T23:59:59Z",
+            "variants": ["preview", "full"]
+        }
+    ],
+    "trash": false,
+    "created_at": "2024-03-20T10:00:00Z",
+    "created_by": "507f1f77bcf86cd799439014",
+    "updated_at": "2024-03-20T10:00:00Z",
+    "updated_by": "507f1f77bcf86cd799439014"
+}
+*/
+
 import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"

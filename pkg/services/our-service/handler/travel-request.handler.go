@@ -1,0 +1,77 @@
+package handler
+
+import (
+	"encoding/json"
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/middleware"
+	ourservice "larsa-tourism-microservices/pkg/services/our-service"
+	"larsa-tourism-microservices/pkg/services/our-service/models"
+	"larsa-tourism-microservices/pkg/util"
+	"net/http"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/samber/do"
+)
+
+type TravelRequestHandler struct {
+	travelreqsvcs ourservice.TravelRequestSvcs
+}
+
+func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
+	h := &TravelRequestHandler{
+		travelreqsvcs: do.MustInvoke[ourservice.TravelRequestSvcs](i),
+	}
+
+	r.Route("/travel-requests", func(r chi.Router) {
+		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.Get("/", helpers.Make(h.Get))
+		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+	})
+}
+
+func (h *TravelRequestHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id")
+
+	result, err := h.travelreqsvcs.GetOne(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) Get(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.travelreqsvcs.Get(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) Add(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.TravelRequestDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelreqsvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}

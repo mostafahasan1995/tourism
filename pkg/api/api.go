@@ -11,7 +11,6 @@ import (
 	home "larsa-tourism-microservices/pkg/services/home/di"
 	messaging "larsa-tourism-microservices/pkg/services/messaging/di"
 	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
-	travelreq "larsa-tourism-microservices/pkg/services/travel-req/di"
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
@@ -97,7 +96,9 @@ func Start() error {
 	picklist.Init(injector, r)
 	interactions.Init(injector, r)
 	member.Init(injector, r)
-	travelreq.Init(injector, r)
+
+	//deprecated
+	//travelreq.Init(injector, r)
 
 	fmt.Println("start server")
 

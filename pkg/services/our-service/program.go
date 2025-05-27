@@ -17,47 +17,39 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type PackageSvcs interface {
-	Get(ctx context.Context, skip, limit int64, query string) (*models.PackageWithPagination, error)
-	GetAll(ctx context.Context) ([]models.Package, error)
-	Add(ctx context.Context, data *models.PackageDto) (*models.Package, error)
-	Update(ctx context.Context, pkgId string, data *models.PackageDto) (*models.Package, error)
-	Delete(ctx context.Context, pkgId string) error
+type ProgramSvcs interface {
+	GetOne(ctx context.Context, id string) (*models.Program, error)
+	Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
+	Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error)
+	Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error)
+	Delete(ctx context.Context, id string) error
 }
 
-type packagesvcs struct {
-	repo repo.PackageRepo
+type programsvcs struct {
+	repo repo.ProgramRepo
 }
 
-func NewPackageSvcs(i *do.Injector) (PackageSvcs, error) {
-	return &packagesvcs{
-		repo: do.MustInvoke[repo.PackageRepo](i),
+func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
+	return &programsvcs{
+		repo: do.MustInvoke[repo.ProgramRepo](i),
 	}, nil
 }
 
-func (p *packagesvcs) GetAll(ctx context.Context) ([]models.Package, error) {
+//
 
-	pipeline := []bson.M{
-		{"$match": bson.M{"trash": false}},
-	}
-
-	var result []models.Package
-	err := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		return cur.All(ctx, &result)
-	})
-
+func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.Program, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return result, nil
+	return p.repo.GetByFilter(ctx, bson.M{"_id": _id})
 }
 
-func (p *packagesvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.PackageWithPagination, error) {
-
+func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error) {
 	match := bson.M{"trash": false}
 
-	filters, err := filter.NewPackageFilter(query)
+	filters, err := filter.NewProgramFilter(query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}
@@ -76,7 +68,7 @@ func (p *packagesvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Package
+	var result []models.Program
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -91,68 +83,67 @@ func (p *packagesvcs) Get(ctx context.Context, skip, limit int64, query string) 
 		TotalCount: count,
 	}
 
-	return &models.PackageWithPagination{
-		Packages:   result,
+	return &models.ProgramPagination{
+		Programs:   result,
 		Pagination: pagination,
 	}, nil
 }
 
-func (p *packagesvcs) Add(ctx context.Context, data *models.PackageDto) (*models.Package, error) {
+func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	pkg := &models.Package{
+	program := &models.Program{
 		Id:         primitive.NewObjectID(),
-		PackageDto: *data,
+		ProgramDto: *data,
 		CreatedAt:  time.Now(),
 		CreatedBy:  cfg.User.Id,
 	}
 
-	if err := p.repo.Add(ctx, pkg); err != nil {
+	if err := p.repo.Add(ctx, program); err != nil {
 		return nil, err
 	}
 
-	return pkg, nil
+	return program, nil
 }
 
-func (p *packagesvcs) Update(ctx context.Context, pkgId string, data *models.PackageDto) (*models.Package, error) {
+func (p *programsvcs) Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	_id, err := primitive.ObjectIDFromHex(pkgId)
+	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	pkg := &models.Package{
+	program := &models.Program{
 		Id:         _id,
-		PackageDto: *data,
+		ProgramDto: *data,
 		UpdatedAt:  time.Now(),
 		UpdatedBy:  cfg.User.Id,
 	}
 
 	filter := bson.M{"_id": _id}
-	update := bson.M{"$set": pkg}
+	update := bson.M{"$set": program}
 
-	updatedPackage, err := p.repo.Patch(ctx, filter, update)
+	updatedProgram, err := p.repo.Patch(ctx, filter, update)
 	if err != nil {
 		return nil, err
 	}
 
-	return updatedPackage, nil
+	return updatedProgram, nil
 }
 
-func (p *packagesvcs) Delete(ctx context.Context, pkgId string) error {
+func (p *programsvcs) Delete(ctx context.Context, id string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
 	}
-
-	_id, err := primitive.ObjectIDFromHex(pkgId)
+	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
