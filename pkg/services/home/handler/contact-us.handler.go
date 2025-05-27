@@ -19,6 +19,67 @@ type ContactUsHandler struct {
 	contactUssvcs home.ContactUsSvcs
 }
 
+// parseContactUsData parses raw JSON data into ContactUsDto with flexible field handling
+func (l *ContactUsHandler) parseContactUsData(rawData map[string]interface{}) models.ContactUsDto {
+	data := models.ContactUsDto{
+		AdditionalFields: make(map[string]interface{}),
+	}
+
+	// Extract known fields
+	if val, ok := rawData["fullName"]; ok {
+		if str, ok := val.(string); ok {
+			data.FullName = str
+		}
+	}
+	if val, ok := rawData["emailAddress"]; ok {
+		if str, ok := val.(string); ok {
+			data.EmailAddress = str
+		}
+	}
+	if val, ok := rawData["phoneNumber"]; ok {
+		if str, ok := val.(string); ok {
+			data.PhoneNumber = str
+		}
+	}
+	if val, ok := rawData["howDidYouFindUs"]; ok {
+		if str, ok := val.(string); ok {
+			data.HowDidYouFindUs = str
+		}
+	}
+	if val, ok := rawData["message"]; ok {
+		if str, ok := val.(string); ok {
+			data.Message = str
+		}
+	}
+
+	// Handle additionalFields if provided as a nested object
+	if val, ok := rawData["additionalFields"]; ok {
+		if additionalMap, ok := val.(map[string]interface{}); ok {
+			for k, v := range additionalMap {
+				data.AdditionalFields[k] = v
+			}
+		}
+	}
+
+	// Move any unknown fields to additionalFields
+	knownFields := map[string]bool{
+		"fullName":         true,
+		"emailAddress":     true,
+		"phoneNumber":      true,
+		"howDidYouFindUs":  true,
+		"message":          true,
+		"additionalFields": true,
+	}
+
+	for key, value := range rawData {
+		if !knownFields[key] {
+			data.AdditionalFields[key] = value
+		}
+	}
+
+	return data
+}
+
 func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
 	h := &ContactUsHandler{
 		contactUssvcs: do.MustInvoke[home.ContactUsSvcs](i),
@@ -29,9 +90,9 @@ func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 
 		r.Get("/", helpers.Make(h.GetAll))
-		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+		r.Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Post("/many", helpers.Make(h.AddMany))
-		
+
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -75,10 +136,14 @@ func (l *ContactUsHandler) GetAll(w http.ResponseWriter, r *http.Request) error 
 func (l *ContactUsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.ContactUsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	// First decode into a generic map to capture all fields
+	var rawData map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
 		return helpers.InvalidJSON()
 	}
+
+	// Parse the data using the helper function
+	data := l.parseContactUsData(rawData)
 
 	//and validations go here
 
@@ -86,8 +151,11 @@ func (l *ContactUsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+
+	response := map[string]string{
+		"message": "Contact form submitted successfully",
+	}
+	return helpers.WriteJson(w, http.StatusOK, response)
 }
 
 func (l *ContactUsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -105,10 +173,14 @@ func (l *ContactUsHandler) Delete(w http.ResponseWriter, r *http.Request) error 
 func (l *ContactUsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.ContactUsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	// First decode into a generic map to capture all fields
+	var rawData map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
 		return helpers.InvalidJSON()
 	}
+
+	// Parse the data using the helper function
+	data := l.parseContactUsData(rawData)
 
 	//and validations go here
 	id := chi.URLParam(r, "id")
