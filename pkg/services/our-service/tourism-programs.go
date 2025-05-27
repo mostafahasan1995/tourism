@@ -1,19 +1,20 @@
-package  ourService
+package ourservice
 
 import (
 	"context"
 	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
+	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// deprecated
 type TourismProgramSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.TourismProgram, error)
-	GetAll(ctx context.Context,filter filter.TourismProgramFilter) (models.TourismProgramPagination, error)
+	GetAll(ctx context.Context, filter filter.TourismProgramFilter) (models.TourismProgramPagination, error)
 	Add(ctx context.Context, data *models.TourismProgramDto) error
 	Update(ctx context.Context, id string, data *models.TourismProgramDto) error
 	Delete(ctx context.Context, id string) error
@@ -34,9 +35,9 @@ func (l *tourismProgramsvcs) GetOne(ctx context.Context, id string) (*models.Tou
 
 }
 
-func (l *tourismProgramsvcs) GetAll(ctx context.Context,filter filter.TourismProgramFilter) (models.TourismProgramPagination, error) {
+func (l *tourismProgramsvcs) GetAll(ctx context.Context, filter filter.TourismProgramFilter) (models.TourismProgramPagination, error) {
 
-	data, err := l.repo.GetAll(ctx,filter)
+	data, err := l.repo.GetAll(ctx, filter)
 	if err != nil {
 		return models.TourismProgramPagination{}, err
 	}
