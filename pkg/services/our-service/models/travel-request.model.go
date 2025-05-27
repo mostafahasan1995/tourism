@@ -7,83 +7,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Example JSON for TravelRequestDto:
-// {
-//   "clientName": "John Doe",
-//   "clientPhone": "+1234567890",
-//   "clientEmail": "john.doe@example.com",
-//   "serviceType": "delegation",
-//   "delegation": {
-//     "delegationType": "business",
-//     "organizationName": "Tech Corp",
-//     "nationality": "USA",
-//     "tripDuration": 5,
-//     "tripCoordinatorName": "Jane Smith"
-//   },
-//   "destination": {
-//     "destination": "507f1f77bcf86cd799439011",
-//     "tripDetails": {
-//       "startDate": "2024-03-01T00:00:00Z",
-//       "endDate": "2024-03-05T00:00:00Z",
-//       "days": 5
-//     },
-//     "accommodation": [
-//       {
-//         "city": "Dubai",
-//         "preferences": "5-star hotel",
-//         "specialRequests": ["Non-smoking room", "High floor"],
-//         "numOfRooms": 2,
-//         "bedType": "King",
-//         "numOfBeds": 2,
-//         "numOfBathrooms": 2,
-//         "privateMeetingRoom": true
-//       }
-//     ],
-//     "flightTickets": {
-//       "arrangeByUs": true,
-//       "tripType": "round-trip",
-//       "travelClass": "business",
-//       "numOfPassengers": 4,
-//       "departureDate": "2024-03-01T00:00:00Z",
-//       "returnDate": "2024-03-05T00:00:00Z",
-//       "flexibleTravelDates": "No",
-//       "preferredDepartureTime": "morning",
-//       "layoverPreferences": "short transit time",
-//       "preferredAirlines": "Emirates",
-//       "extraBaggage": true,
-//       "specialMeals": true,
-//       "travelWithPet": false,
-//       "anySpecialReq": "Vegetarian meals"
-//     },
-//     "transportation": {
-//       "trans": "private car",
-//       "driverLangs": ["English", "Arabic"]
-//     },
-//     "activities": ["Business meetings", "City tour"],
-//     "agenda": {
-//       "needAgenda": true,
-//       "items": ["Morning meetings", "Afternoon site visits"],
-//       "files": []
-//     },
-//     "services": {
-//       "tourGuide": true,
-//       "translator": true,
-//       "airportPickup": true,
-//       "tourAfterMeeting": true
-//     }
-//   },
-//   "tripCoordinator": "507f1f77bcf86cd799439012",
-//   "contactMethod": ["email", "phone"],
-//   "specialReq": "Need wheelchair assistance at airport"
-// }
-//
-// Note: This is an example for a delegation-type request. For other service types:
-// - For businessMan: include businessMan object instead of delegation
-// - For vipCar: include vipCar object with destinations
-// - For customPlan: include customPlan object
-// - For flightTicketRequest: include flightTicketRequest object
-// - For partnerRequest: include partnerRequest object
-
 type TravelRequestDto struct {
 	ClientInfo  `bson:",inline"`
 	ServiceType string `bson:"serviceType" json:"serviceType"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
@@ -100,6 +23,103 @@ type TravelRequestDto struct {
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
+
+/*
+Example JSON structure for TravelRequestDto:
+{
+    "clientName": "John Doe",
+    "clientPhone": "+1234567890",
+    "clientEmail": "john.doe@example.com",
+    "serviceType": "custom-plan",
+    "delegation": null,
+    "businessMan": null,
+    "vipCar": null,
+    "customPlan": {
+        "tripType": "luxury",
+        "nationality": "US",
+        "tripDuration": 7,
+        "tripCoordinator": "507f1f77bcf86cd799439011"
+    },
+    "flightTicketRequest": null,
+    "partnerRequest": null,
+    "destination": [
+        {
+            "destination": "507f1f77bcf86cd799439012",
+            "tripDetails": {
+                "startDate": "2024-06-01T00:00:00Z",
+                "endDate": "2024-06-07T00:00:00Z",
+                "days": 7
+            },
+            "accommodation": [
+                {
+                    "city": "Paris",
+                    "preferences": "Luxury hotel",
+                    "specialRequests": ["Ocean view", "King size bed"],
+                    "numOfRooms": 1,
+                    "bedType": "King",
+                    "numOfBeds": 1,
+                    "numOfBathrooms": 1,
+                    "privateMeetingRoom": false
+                }
+            ],
+            "flightTickets": {
+                "arrangeByUs": true,
+                "tripType": "round-trip",
+                "travelClass": "business",
+                "numOfPassengers": 2,
+                "departureDate": "2024-06-01T08:00:00Z",
+                "returnDate": "2024-06-07T16:00:00Z",
+                "flexibleTravelDates": "No",
+                "preferredDepartureTime": "morning",
+                "layoverPreferences": "direct flight preferred",
+                "preferredAirlines": "Emirates",
+                "extraBaggage": true,
+                "specialMeals": true,
+                "travelWithPet": false,
+                "anySpecialReq": "Window seats preferred",
+                "adults": 2,
+                "children": 0,
+                "infant": 0
+            },
+            "transportation": {
+                "trans": "Private car",
+                "driverLangs": ["English", "French"]
+            },
+            "activities": ["City tour", "Museum visits", "Fine dining"],
+            "agenda": {
+                "needAgenda": true,
+                "items": [
+                    "Morning city tour",
+                    "Afternoon museum visit",
+                    "Evening fine dining"
+                ],
+                "files": [
+                    {
+                        "_id": "507f1f77bcf86cd799439013",
+                        "originalName": "itinerary.pdf",
+                        "path": "/uploads/itinerary.pdf",
+                        "service": "file-service",
+                        "expire": "2024-12-31T23:59:59Z",
+                        "variants": []
+                    }
+                ]
+            },
+            "services": {
+                "tourGuide": true,
+                "translator": true,
+                "airportPickup": true,
+                "tourAfterMeeting": false,
+                "photography": true,
+                "airportMeetAndGreet": true,
+                "simCardAndInternet": true
+            }
+        }
+    ],
+    "tripCoordinator": "507f1f77bcf86cd799439014",
+    "contactMethod": ["email", "phone"],
+    "specialReq": "Vegetarian meals preferred"
+}
+*/
 
 type TravelRequest struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
