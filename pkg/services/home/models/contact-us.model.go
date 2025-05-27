@@ -23,8 +23,8 @@ type ContactUs struct {
 
 	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 
-	Trash bool `bson:"trash" json:"trash"`
-
+	Trash     bool               `bson:"trash" json:"trash"`
+	Status    string             `bson:"status" json:"status"`
 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`

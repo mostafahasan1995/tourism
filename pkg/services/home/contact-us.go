@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"git.larsa.io/mahdawi/microservices-commons/common"
+	//"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -117,6 +118,7 @@ func (l *contactUssvcs) Add(ctx context.Context, data *models.ContactUsDto) erro
 		ContactUsDto: *data, // This preserves AdditionalFields
 		Id:           primitive.NewObjectID(),
 		Trash:        false,
+		Status:       "pending",
 		CreatedAt:    time.Now(),
 		CreatedBy:    userId,
 		UpdatedAt:    time.Now(),
@@ -154,6 +156,7 @@ func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto)
 			ContactUsDto: flr, // This preserves AdditionalFields
 			Id:           primitive.NewObjectID(),
 			Trash:        false,
+			Status:       "pending",
 			CreatedAt:    time.Now(),
 			CreatedBy:    userId,
 			UpdatedAt:    time.Now(),
@@ -199,6 +202,7 @@ func (a *contactUssvcs) Update(ctx context.Context, id string, data *models.Cont
 		ContactUsDto: *data, // This preserves AdditionalFields
 		Id:           _id,
 		Trash:        false,
+		Status:       existing.Status, // Preserve existing status
 		CreatedAt:    existing.CreatedAt,
 		CreatedBy:    existing.CreatedBy,
 		UpdatedBy:    userId,
