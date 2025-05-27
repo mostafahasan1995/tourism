@@ -10,6 +10,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
@@ -94,7 +95,7 @@ func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/many", helpers.Make(h.AddMany))
 
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
-
+		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 
 	})
@@ -117,8 +118,11 @@ func (l *ContactUsHandler) GetOne(w http.ResponseWriter, r *http.Request) error 
 
 func (l *ContactUsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-	filterParam := r.URL.Query().Get("query")
+
 	var filter filter.ContactUsFilter
+
+	// Handle JSON query parameter (existing format)
+	filterParam := r.URL.Query().Get("query")
 	if filterParam != "" {
 		err := json.Unmarshal([]byte(filterParam), &filter)
 		if err != nil {
@@ -126,6 +130,28 @@ func (l *ContactUsHandler) GetAll(w http.ResponseWriter, r *http.Request) error 
 			return err
 		}
 	}
+
+	// Handle direct pagination parameters (new format)
+	pageParam := r.URL.Query().Get("page")
+	sizeParam := r.URL.Query().Get("size")
+	statusParam := r.URL.Query().Get("status")
+
+	if pageParam != "" {
+		if page, err := strconv.Atoi(pageParam); err == nil && page > 0 {
+			filter.Page = page
+		}
+	}
+
+	if sizeParam != "" {
+		if size, err := strconv.Atoi(sizeParam); err == nil && size > 0 {
+			filter.Size = size
+		}
+	}
+
+	if statusParam != "" {
+		filter.Status = statusParam
+	}
+
 	result, err := l.contactUssvcs.GetAll(ctx, filter)
 	if err != nil {
 		return err
@@ -190,6 +216,27 @@ func (l *ContactUsHandler) Update(w http.ResponseWriter, r *http.Request) error 
 	}
 	w.WriteHeader(http.StatusOK)
 	return nil
+}
+func (l *ContactUsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	// Decode the raw data for partial updates
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	//and validations go here
+	id := chi.URLParam(r, "id")
+	err := l.contactUssvcs.Patch(ctx, id, updates)
+	if err != nil {
+		return err
+	}
+
+	response := map[string]string{
+		"message": "Contact updated successfully",
+	}
+	return helpers.WriteJson(w, http.StatusOK, response)
 }
 
 func (l *ContactUsHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
