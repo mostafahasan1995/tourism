@@ -3,6 +3,7 @@ package ourservice
 import (
 	"context"
 	"errors"
+	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -26,12 +27,16 @@ type ProgramSvcs interface {
 }
 
 type programsvcs struct {
-	repo repo.ProgramRepo
+	repo          repo.ProgramRepo
+	travelreqsvcs TravelRequestSvcs
+	withtxn       *db.WithTxn
 }
 
 func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 	return &programsvcs{
-		repo: do.MustInvoke[repo.ProgramRepo](i),
+		repo:          do.MustInvoke[repo.ProgramRepo](i),
+		travelreqsvcs: do.MustInvoke[TravelRequestSvcs](i),
+		withtxn:       do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -89,24 +94,37 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	}, nil
 }
 
+// add general or custom program - update related travel request
 func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+	result, err := p.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		cfg, err := util.GetReqAppCfg(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		program := &models.Program{
+			Id:         primitive.NewObjectID(),
+			ProgramDto: *data,
+			CreatedAt:  time.Now(),
+			CreatedBy:  cfg.User.Id,
+		}
+
+		if program.TravelReqId != primitive.NilObjectID {
+
+		}
+
+		if err := p.repo.Add(ctx, program); err != nil {
+			return nil, err
+		}
+
+		return program, nil
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	program := &models.Program{
-		Id:         primitive.NewObjectID(),
-		ProgramDto: *data,
-		CreatedAt:  time.Now(),
-		CreatedBy:  cfg.User.Id,
-	}
-
-	if err := p.repo.Add(ctx, program); err != nil {
-		return nil, err
-	}
-
-	return program, nil
+	return result.(*models.Program), nil
 }
 
 func (p *programsvcs) Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error) {

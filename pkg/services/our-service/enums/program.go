@@ -10,6 +10,7 @@ const (
 	ServiceTypeVipCar         ServiceType = "vip-car"
 	ServiceTypeFlightRequest  ServiceType = "flight-request"
 	ServiceTypePartnerRequest ServiceType = "partner-request"
+	ServiceTypeHotelBooking   ServiceType = "hotel-booking"
 
 	// Travel Types
 	ServiceTypeRelaxation ServiceType = "relaxation" // رحلة استجمام

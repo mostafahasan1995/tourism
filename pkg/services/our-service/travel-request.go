@@ -24,6 +24,8 @@ type TravelRequestSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query string) (*models.TravelRequestPagination, error)
 	GetOne(ctx context.Context, id string) (*models.TravelRequest, error)
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
+	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
+	MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error)
 }
 
 type travelrequestsvcs struct {
@@ -127,4 +129,62 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 	}
 
 	return result.(*models.TravelRequest), nil
+}
+
+func (t *travelrequestsvcs) Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	request := &models.TravelRequest{
+		Id:               _id,
+		TravelRequestDto: *data,
+		UpdatedAt:        time.Now(),
+		UpdatedBy:        cfg.User.Id,
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": request}
+
+	updatedRequest, err := t.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedRequest, nil
+}
+
+func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	match := bson.M{"customerId": cfg.User.Id}
+
+	if status != "all" {
+		match["status"] = status
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+		{"$sort": bson.M{"_id": -1}},
+	}
+
+	var requests []models.TravelRequest
+	err = t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &requests)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return requests, nil
 }
