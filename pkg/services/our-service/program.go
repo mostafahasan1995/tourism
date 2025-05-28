@@ -110,7 +110,9 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 		}
 
 		if program.TravelReqId != primitive.NilObjectID {
-
+			if err := p.AssignProgramToTravelRequest(ctx, program); err != nil {
+				return nil, errors.New("error updating travel request, check if it is already assigned to a program")
+			}
 		}
 
 		if err := p.repo.Add(ctx, program); err != nil {
@@ -127,33 +129,131 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 	return result.(*models.Program), nil
 }
 
+func (p *programsvcs) AssignProgramToTravelRequest(ctx context.Context, program *models.Program) error {
+	filter := bson.M{
+		"_id": program.TravelReqId,
+		"$or": []bson.M{
+			{"program": primitive.NilObjectID},
+			{"program": bson.M{"$exists": false}},
+		},
+		"trash": false,
+	}
+	update := bson.M{"$set": bson.M{
+		"program":     program.Id,
+		"package":     program.Package,
+		"revisionNum": 1,
+	}}
+
+	if _, err := p.travelreqsvcs.Patch(ctx, filter, update); err != nil {
+		return errors.New("error updating travel request, check if it is already assigned to a program")
+	}
+
+	return nil
+}
+
+func (p *programsvcs) UnassignProgramFromTravelRequest(ctx context.Context, program *models.Program) error {
+	filter := bson.M{
+		"program": program.Id,
+	}
+	update := bson.M{"$set": bson.M{
+		"program":     primitive.NilObjectID,
+		"package":     primitive.NilObjectID,
+		"revisionNum": 0,
+	}}
+
+	_, err := p.travelreqsvcs.Patch(ctx, filter, update)
+
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return err
+	}
+
+	return nil
+}
+
+func (p *programsvcs) UpdateTravelRequestRevisionNum(ctx context.Context, program *models.Program) error {
+	filter := bson.M{
+		"_id": program.TravelReqId,
+	}
+	update := bson.M{"$inc": bson.M{
+		"revisionNum": 1,
+	}}
+
+	if _, err := p.travelreqsvcs.Patch(ctx, filter, update); err != nil {
+		return errors.New("error updating travel request")
+	}
+
+	return nil
+}
+
 func (p *programsvcs) Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+	result, err := p.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		cfg, err := util.GetReqAppCfg(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		_id, err := primitive.ObjectIDFromHex(id)
+		if err != nil {
+			return nil, err
+		}
+
+		program := &models.Program{
+			Id:         _id,
+			ProgramDto: *data,
+			UpdatedAt:  time.Now(),
+			UpdatedBy:  cfg.User.Id,
+		}
+
+		if program.TravelReqId == primitive.NilObjectID {
+			if err := p.UnassignProgramFromTravelRequest(ctx, program); err != nil {
+				return nil, err
+			}
+		} else {
+			currentProgram, err := p.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+			if err != nil {
+				return nil, errors.New("error fetching program")
+			}
+
+			if currentProgram.TravelReqId == primitive.NilObjectID {
+				if err := p.AssignProgramToTravelRequest(ctx, program); err != nil {
+					return nil, err
+				}
+			} else {
+				if currentProgram.TravelReqId == program.TravelReqId {
+					if err := p.UpdateTravelRequestRevisionNum(ctx, program); err != nil {
+						return nil, err
+					}
+				} else {
+
+					if err := p.UnassignProgramFromTravelRequest(ctx, program); err != nil {
+						return nil, err
+					}
+
+					if err := p.AssignProgramToTravelRequest(ctx, program); err != nil {
+						return nil, err
+					}
+				}
+			}
+
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": program}
+
+		updatedProgram, err := p.repo.Patch(ctx, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return updatedProgram, nil
+
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
-	program := &models.Program{
-		Id:         _id,
-		ProgramDto: *data,
-		UpdatedAt:  time.Now(),
-		UpdatedBy:  cfg.User.Id,
-	}
-
-	filter := bson.M{"_id": _id}
-	update := bson.M{"$set": program}
-
-	updatedProgram, err := p.repo.Patch(ctx, filter, update)
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedProgram, nil
+	return result.(*models.Program), nil
 }
 
 func (p *programsvcs) Delete(ctx context.Context, id string) error {

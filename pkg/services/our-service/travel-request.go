@@ -27,6 +27,9 @@ type TravelRequestSvcs interface {
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error)
+	UpdateStatus(ctx context.Context, id string, status string) (*models.TravelRequest, error)
+	Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error)
+	BulkWrite(ctx context.Context, writes []mongo.WriteModel) (*mongo.BulkWriteResult, error)
 }
 
 type travelrequestsvcs struct {
@@ -190,4 +193,42 @@ func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]mo
 	}
 
 	return requests, nil
+}
+
+func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, status string) (*models.TravelRequest, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := t.repo.GetByFilter(ctx, bson.M{"_id": id, "trash": false})
+	if err != nil {
+		return nil, errors.New("travel request not found")
+	}
+
+	if request.CustomerId != cfg.User.Id {
+		return nil, errors.New("unauthorized")
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{"status": status, "updatedAt": time.Now(), "updatedBy": cfg.User.Id}}
+
+	updatedRequest, err := t.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedRequest, nil
+}
+
+func (t *travelrequestsvcs) Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error) {
+	return t.repo.Patch(ctx, filter, update)
+}
+
+func (t *travelrequestsvcs) BulkWrite(ctx context.Context, writes []mongo.WriteModel) (*mongo.BulkWriteResult, error) {
+	return t.repo.BulkWrite(ctx, writes)
 }
