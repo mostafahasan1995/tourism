@@ -36,7 +36,7 @@ type CustomerSvcs interface {
 	Update(ctx context.Context, customerId string, data *models.CustomerDto) (*models.Customer, error)
 	Delete(ctx context.Context, customerId string) error
 	//
-	RegisterAsCustomer(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
+	RegisterAsCustomer(ctx context.Context, data *models.CustomerRegisterData) (*models.Customer, error)
 }
 
 type customerSvcs struct {
@@ -325,14 +325,25 @@ func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Cu
 	return _data.Id, nil
 }
 
-func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.CustomerDto) (*models.Customer, error) {
+func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.CustomerRegisterData) (*models.Customer, error) {
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		customer := &models.Customer{
-			CustomerDto: *data,
-			CreatedAt:   time.Now(),
+			CustomerDto: models.CustomerDto{
+				Name:        data.ClientName,
+				Nationality: data.Nationality,
+				ClientContact: models.MemberContact{
+					Mobile: data.ClientPhone,
+					Email:  data.ClientEmail,
+				},
+				Security: models.MemberSecurity{
+					Email:       data.ClientEmail,
+					NewPassword: data.Password,
+				},
+			},
+			CreatedAt: time.Now(),
 		}
 
-		if data.Security.NewPassword == "" {
+		if data.Password == "" {
 			return nil, errors.New("password is required")
 		}
 

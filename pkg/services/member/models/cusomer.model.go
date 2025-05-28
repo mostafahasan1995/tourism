@@ -41,3 +41,13 @@ type CustomerWithPagination struct {
 	Customers  []Customer       `bson:"customers" json:"customers"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
+
+//
+
+type CustomerRegisterData struct {
+	ClientName  string `bson:"clientName" json:"clientName"`
+	ClientPhone string `bson:"clientPhone" json:"clientPhone"`
+	ClientEmail string `bson:"clientEmail" json:"clientEmail"`
+	Nationality string `bson:"nationality" json:"nationality"`
+	Password    string `bson:"password" json:"password"`
+}

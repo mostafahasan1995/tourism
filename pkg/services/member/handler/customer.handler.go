@@ -82,7 +82,7 @@ func (h *CustomerHandler) Add(w http.ResponseWriter, r *http.Request) error {
 func (h *CustomerHandler) Register(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.CustomerDto
+	var data models.CustomerRegisterData
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return err
 	}
