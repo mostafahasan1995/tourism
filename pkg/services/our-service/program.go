@@ -172,7 +172,8 @@ func (p *programsvcs) UnassignProgramFromTravelRequest(ctx context.Context, prog
 
 func (p *programsvcs) UpdateTravelRequestRevisionNum(ctx context.Context, program *models.Program) error {
 	filter := bson.M{
-		"_id": program.TravelReqId,
+		"_id":     program.TravelReqId,
+		"program": program.Id,
 	}
 	update := bson.M{"$inc": bson.M{
 		"revisionNum": 1,

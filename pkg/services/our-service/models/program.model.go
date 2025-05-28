@@ -159,8 +159,8 @@ type Program struct {
 type ProgramDto struct {
 	Title       string             `bson:"title" json:"title" validate:"required"` // program title
 	ServiceType enums.ServiceType  `bson:"serviceType" json:"serviceType"`         // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
-	TravelReqId primitive.ObjectID `bson:"travelReqId,omitempty" json:"travelReqId,omitempty"`
-	CustomerId  primitive.ObjectID `bson:"customerId,omitempty" json:"customerId,omitempty"`
+	TravelReqId primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
+	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
 	Status      string             `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
 	Package     primitive.ObjectID `bson:"package" json:"package" validate:"required"`
 	ProgramType string             `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
