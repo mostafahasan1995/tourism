@@ -10,16 +10,19 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-playground/validator/v10"
 	"github.com/samber/do"
 )
 
 type TravelRequestHandler struct {
-	travelreqsvcs ourservice.TravelRequestSvcs
+	travelreqsvcs      ourservice.TravelRequestSvcs
+	validationInstance *validator.Validate
 }
 
 func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 	h := &TravelRequestHandler{
-		travelreqsvcs: do.MustInvoke[ourservice.TravelRequestSvcs](i),
+		travelreqsvcs:      do.MustInvoke[ourservice.TravelRequestSvcs](i),
+		validationInstance: do.MustInvoke[*validator.Validate](i),
 	}
 
 	r.Route("/travel-requests", func(r chi.Router) {
@@ -70,6 +73,10 @@ func (h *TravelRequestHandler) Add(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
 	result, err := h.travelreqsvcs.Add(ctx, &data)
 	if err != nil {
 		return err
@@ -85,6 +92,10 @@ func (h *TravelRequestHandler) Update(w http.ResponseWriter, r *http.Request) er
 
 	var data models.TravelRequestDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
 		return err
 	}
 

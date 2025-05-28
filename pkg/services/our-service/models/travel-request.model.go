@@ -1,10 +1,12 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -12,7 +14,7 @@ type TravelRequestDto struct {
 	//basic information
 	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
 	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
-	ClientEmail  string `bson:"clientEmail" json:"clientEmail" validate:"required, email"`
+	ClientEmail  string `bson:"clientEmail" json:"clientEmail" validate:"required"`
 	Nationality  string `bson:"nationality" json:"nationality" `
 	TripDuration int    `bson:"tripDuration" json:"tripDuration" validate:"required"`
 	//
@@ -30,17 +32,22 @@ type TravelRequestDto struct {
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
+
+func (t *TravelRequestDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, t)
+}
+
 type TravelRequest struct {
 	Id               primitive.ObjectID    `bson:"_id,omitempty" json:"_id,omitempty"`
-	ReqId            string                `bson:"reqId" json:"reqId"`
-	Package          primitive.ObjectID    `bson:"package" json:"package"`
-	Program          primitive.ObjectID    `bson:"program" json:"program"`
-	Date             time.Time             `bson:"date" json:"date"`
-	CustomerId       primitive.ObjectID    `bson:"customerId" json:"customerId"` //same as user id
-	Status           enums.TravelReqStatus `bson:"status" json:"status"`
+	ReqId            string                `bson:"reqId,omitempty" json:"reqId,omitempty"`
+	Package          primitive.ObjectID    `bson:"package,omitempty" json:"package,omitempty"`
+	Program          primitive.ObjectID    `bson:"program,omitempty" json:"program,omitempty"`
+	Date             time.Time             `bson:"date,omitempty" json:"date,omitempty"`
+	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
+	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
 	TravelRequestDto `bson:",inline"`
-	RevisionNum      int                `bson:"revsionNum" json:"revisionNum"`
-	Trash            bool               `bson:"trash" json:"trash"`
+	RevisionNum      int                `bson:"revsionNum,omitempty" json:"revisionNum,omitempty"`
+	Trash            bool               `bson:"trash,omitempty" json:"trash,omitempty"`
 	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy        primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	UpdatedAt        time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`

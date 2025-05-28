@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -113,8 +114,10 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 			ReqId:            reqId,
 			TravelRequestDto: *data,
 			Date:             time.Now(),
-			Status:           "pending",
+			Status:           enums.TravelReqStatusPending,
 			CustomerId:       cfg.User.Id,
+			CreatedAt:        time.Now(),
+			CreatedBy:        cfg.User.Id,
 		}
 
 		if err := t.repo.Add(ctx, request); err != nil {
