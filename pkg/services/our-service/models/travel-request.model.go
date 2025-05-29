@@ -46,7 +46,7 @@ type TravelRequest struct {
 	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
 	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
 	TravelRequestDto `bson:",inline"`
-	RevisionNum      int                `bson:"revsionNum,omitempty" json:"revisionNum,omitempty"`
+	RevisionNum      int                `bson:"revisionNum,omitempty" json:"revisionNum,omitempty"`
 	Trash            bool               `bson:"trash" json:"trash"`
 	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy        primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
