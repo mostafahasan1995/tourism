@@ -1,4 +1,4 @@
-package invoice
+package ourservice
 
 import (
 	"context"
@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
-	"larsa-tourism-microservices/pkg/services/invoice/filters"
-	"larsa-tourism-microservices/pkg/services/invoice/models"
-	"larsa-tourism-microservices/pkg/services/invoice/repo"
+	"larsa-tourism-microservices/pkg/services/our-service/filter"
+	"larsa-tourism-microservices/pkg/services/our-service/models"
+	"larsa-tourism-microservices/pkg/services/our-service/repo"
 	"larsa-tourism-microservices/pkg/types"
 	"math"
 	"time"
@@ -31,7 +31,7 @@ type invoiceSvcs struct {
 	withtxn     *db.WithTxn
 }
 
-func NewInvoiceRepo(i *do.Injector) (InvoiceSvcs, error) {
+func NewInvoiceSvcs(i *do.Injector) (InvoiceSvcs, error) {
 	return &invoiceSvcs{
 		repo:        do.MustInvoke[repo.InvoiceRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
@@ -44,6 +44,11 @@ func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models
 		invoice := &models.Invoice{
 			Id:         primitive.NewObjectID(),
 			InvoiceDto: *data,
+			Payments:   []models.Payment{},
+		}
+
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
 		}
 
 		seq, err := i.sortingsvcs.GetAndUpdateSourceSeq(ctx, "invoice")
@@ -80,7 +85,7 @@ func (i *invoiceSvcs) GetOne(ctx context.Context, id string) (*models.Invoice, e
 func (i *invoiceSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.InvoicePagination, error) {
 	match := bson.M{}
 
-	filters, err := filters.NewInvoiceFilter(query)
+	filters, err := filter.NewInvoiceFilter(query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}

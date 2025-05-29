@@ -42,6 +42,7 @@ type TravelRequest struct {
 	ReqId            string                `bson:"reqId,omitempty" json:"reqId,omitempty"`
 	Package          primitive.ObjectID    `bson:"package,omitempty" json:"package,omitempty"`
 	Program          primitive.ObjectID    `bson:"program,omitempty" json:"program,omitempty"`
+	InvoiceId        primitive.ObjectID    `bson:"invoiceId,omitempty" json:"invoiceId,omitempty"`
 	Date             time.Time             `bson:"date,omitempty" json:"date,omitempty"`
 	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
 	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
@@ -57,4 +58,20 @@ type TravelRequest struct {
 type TravelRequestPagination struct {
 	Requests   []TravelRequest  `json:"requests"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+// change status
+type ChangeStatusDto struct {
+	Status string `bson:"status" json:"status" validate:"required,oneof=pending approved rejected"`
+}
+
+func (c *ChangeStatusDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, c)
+}
+
+//
+
+type TravelRequestWithProgram struct {
+	TravelRequest `bson:",inline"`
+	Program       *Program `bson:"program,omitempty" json:"program,omitempty"`
 }

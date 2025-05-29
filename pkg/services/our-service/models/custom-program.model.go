@@ -38,6 +38,97 @@ type ProgramDestination struct {
 	Services        ProgramServices        `bson:"services" json:"services"`
 }
 
+func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, error) {
+	var services []InvoiceService
+
+	for _, ac := range pd.Accommodation {
+		service := InvoiceService{
+			Item:  ac.Preferences,
+			Price: ac.TotalStayCost,
+			Qty:   1,
+		}
+		services = append(services, service)
+	}
+
+	if pd.FlightTickets.TotalCost > 0 {
+		services = append(services, InvoiceService{
+			Item:  pd.FlightTickets.TripType,
+			Price: pd.FlightTickets.TotalCost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Transportation.TotalCost > 0 {
+		services = append(services, InvoiceService{
+			Item:  pd.Transportation.TransType,
+			Price: pd.Transportation.TotalCost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Activities.TotalCost > 0 {
+		services = append(services, InvoiceService{
+			Item:  "Activities",
+			Price: pd.Activities.TotalCost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.TourGuide.Active {
+		services = append(services, InvoiceService{
+			Item:  "Tour Guide",
+			Price: pd.Services.TourGuide.Cost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.Translator.Active {
+		services = append(services, InvoiceService{
+			Item:  "Translator",
+			Price: pd.Services.Translator.Cost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.AirportPickup.Active {
+		services = append(services, InvoiceService{
+			Item:  "Airport Pickup",
+			Price: pd.Services.AirportPickup.Cost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.TourAfterMeeting.Active {
+		services = append(services, InvoiceService{
+			Item:  "Tour After Meeting",
+			Price: pd.Services.TourAfterMeeting.Cost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.Photography.Active {
+		services = append(services, InvoiceService{
+			Item:  "Photography",
+			Price: pd.Services.Photography.Cost,
+		})
+	}
+
+	if pd.Services.AirportMeetAndGreet.Active {
+		services = append(services, InvoiceService{
+			Item:  "Airport Meet and Greet",
+			Price: pd.Services.AirportMeetAndGreet.Cost,
+		})
+	}
+
+	if pd.Services.SimCardAndInternet.Active {
+		services = append(services, InvoiceService{
+			Item:  "Sim Card and Internet",
+			Price: pd.Services.SimCardAndInternet.Cost,
+		})
+	}
+	return services, nil
+}
+
 type ProgramAccommodation struct {
 	Accommodation `bson:",inline"`
 	PricePerNight float64 `bson:"pricePerNight" json:"pricePerNight"`
@@ -72,4 +163,50 @@ type ProgramServices struct {
 	Photography         Service `bson:"photography" json:"photography"`
 	AirportMeetAndGreet Service `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
 	SimCardAndInternet  Service `bson:"simCardAndInternet" json:"simCardAndInternet"`
+}
+
+func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
+	var services []InvoiceService
+
+	for _, des := range cp.VipCar.Destinations {
+		service := InvoiceService{
+			Item:  des.TransType,
+			Price: des.TotalCost,
+			Qty:   1,
+		}
+		services = append(services, service)
+	}
+
+	for _, des := range cp.FlightTicketRequest.Destinations {
+		service := InvoiceService{
+			Item:  des.TripType,
+			Price: des.TotalCost,
+			Qty:   1,
+		}
+		services = append(services, service)
+	}
+
+	return services, nil
+}
+
+func (cp *CustomProgram) GetAllServicePricing() ([]InvoiceService, error) {
+
+	var services []InvoiceService
+
+	otherServices, err := cp.GetOtherServicePricing()
+	if err != nil {
+		return nil, err
+	}
+
+	services = append(services, otherServices...)
+
+	for _, des := range cp.Destinations {
+		destServices, err := des.GetProgramDestServicePricing()
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, destServices...)
+	}
+
+	return services, nil
 }

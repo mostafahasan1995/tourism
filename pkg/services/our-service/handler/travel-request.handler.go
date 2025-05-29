@@ -31,6 +31,7 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Get("/my-requests/{status}", helpers.Make(h.MyRequests))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
 	})
 }
 
@@ -113,6 +114,28 @@ func (h *TravelRequestHandler) MyRequests(w http.ResponseWriter, r *http.Request
 	status := chi.URLParam(r, "status")
 
 	result, err := h.travelreqsvcs.MyRequests(ctx, status)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id") // travel request id
+
+	var data models.ChangeStatusDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.travelreqsvcs.UpdateStatus(ctx, id, &data)
 	if err != nil {
 		return err
 	}

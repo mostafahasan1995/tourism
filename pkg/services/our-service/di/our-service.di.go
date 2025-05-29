@@ -16,6 +16,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, ourService.NewPackageSvcs)
 	do.Provide(i, ourService.NewTravelRequestSvcs)
 	do.Provide(i, ourService.NewProgramSvcs)
+	do.Provide(i, ourService.NewInvoiceSvcs)
 
 	//repos
 	do.Provide(i, repo.NewTourismProgramRepo)
@@ -23,6 +24,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewPackageRepo)
 	do.Provide(i, repo.NewTravelRequestRepo)
 	do.Provide(i, repo.NewProgramRepo)
+	do.Provide(i, repo.NewInvoiceRepo)
 
 	//handlers
 	handler.NewTourismProgramHandler(i, r)
@@ -30,6 +32,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	handler.NewPackageHandler(i, r)
 	handler.NewTravelRequestHandler(i, r)
 	handler.NewProgramHandler(i, r)
+	handler.NewInvoiceHandler(i, r)
 
 	return i
 }

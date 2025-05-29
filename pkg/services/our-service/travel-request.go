@@ -27,13 +27,14 @@ type TravelRequestSvcs interface {
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error)
-	UpdateStatus(ctx context.Context, id string, status string) (*models.TravelRequest, error)
+	UpdateStatus(ctx context.Context, id string, data *models.ChangeStatusDto) (*models.TravelRequest, error)
 	Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error)
 	BulkWrite(ctx context.Context, writes []mongo.WriteModel) (*mongo.BulkWriteResult, error)
 }
 
 type travelrequestsvcs struct {
 	repo        repo.TravelRequestRepo
+	invoicesvcs InvoiceSvcs
 	sortingsvcs dbsvcs.SortingSvcs
 	withtxn     *db.WithTxn
 }
@@ -41,6 +42,7 @@ type travelrequestsvcs struct {
 func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 	return &travelrequestsvcs{
 		repo:        do.MustInvoke[repo.TravelRequestRepo](i),
+		invoicesvcs: do.MustInvoke[InvoiceSvcs](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
@@ -195,34 +197,104 @@ func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]mo
 	return requests, nil
 }
 
-func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, status string) (*models.TravelRequest, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *models.ChangeStatusDto) (*models.TravelRequest, error) {
+	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		cfg, err := util.GetReqAppCfg(ctx)
+		if err != nil {
+			return nil, err
+		}
+		_id, err := primitive.ObjectIDFromHex(id) // travel request id
+		if err != nil {
+			return nil, err
+		}
+
+		pipeline := []bson.M{
+			{"$match": bson.M{"_id": _id}},
+			{"$lookup": bson.M{
+				"from":         "tourismPrograms",
+				"localField":   "program",
+				"foreignField": "_id",
+				"as":           "program",
+			}},
+			{"$unwind": bson.M{
+				"path":                       "$program",
+				"preserveNullAndEmptyArrays": true,
+			}},
+			{"$limit": 1},
+		}
+
+		var result []models.TravelRequestWithProgram
+		errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+			return cur.All(ctx, &result)
+		})
+
+		if errAg != nil || len(result) == 0 {
+			return nil, errors.New("error fetch travel request")
+		}
+
+		request := result[0]
+
+		if request.CustomerId != cfg.User.Id {
+			return nil, errors.New("unauthorized")
+		}
+
+		var invoiceId primitive.ObjectID
+
+		if data.Status == string(enums.TravelReqStatusApproved) {
+			program := request.Program
+
+			invoiceDto := &models.InvoiceDto{
+				DateOfIssue: time.Now(),
+				Customer:    models.InvoiceContact{},
+				Company:     models.InvoiceContact{},
+				ProgramName: program.Title,
+				TravelStart: program.StartDate,
+				TravelEnd:   program.EndDate,
+				Services:    []models.InvoiceService{},
+				Adjustments: []models.InvoiceAdjustment{},
+				Note:        "",
+			}
+
+			if program.ProgramType == "custom" {
+				svcss, err := program.CustomType.GetAllServicePricing()
+				if err != nil {
+					return nil, errors.New("error get program service list pricing")
+				}
+
+				invoiceDto.Services = svcss
+			}
+
+			invoice, err := t.invoicesvcs.Add(ctx, invoiceDto)
+			if err != nil {
+				return nil, errors.New("error add invoice")
+			}
+
+			invoiceId = invoice.Id
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": bson.M{
+			"status":    data.Status,
+			"invoiceId": invoiceId,
+			"updatedAt": time.Now(),
+			"updatedBy": cfg.User.Id,
+		}}
+
+		updatedRequest, err := t.repo.Patch(ctx, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return updatedRequest, nil
+
+	})
+
 	if err != nil {
 		return nil, err
 	}
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
 
-	request, err := t.repo.GetByFilter(ctx, bson.M{"_id": id, "trash": false})
-	if err != nil {
-		return nil, errors.New("travel request not found")
-	}
+	return result.(*models.TravelRequest), nil
 
-	if request.CustomerId != cfg.User.Id {
-		return nil, errors.New("unauthorized")
-	}
-
-	filter := bson.M{"_id": _id}
-	update := bson.M{"$set": bson.M{"status": status, "updatedAt": time.Now(), "updatedBy": cfg.User.Id}}
-
-	updatedRequest, err := t.repo.Patch(ctx, filter, update)
-	if err != nil {
-		return nil, err
-	}
-
-	return updatedRequest, nil
 }
 
 func (t *travelrequestsvcs) Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error) {
