@@ -3,7 +3,7 @@ package models
 import (
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons/common"
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 

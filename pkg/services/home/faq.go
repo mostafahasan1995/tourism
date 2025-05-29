@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons/common"
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
