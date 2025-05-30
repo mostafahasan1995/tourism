@@ -371,13 +371,49 @@ func (h *FaqHandler) GetAllGroups(w http.ResponseWriter, r *http.Request) error 
 	ctx, _ := util.AddCtxAppCfg(r)
 	groupFilter := parseGroupFilter(r)
 
+	// Check if faqPageId is provided in URL parameters
+	faqPageIdParam := chi.URLParam(r, "faqPageId")
+	includeQuestions := faqPageIdParam != ""
+
 	// If faqPageId is provided in URL parameters, use it to filter
-	if faqPageIdParam := chi.URLParam(r, "faqPageId"); faqPageIdParam != "" {
+	if faqPageIdParam != "" {
 		if faqPageId, err := primitive.ObjectIDFromHex(faqPageIdParam); err == nil {
 			groupFilter.FaqPageId = faqPageId
 		}
 	}
 
+	// If we need to include questions (when called from /faq-pages/{id}/groups route)
+	if includeQuestions {
+		// Get all groups first
+		result, err := h.faqGroupSvcs.GetAll(ctx, groupFilter)
+		if err != nil {
+			return err
+		}
+
+		// Convert each group to include questions
+		var groupsWithQuestions []models.FaqGroupWithQuestions
+		for _, group := range result.FaqGroups {
+			groupWithQuestions, err := h.faqGroupSvcs.GetWithQuestions(ctx, group.Id.Hex())
+			if err != nil {
+				// If error getting questions, include group without questions
+				groupsWithQuestions = append(groupsWithQuestions, models.FaqGroupWithQuestions{
+					FaqGroup:  group,
+					Questions: []models.FaqQuestion{},
+				})
+			} else {
+				groupsWithQuestions = append(groupsWithQuestions, *groupWithQuestions)
+			}
+		}
+
+		// Return groups with questions
+		response := map[string]interface{}{
+			"faqGroups":  groupsWithQuestions,
+			"pagination": result.Pagination,
+		}
+		return helpers.WriteJson(w, http.StatusOK, response)
+	}
+
+	// Default behavior - return groups without questions
 	result, err := h.faqGroupSvcs.GetAll(ctx, groupFilter)
 	if err != nil {
 		return err
@@ -594,6 +630,19 @@ func (h *FaqHandler) AddManyQuestions(w http.ResponseWriter, r *http.Request) er
 	var data []models.FaqQuestionDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
+	}
+
+	// Get faqGroupId from URL parameters if provided
+	faqGroupIdParam := chi.URLParam(r, "faqGroupId")
+	if faqGroupIdParam != "" {
+		faqGroupId, err := primitive.ObjectIDFromHex(faqGroupIdParam)
+		if err != nil {
+			return helpers.InvalidObjectId()
+		}
+
+		for i := range data {
+			data[i].FaqGroupId = &faqGroupId
+		}
 	}
 
 	err := h.faqQuestionSvcs.AddMany(ctx, data)
