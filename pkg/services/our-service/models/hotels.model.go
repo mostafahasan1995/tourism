@@ -5,7 +5,7 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commonsgit/common"
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
