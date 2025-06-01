@@ -36,6 +36,7 @@ type TravelRequestDto struct {
 }
 
 type BasicInfo struct {
+	ProgramTitle    string    `bson:"programTitle" json:"programTitle"`
 	ServiceType    string    `bson:"serviceType" json:"serviceType"`
 	Purpose        string    `bson:"purpose" json:"purpose"`
 	DelegationType string    `bson:"delegationType" json:"delegationType"`
