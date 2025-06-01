@@ -42,3 +42,39 @@ func Auth(restructions ...string) func(http.Handler) http.Handler {
 		})
 	}
 }
+
+// OptionalAuth tries to get user info but continues if no token is present
+func OptionalAuth() func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c := make(chan common.Credentials)
+
+			go common.Guard(c, common.ExtractHeaderParams(r), []string{"authenticate"})
+
+			credentials := <-c
+
+			// If there's an error (no token), continue without user context
+			if credentials.Err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			_user := credentials.User
+
+			userId, err := primitive.ObjectIDFromHex(_user.Id)
+			if err != nil {
+				// If user ID is invalid, continue without user context
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			user := &types.User{
+				Id:       userId,
+				UserData: _user,
+			}
+
+			ctx := util.SetReqUser(r.Context(), user)
+			next.ServeHTTP(w, r.WithContext(ctx))
+		})
+	}
+}

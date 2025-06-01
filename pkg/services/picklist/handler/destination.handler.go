@@ -3,7 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/middleware"
+
 	"larsa-tourism-microservices/pkg/services/picklist"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -23,11 +23,11 @@ func NewDestinationHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/destinations", func(r chi.Router) {
-		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOne))
-		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
-		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
-		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
-		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.Get("/all", helpers.Make(h.GetAll))
+		r.Post("/", helpers.Make(h.Add))
+		r.Put("/{id}", helpers.Make(h.Update))
+		r.Delete("/{id}", helpers.Make(h.Delete))
 	})
 }
 

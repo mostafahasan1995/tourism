@@ -119,18 +119,21 @@ type RoomCategory struct {
 }
 
 type Pricing struct {
-	NightlyRateBase     int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
-	NightlyRateBaseType string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
-
+	NightlyRateBase       int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	NightlyRateBaseType   string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
 	ExtraPersonCharge     int    `bson:"extraPersonCharge" json:"extraPersonCharge"`
 	ExtraPersonChargeType string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
 	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
+	ActivePricingType     string `bson:"activePricingType" json:"activePricingType"`
 }
 type SeasonPricing struct {
-	NightlyRateBase    int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
-	ExtraPersonCharge  int    `bson:"extraPersonCharge" json:"extraPersonCharge"`
-	IsIncludeBreakFast bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
-	SeasonName         string `bson:"seasonName" json:"seasonName"`
+	NightlyRateBase       int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
+	NightlyRateBaseType   string `bson:"nightlyRateBaseType" json:"nightlyRateBaseType"`
+	ExtraPersonCharge     int    `bson:"extraPersonCharge" json:"extraPersonCharge"`
+	ExtraPersonChargeType string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
+	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
+	SeasonName            string `bson:"seasonName" json:"seasonName"`
+	ActivePricingType     string `bson:"activePricingType" json:"activePricingType"`
 }
 type Advantages struct {
 	Text string          `bson:"text" json:"text"`
@@ -190,11 +193,12 @@ type AttractionsNearby struct {
 }
 
 type ReviewsAndRatingsPage struct {
-	StartingText  string             `bson:"startingText" json:"startingText"`
-	HotelReviews  []HotelReview      `bson:"hotelReviews" json:"hotelReviews"`
-	ActiveProgram primitive.ObjectID `bson:"activeProgram" json:"activeProgram"`
+	StartingText  string               `bson:"startingText" json:"startingText"`
+	HotelReviews  []HotelReviewDisplay `bson:"hotelReviews" json:"hotelReviews"`
+	ActiveProgram primitive.ObjectID   `bson:"activeProgram" json:"activeProgram"`
 }
-type HotelReview struct {
+
+type HotelReviewDisplay struct {
 	ReviewerImage types.FileField   `bson:"reviewerImage" json:"reviewerImage"`
 	ReviewerName  string            `bson:"reviewerName" json:"reviewerName"`
 	ReviewText    string            `bson:"reviewText" json:"reviewText"`
@@ -240,4 +244,37 @@ type HotelsPagination struct {
 type CheckInAndCheckOut struct {
 	From time.Time `bson:"from" json:"from"`
 	To   time.Time `bson:"to" json:"to"`
+}
+
+// HotelReview represents a review for a hotel
+type HotelReviewDto struct {
+	UserId      string             `bson:"userId" json:"userId"`
+	FirstName   string             `bson:"firstName" json:"firstName"`
+	LastName    string             `bson:"lastName" json:"lastName"`
+	Email       string             `bson:"email" json:"email"`
+	Description string             `bson:"description" json:"description" validate:"required"`
+	Value       float64            `bson:"value" json:"value" validate:"required,min=1,max=5"`
+	ProgramId   primitive.ObjectID `bson:"programId" json:"programId" validate:"required"`
+	Images      []types.FileField  `bson:"images" json:"images"`
+	Status      string             `bson:"status" json:"status"` // pending, approved, rejected
+	Date        time.Time          `bson:"date" json:"date"`
+}
+
+type HotelReview struct {
+	HotelReviewDto `bson:",inline"`
+	Id             primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	HotelId        primitive.ObjectID `bson:"hotelId" json:"hotelId"`
+	Trash          bool               `bson:"trash" json:"trash"`
+	CreatedAt      time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	UpdatedAt      time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+}
+
+type HotelReviewPagination struct {
+	Reviews    []HotelReview     `bson:"reviews" json:"reviews"`
+	Pagination common.Pagination `bson:"pagination" json:"pagination"`
+}
+
+// ReviewStatusDto for updating review status
+type ReviewStatusDto struct {
+	Status string `bson:"status" json:"status" validate:"required,oneof=pending approved rejected"`
 }
