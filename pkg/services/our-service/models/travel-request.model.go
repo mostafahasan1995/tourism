@@ -43,8 +43,8 @@ type BasicInfo struct {
 	Customer       string    `bson:"customer" json:"customer"`
 	Company        string    `bson:"company" json:"company"`
 	Coordinator    string    `bson:"coordinator" json:"coordinator"`
-	StartDate      time.Time `bson:"startDate" json:"startDate"`
-	EndDate        time.Time `bson:"endDate" json:"endDate"`
+	StartDate      *time.Time `bson:"startDate" json:"startDate"`
+	EndDate        *time.Time `bson:"endDate" json:"endDate"`
 	GroupSize      string    `bson:"groupSize" json:"groupSize"`
 }
 
