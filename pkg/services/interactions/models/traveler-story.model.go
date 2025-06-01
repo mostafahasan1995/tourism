@@ -31,10 +31,10 @@ type TravelerStory struct {
 	RejectReason     string             `bson:"rejectReason" json:"rejectReason"`
 	Feedback         string             `bson:"feedback" json:"feedback"`
 	Trash            bool               `bson:"trash" json:"trash"`
-	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
-	CreatedBy        primitive.ObjectID `bson:"created_by" json:"created_by"`
-	UpdatedAt        time.Time          `bson:"updated_at" json:"updated_at"`
-	UpdatedBy        primitive.ObjectID `bson:"updated_by" json:"updated_by"`
+	CreatedAt        time.Time          `bson:"created_at,omitempty" json:"created_at,omitempty"`
+	CreatedBy        primitive.ObjectID `bson:"created_by,omitempty" json:"created_by,omitempty"`
+	UpdatedAt        time.Time          `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
+	UpdatedBy        primitive.ObjectID `bson:"updated_by,omitempty" json:"updated_by,omitempty"`
 }
 
 type TravelerStoryWithPagination struct {
