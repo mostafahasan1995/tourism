@@ -7,13 +7,12 @@ import (
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
+	"larsa-tourism-microservices/pkg/services/picklist"
+	pModels "larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
-	"larsa-tourism-microservices/pkg/services/picklist"
-	pModels "larsa-tourism-microservices/pkg/services/picklist/models"
-	
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
@@ -30,20 +29,18 @@ type ProgramSvcs interface {
 }
 
 type programsvcs struct {
-	repo          repo.ProgramRepo
-	travelreqsvcs TravelRequestSvcs
-	withtxn       *db.WithTxn
-	activitiesSvcs          picklist.ActivitiesSvcs
-
+	repo           repo.ProgramRepo
+	travelreqsvcs  TravelRequestSvcs
+	withtxn        *db.WithTxn
+	activitiesSvcs picklist.ActivitiesSvcs
 }
 
 func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 	return &programsvcs{
-		repo:          do.MustInvoke[repo.ProgramRepo](i),
-		travelreqsvcs: do.MustInvoke[TravelRequestSvcs](i),
-		withtxn:       do.MustInvoke[*db.WithTxn](i),
-		activitiesSvcs:          do.MustInvoke[picklist.ActivitiesSvcs](i),
-
+		repo:           do.MustInvoke[repo.ProgramRepo](i),
+		travelreqsvcs:  do.MustInvoke[TravelRequestSvcs](i),
+		withtxn:        do.MustInvoke[*db.WithTxn](i),
+		activitiesSvcs: do.MustInvoke[picklist.ActivitiesSvcs](i),
 	}, nil
 }
 
@@ -108,28 +105,27 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 		if err != nil {
 			return nil, err
 		}
-		 // Check if this is a general program and has daily itinerary
-		 if data.ProgramType == "general" && data.GeneralType != nil {
-            // Loop through daily itinerary
-            for i, day := range data.GeneralType.DailyItinerary {
-                // Check if NewActions exists and has elements
-                if len(day.NewActions) > 0 {
-                    for _, actionName := range day.NewActions {
+		// Check if this is a general program and has daily itinerary
+		if data.ProgramType == "general" && data.GeneralType != nil {
+			// Loop through daily itinerary
+			for i, day := range data.GeneralType.DailyItinerary {
+				// Check if NewActions exists and has elements
+				if len(day.NewActions) > 0 {
+					for _, actionName := range day.NewActions {
 						newActivity := &pModels.ActivitiesDto{
-                            Name:        actionName,
-                            Description: "", // You can customize this
-                            // Add other fields as needed
-                        }
+							Name:        actionName,
+							Description: "", // You can customize this
+							// Add other fields as needed
+						}
 						createdActivity, err := p.activitiesSvcs.Add(ctx, newActivity)
-                        if err != nil {
-                            return nil, errors.New("failed to create new activity: " + err.Error())
-                        }
-						data.GeneralType.DailyItinerary[i].Actions = append(data.GeneralType.DailyItinerary[i].Actions,createdActivity.Id)
+						if err != nil {
+							return nil, errors.New("failed to create new activity: " + err.Error())
+						}
+						data.GeneralType.DailyItinerary[i].Actions = append(data.GeneralType.DailyItinerary[i].Actions, createdActivity.Id)
 					}
-                }
-            }
-        }
-
+				}
+			}
+		}
 
 		program := &models.Program{
 			Id:         primitive.NewObjectID(),
