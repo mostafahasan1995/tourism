@@ -220,6 +220,16 @@ func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *m
 				"path":                       "$program",
 				"preserveNullAndEmptyArrays": true,
 			}},
+			{"$lookup": bson.M{
+				"from":         "tourismCustomers",
+				"localField":   "customerId",
+				"foreignField": "_id",
+				"as":           "customer",
+			}},
+			{"$unwind": bson.M{
+				"path":                       "$customer",
+				"preserveNullAndEmptyArrays": true,
+			}},
 			{"$limit": 1},
 		}
 
@@ -242,11 +252,18 @@ func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *m
 
 		if data.Status == string(enums.TravelReqStatusApproved) {
 			program := request.Program
+			customer := request.Customer
 
 			invoiceDto := &models.InvoiceDto{
 				DateOfIssue: time.Now(),
 				TravelReqId: request.Id,
-				Customer:    models.InvoiceContact{},
+				Customer: models.InvoiceContact{
+					Name:    customer.Name,
+					Address: "",
+					Phone:   customer.ClientContact.Mobile,
+					Email:   customer.Security.Email,
+					Website: customer.ClientContact.Website,
+				},
 				Company:     models.InvoiceContact{},
 				ProgramName: program.Title,
 				TravelStart: program.StartDate,

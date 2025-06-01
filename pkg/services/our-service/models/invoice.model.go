@@ -43,17 +43,23 @@ type InvoiceService struct {
 }
 
 type Payment struct {
-	PaymentId  string `bson:"paymentId" json:"paymentId"`
+	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	PaymentId  string             `bson:"paymentId" json:"paymentId"`
 	PaymentDto `bson:",inline"`
+	CreatedAt  time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy  primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt  time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy  primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
 type PaymentDto struct {
-	Date   time.Time `bson:"date" json:"date"`
-	Method string    `bson:"method" json:"method"`
-	Amount float64   `bson:"amount" json:"amount"`
-	Unit   string    `bson:"unit" json:"unit"`
-	Status string    `bson:"status" json:"status"` //paid - unpaid
-	Note   string    `bson:"note" json:"note"`
+	Date    time.Time         `bson:"date" json:"date"`
+	Method  string            `bson:"method" json:"method"`
+	Amount  float64           `bson:"amount" json:"amount"`
+	Unit    string            `bson:"unit" json:"unit"`
+	Status  string            `bson:"status" json:"status"` //paid - unpaid
+	Note    string            `bson:"note" json:"note"`
+	Reciept []types.FileField `bson:"reciept" json:"reciept"`
 }
 
 type Invoice struct {

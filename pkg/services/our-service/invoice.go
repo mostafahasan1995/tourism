@@ -10,6 +10,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
 	"larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
 
@@ -23,6 +24,9 @@ type InvoiceSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Invoice, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.InvoicePagination, error)
 	Add(ctx context.Context, data *models.InvoiceDto) (*models.Invoice, error)
+	AddPayment(ctx context.Context, invoiceId string, data *models.PaymentDto) (*models.Invoice, error)
+	UpdatePayment(ctx context.Context, invoiceId, paymentId string, data *models.PaymentDto) (*models.Invoice, error)
+	DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error)
 }
 
 type invoiceSvcs struct {
@@ -123,4 +127,165 @@ func (i *invoiceSvcs) Get(ctx context.Context, skip, limit int64, query string) 
 		Invoices:   result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (i *invoiceSvcs) AddPayment(ctx context.Context, invoiceId string, data *models.PaymentDto) (*models.Invoice, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(invoiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id})
+		if err != nil {
+			return nil, errors.New("invoice not found")
+		}
+
+		payments := invoice.Payments
+
+		newPayment := models.Payment{
+			Id:         primitive.NewObjectID(),
+			PaymentDto: *data,
+			CreatedAt:  time.Now(),
+			CreatedBy:  cfg.User.Id,
+		}
+
+		payments = append(payments, newPayment)
+		invoice.Payments = payments
+
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": invoice}
+
+		updatedInvoice, err := i.repo.Patch(ctx, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return updatedInvoice, nil
+
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
+
+}
+
+func (i *invoiceSvcs) UpdatePayment(ctx context.Context, invoiceId, paymentId string, data *models.PaymentDto) (*models.Invoice, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(invoiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	pId, err := primitive.ObjectIDFromHex(paymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id})
+		if err != nil {
+			return nil, errors.New("invoice not found")
+		}
+
+		var found bool
+		var payments []models.Payment
+		for _, payment := range invoice.Payments {
+			if payment.Id == pId {
+				payment.PaymentDto = *data
+				payment.UpdatedAt = time.Now()
+				payment.UpdatedBy = cfg.User.Id
+				found = true
+			}
+			payments = append(payments, payment)
+		}
+
+		if !found {
+			return nil, errors.New("payment not found")
+		}
+
+		invoice.Payments = payments
+
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": invoice}
+
+		updatedInvoice, err := i.repo.Patch(ctx, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return updatedInvoice, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
+
+}
+
+func (i *invoiceSvcs) DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error) {
+	_id, err := primitive.ObjectIDFromHex(invoiceId)
+	if err != nil {
+		return nil, err
+	}
+
+	pId, err := primitive.ObjectIDFromHex(paymentId)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id})
+		if err != nil {
+			return nil, errors.New("invoice not found")
+		}
+
+		payments := util.SliceFilter(invoice.Payments, func(payment models.Payment) bool {
+			return payment.Id != pId
+		})
+
+		invoice.Payments = payments
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": invoice}
+
+		updatedInvoice, err := i.repo.Patch(ctx, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return updatedInvoice, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
+
 }

@@ -26,6 +26,9 @@ func NewInvoiceHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+		r.With(middleware.Auth("authenticate")).Post("/{id}/payments", helpers.Make(h.AddPayment))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/payments/{paymentId}", helpers.Make(h.UpdatePayment))
+		r.With(middleware.Auth("authenticate")).Delete("/{id}/payments/{paymentId}", helpers.Make(h.DeletePayment))
 	})
 }
 
@@ -69,6 +72,57 @@ func (h *InvoiceHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.invoicesvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *InvoiceHandler) AddPayment(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	invoiceId := chi.URLParam(r, "id")
+
+	var data models.PaymentDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.invoicesvcs.AddPayment(ctx, invoiceId, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *InvoiceHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	invoiceId := chi.URLParam(r, "id")
+	paymentId := chi.URLParam(r, "paymentId")
+
+	var data models.PaymentDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.invoicesvcs.UpdatePayment(ctx, invoiceId, paymentId, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *InvoiceHandler) DeletePayment(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	invoiceId := chi.URLParam(r, "id")
+	paymentId := chi.URLParam(r, "paymentId")
+
+	result, err := h.invoicesvcs.DeletePayment(ctx, invoiceId, paymentId)
 	if err != nil {
 		return err
 	}

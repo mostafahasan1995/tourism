@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
+	membermodels "larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
@@ -12,7 +13,7 @@ import (
 
 type TravelRequestDto struct {
 	//basic information
-	BasicInfo   BasicInfo `bson:"basicInfo" json:"basicInfo"`
+	//BasicInfo BasicInfo `bson:"basicInfo" json:"basicInfo"`
 
 	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
 	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
@@ -35,19 +36,19 @@ type TravelRequestDto struct {
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
 
-type BasicInfo struct {
-	ProgramTitle    string    `bson:"programTitle" json:"programTitle"`
-	ServiceType    string    `bson:"serviceType" json:"serviceType"`
-	Purpose        string    `bson:"purpose" json:"purpose"`
-	DelegationType string    `bson:"delegationType" json:"delegationType"`
-	Source         string    `bson:"source" json:"source"`
-	Customer       string    `bson:"customer" json:"customer"`
-	Company        string    `bson:"company" json:"company"`
-	Coordinator    string    `bson:"coordinator" json:"coordinator"`
-	StartDate      *time.Time `bson:"startDate" json:"startDate"`
-	EndDate        *time.Time `bson:"endDate" json:"endDate"`
-	GroupSize      string    `bson:"groupSize" json:"groupSize"`
-}
+// type BasicInfo struct {
+// 	ProgramTitle   string     `bson:"programTitle" json:"programTitle"`
+// 	ServiceType    string     `bson:"serviceType" json:"serviceType"`
+// 	Purpose        string     `bson:"purpose" json:"purpose"`
+// 	DelegationType string     `bson:"delegationType" json:"delegationType"`
+// 	Source         string     `bson:"source" json:"source"`
+// 	Customer       string     `bson:"customer" json:"customer"`
+// 	Company        string     `bson:"company" json:"company"`
+// 	Coordinator    string     `bson:"coordinator" json:"coordinator"`
+// 	StartDate      *time.Time `bson:"startDate" json:"startDate"`
+// 	EndDate        *time.Time `bson:"endDate" json:"endDate"`
+// 	GroupSize      string     `bson:"groupSize" json:"groupSize"`
+// }
 
 func (t *TravelRequestDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, t)
@@ -89,5 +90,6 @@ func (c *ChangeStatusDto) Validate(v *validator.Validate) error {
 
 type TravelRequestWithProgram struct {
 	TravelRequest `bson:",inline"`
-	Program       *Program `bson:"program,omitempty" json:"program,omitempty"`
+	Program       Program               `bson:"program" json:"program"`
+	Customer      membermodels.Customer `bson:"customer" json:"customer"`
 }
