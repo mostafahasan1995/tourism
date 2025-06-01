@@ -12,6 +12,8 @@ import (
 
 type TravelRequestDto struct {
 	//basic information
+	BasicInfo   BasicInfo `bson:"basicInfo" json:"basicInfo"`
+
 	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
 	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
 	ClientEmail  string `bson:"clientEmail" json:"clientEmail" validate:"required"`
@@ -31,6 +33,20 @@ type TravelRequestDto struct {
 	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"`
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
+}
+
+type BasicInfo struct {
+	ProgramTitle    string    `bson:"programTitle" json:"programTitle"`
+	ServiceType    string    `bson:"serviceType" json:"serviceType"`
+	Purpose        string    `bson:"purpose" json:"purpose"`
+	DelegationType string    `bson:"delegationType" json:"delegationType"`
+	Source         string    `bson:"source" json:"source"`
+	Customer       string    `bson:"customer" json:"customer"`
+	Company        string    `bson:"company" json:"company"`
+	Coordinator    string    `bson:"coordinator" json:"coordinator"`
+	StartDate      *time.Time `bson:"startDate" json:"startDate"`
+	EndDate        *time.Time `bson:"endDate" json:"endDate"`
+	GroupSize      string    `bson:"groupSize" json:"groupSize"`
 }
 
 func (t *TravelRequestDto) Validate(v *validator.Validate) error {
