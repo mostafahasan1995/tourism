@@ -163,15 +163,94 @@ func (s *faqPageSvcs) GetAll(ctx context.Context, filter filter.FaqPageFilter) (
 		return models.FaqPagePagination{}, err
 	}
 
-	// Convert to FaqPageWithStats and get counts separately if needed
+	// Convert to FaqPageWithStats and calculate dynamic counts
 	var pagesWithStats []models.FaqPageWithStats
 	for _, page := range pages {
-		// For now, set counts to 0 to avoid performance issues
-		// In the future, these can be calculated separately if needed
+		// Count groups for this page
+		groupCount, err := s.groupRepo.Count(ctx, bson.M{
+			"faqPageId": page.Id,
+			"trash":     bson.M{"$ne": true},
+		})
+		if err != nil {
+			groupCount = 0 // Fallback to 0 if error
+		}
+
+		// Count questions for this page (count through groups + general questions)
+		questionCount := int64(0)
+
+		// Count questions in groups that belong to this page
+		groupQuestionsPipeline := []bson.M{
+			// First, find all groups for this page
+			{
+				"$match": bson.M{
+					"faqPageId": page.Id,
+					"trash":     bson.M{"$ne": true},
+				},
+			},
+			// Then lookup questions for each group
+			{
+				"$lookup": bson.M{
+					"from": "tourismFaqQuestions",
+					"let":  bson.M{"groupId": "$_id"},
+					"pipeline": []bson.M{
+						{
+							"$match": bson.M{
+								"$expr": bson.M{
+									"$and": []bson.M{
+										{"$eq": []interface{}{"$faqGroupId", "$$groupId"}},
+										{"$ne": []interface{}{"$trash", true}},
+									},
+								},
+							},
+						},
+					},
+					"as": "questions",
+				},
+			},
+			// Count questions in each group
+			{
+				"$project": bson.M{
+					"questionCount": bson.M{"$size": "$questions"},
+				},
+			},
+			// Sum all question counts
+			{
+				"$group": bson.M{
+					"_id":   nil,
+					"total": bson.M{"$sum": "$questionCount"},
+				},
+			},
+		}
+
+		var groupQuestionsResult []bson.M
+		err = s.groupRepo.Aggregate(ctx, groupQuestionsPipeline, func(cur *mongo.Cursor) error {
+			return cur.All(ctx, &groupQuestionsResult)
+		})
+		if err == nil && len(groupQuestionsResult) > 0 {
+			if total, ok := groupQuestionsResult[0]["total"].(int32); ok {
+				questionCount += int64(total)
+			} else if total, ok := groupQuestionsResult[0]["total"].(int64); ok {
+				questionCount += total
+			}
+		}
+
+		// Count general questions (questions without group but directly assigned to page)
+		generalQuestionsCount, err := s.questionRepo.Count(ctx, bson.M{
+			"faqPageId": page.Id,
+			"trash":     bson.M{"$ne": true},
+			"$or": []bson.M{
+				{"faqGroupId": bson.M{"$exists": false}},
+				{"faqGroupId": nil},
+			},
+		})
+		if err == nil {
+			questionCount += generalQuestionsCount
+		}
+
 		pagesWithStats = append(pagesWithStats, models.FaqPageWithStats{
 			FaqPage:       page,
-			GroupCount:    0,
-			QuestionCount: 0,
+			GroupCount:    int(groupCount),
+			QuestionCount: int(questionCount),
 		})
 	}
 

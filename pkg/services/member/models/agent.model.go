@@ -18,21 +18,22 @@ Example JSON structure for Agent:
         "variants": ["thumbnail", "medium", "large"]
     },
     "bio": "Experienced travel agent with 10 years in the industry",
-    "image": [
-        {
-            "_id": "507f1f77bcf86cd799439014",
-            "originalName": "profile1.jpg",
-            "path": "/uploads/profile1.jpg",
-            "service": "file-service",
-            "expire": "2024-12-31T23:59:59Z",
-            "variants": ["thumbnail", "medium", "large"]
-        }
-    ],
+    "image": {
+        "_id": "507f1f77bcf86cd799439014",
+        "originalName": "profile1.jpg",
+        "path": "/uploads/profile1.jpg",
+        "service": "file-service",
+        "expire": "2024-12-31T23:59:59Z",
+        "variants": ["thumbnail", "medium", "large"]
+    },
     "countries": ["USA", "France", "Italy", "Spain"],
-    "contact": {
+    "contacts": {
+        "phone": {
+            "pre": "+1",
+            "content": "234567890"
+        },
         "email": "john.smith@example.com",
-        "phone": "+1234567890",
-        "address": "123 Travel Street, New York, USA"
+        "web": "https://johntravelagent.com"
     },
     "security": {
         "password": "hashedPassword123",
@@ -60,6 +61,31 @@ Example JSON structure for Agent:
             "cost": 250.00
         }
     },
+    "ratingObjects": [
+        {
+            "username": "customer1",
+            "userId": "507f1f77bcf86cd799439015",
+            "userImg": {
+                "_id": "507f1f77bcf86cd799439016",
+                "originalName": "user1.jpg",
+                "path": "/uploads/user1.jpg",
+                "service": "file-service",
+                "expire": "2024-12-31T23:59:59Z",
+                "variants": ["thumbnail", "medium", "large"]
+            },
+            "value": 4.5,
+            "text": "Great agent, very helpful!",
+            "status": "approved",
+            "date": "2024-03-20T10:00:00Z",
+            "replies": [
+                {
+                    "text": "Thank you for your feedback!",
+                    "date": "2024-03-20T11:00:00Z"
+                }
+            ]
+        }
+    ],
+    "ratings": 4.5,
     "status": "active",
     "isJoinReq": false,
     "joinStatus": "converted",
@@ -78,18 +104,49 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// Rating and review structures for agents (similar to hotels)
+type AgentRatingObject struct {
+	Username string          `bson:"username" json:"username"`
+	UserId   string          `bson:"userId" json:"userId"`
+	UserImg  types.FileField `bson:"userImg" json:"userImg"`
+	Value    float64         `bson:"value" json:"value"`
+	Text     string          `bson:"text" json:"text"`
+	Status   string          `bson:"status" json:"status"`
+	Date     *time.Time      `bson:"date" json:"date"`
+	Replies  []AgentReply    `bson:"replies" json:"replies"`
+}
+
+type AgentReply struct {
+	Text string     `bson:"text" json:"text"`
+	Date *time.Time `bson:"date" json:"date"`
+}
+
 type AgentDto struct {
-	Name        string            `bson:"name" json:"name"`
-	Nationality string            `bson:"nationality" json:"nationality"`
-	SpokenLangs []string          `bson:"languages" json:"languages"`
-	Company     string            `bson:"company" json:"company"`
-	CompanyLogo types.FileField   `bson:"companyLogo" json:"companyLogo"`
-	Bio         string            `bson:"bio" json:"bio"`
-	Image       []types.FileField `bson:"image" json:"image"`
-	Countries   []string          `bson:"countries" json:"countries"`
-	Contact     MemberContact     `bson:"contact" json:"contact"`
-	Security    MemberSecurity    `bson:"security" json:"security"`
-	Financial   AgentFinancial    `bson:"financial" json:"financial"`
+	Name          string              `bson:"name" json:"name"`
+	Nationality   string              `bson:"nationality" json:"nationality"`
+	SpokenLangs   []string            `bson:"languages" json:"languages"`
+	Company       string              `bson:"company" json:"company"`
+	CompanyLogo   types.FileField     `bson:"companyLogo" json:"companyLogo"`
+	Bio           string              `bson:"bio" json:"bio"`
+	Image         types.FileField     `bson:"image" json:"image"` // Changed from array to single object
+	Countries     []string            `bson:"countries" json:"countries"`
+	Contact       AgentContact        `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
+	Security      MemberSecurity      `bson:"security" json:"security"`
+	Financial     AgentFinancial      `bson:"financial" json:"financial"`
+	RatingObjects []AgentRatingObject `bson:"ratingObjects" json:"ratingObjects"` // Added rating objects
+	Ratings       float64             `bson:"ratings" json:"ratings"`             // Added average rating
+}
+
+// CalculateAverageRating calculates the average rating from RatingObjects
+func (a *AgentDto) CalculateAverageRating() {
+	if len(a.RatingObjects) == 0 {
+		return
+	}
+	var total float64
+	for _, rating := range a.RatingObjects {
+		total += rating.Value
+	}
+	a.Ratings = total / float64(len(a.RatingObjects))
 }
 
 type AgentFinancial struct {
