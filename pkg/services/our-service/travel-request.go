@@ -245,6 +245,7 @@ func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *m
 
 			invoiceDto := &models.InvoiceDto{
 				DateOfIssue: time.Now(),
+				TravelReqId: request.Id,
 				Customer:    models.InvoiceContact{},
 				Company:     models.InvoiceContact{},
 				ProgramName: program.Title,

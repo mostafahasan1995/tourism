@@ -322,9 +322,13 @@ func (a *agentsvcs) ConvertToAgent(ctx context.Context, agentId string, data *mo
 			CompanyLogo: data.CompanyLogo,
 			Bio:         data.Bio,
 			Countries:   data.Countries,
-			Contact: models.MemberContact{
-				Mobile: data.Phone,
-				Email:  data.Email,
+			Contact: models.AgentContact{
+				Phone: models.AgentPhone{
+					Pre:     "",
+					Content: data.Phone.Content,
+				},
+				Email: data.Email,
+				Web:   "",
 			},
 			Security: models.MemberSecurity{
 				Email:       data.Email,

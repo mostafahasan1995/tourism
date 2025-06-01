@@ -56,14 +56,13 @@ type RatingObject struct {
 	Value    float64         `bson:"value" json:"value"`
 	Text     string          `bson:"text" json:"text"`
 	Status   string          `bson:"status" json:"status"`
-	Date   *time.Time         `bson:"date" json:"date"`
-	Replies  []Reply        `bson:"replies" json:"replies"`
+	Date     *time.Time      `bson:"date" json:"date"`
+	Replies  []Reply         `bson:"replies" json:"replies"`
 }
 type Reply struct {
-	Text     string          `bson:"text" json:"text"`
-	Date   *time.Time         `bson:"date" json:"date"`
+	Text string     `bson:"text" json:"text"`
+	Date *time.Time `bson:"date" json:"date"`
 }
-
 
 type CloseReservations struct {
 	StartDate time.Time `bson:"startDate" json:"startDate"`
@@ -102,20 +101,21 @@ type OverviewPage struct {
 
 type RoomsAndSuitesPage struct {
 	StartingText   string         `bson:"startingText" json:"startingText"`
-	Advantages     []string   `bson:"advantages" json:"advantages"`
+	Advantages     []string       `bson:"advantages" json:"advantages"`
 	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
-	RoomType      string            `bson:"roomType" json:"roomType"`
-	TotalRoom     int               `bson:"totalRoom" json:"totalRoom"`
-	RoomSurface   string            `bson:"roomSurface" json:"roomSurface"`
-	BedsCount     int               `bson:"bedsCount" json:"bedsCount"`
-	MaxOccupancy  int               `bson:"maxOccupancy" json:"maxOccupancy"`
-	ViewType      string            `bson:"viewType" json:"viewType"`
-	RoomAmenities []string          `bson:"roomAmenities" json:"roomAmenities"`
-	Features      []string          `bson:"features" json:"features"`
-	Images        []types.FileField `bson:"images" json:"images"`
-	Pricing       Pricing           `bson:"pricing" json:"pricing"`
+	RoomType        string            `bson:"roomType" json:"roomType"`
+	TotalRoom       int               `bson:"totalRoom" json:"totalRoom"`
+	RoomSurface     string            `bson:"roomSurface" json:"roomSurface"`
+	BedsCount       int               `bson:"bedsCount" json:"bedsCount"`
+	MaxOccupancy    int               `bson:"maxOccupancy" json:"maxOccupancy"`
+	ViewType        string            `bson:"viewType" json:"viewType"`
+	RoomAmenities   []string          `bson:"roomAmenities" json:"roomAmenities"`
+	Features        []string          `bson:"features" json:"features"`
+	Images          []types.FileField `bson:"images" json:"images"`
+	Pricing         Pricing           `bson:"pricing" json:"pricing"`
+	SeasonalPricing []SeasonPricing   `bson:"seasonalPricing" json:"seasonalPricing"`
 }
 
 type Pricing struct {

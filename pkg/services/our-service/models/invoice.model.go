@@ -10,6 +10,7 @@ import (
 
 type InvoiceDto struct {
 	DateOfIssue time.Time           `bson:"dateOfIssue" json:"dateOfIssue"`
+	TravelReqId primitive.ObjectID  `bson:"travelReqId" json:"travelReqId"`
 	Customer    InvoiceContact      `bson:"customer" json:"customer"`
 	Company     InvoiceContact      `bson:"company" json:"company"`
 	ProgramName string              `bson:"programName" json:"programName"`
@@ -56,10 +57,10 @@ type PaymentDto struct {
 }
 
 type Invoice struct {
-	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	InvoiceId    string             `bson:"invoiceId" json:"invoiceId"`
-	InvoiceDto   `bson:",inline"`
-	TravelReqId  primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
+	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	InvoiceId  string             `bson:"invoiceId" json:"invoiceId"`
+	InvoiceDto `bson:",inline"`
+
 	SubTotal     float64            `bson:"subTotal" json:"subTotal"`
 	Total        float64            `bson:"total" json:"total"`
 	PaidAmount   float64            `bson:"paidAmount" json:"paidAmount"`
