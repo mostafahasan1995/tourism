@@ -13,7 +13,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
 
 	do.Provide(i, home.NewContactUsSvcs)
-	do.Provide(i, home.NewOurAgentsSvcs)
+	//do.Provide(i, home.NewOurAgentsSvcs)
 	do.Provide(i, home.NewReviewsSvcs)
 
 	// FAQ services
@@ -35,7 +35,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//handlers
 
 	handler.NewContactUsHandler(i, r)
-	handler.NewOurAgentsHandler(i, r)
+	//handler.NewOurAgentsHandler(i, r)
 	handler.NewReviewsHandler(i, r)
 
 	// FAQ handler
