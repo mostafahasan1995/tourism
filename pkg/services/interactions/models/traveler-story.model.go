@@ -11,7 +11,7 @@ type TravelerStoryDto struct {
 	Name         string               `bson:"name" json:"name"`
 	Destinations []primitive.ObjectID `bson:"destinations" json:"destinations"`
 	DiaryTitle   string               `bson:"diaryTitle" json:"diaryTitle"`
-	TripType     primitive.ObjectID   `bson:"tripType" json:"tripType"`
+	TripType     string               `bson:"tripType" json:"tripType"`
 	Bio          string               `bson:"bio" json:"bio"`
 	CoverImage   []types.FileField    `bson:"coverImage" json:"coverImage"`
 	Status       string               `bson:"status" json:"status"`
