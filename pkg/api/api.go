@@ -91,9 +91,9 @@ func Start() error {
 	//db service
 	dbsvcs.Init(injector, r)
 
+	picklist.Init(injector, r)
 	home.Init(injector, r)
 	ourService.Init(injector, r)
-	picklist.Init(injector, r)
 	interactions.Init(injector, r)
 	member.Init(injector, r)
 

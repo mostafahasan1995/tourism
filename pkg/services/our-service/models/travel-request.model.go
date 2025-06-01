@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
+	membermodels "larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
@@ -12,6 +13,8 @@ import (
 
 type TravelRequestDto struct {
 	//basic information
+	//BasicInfo BasicInfo `bson:"basicInfo" json:"basicInfo"`
+
 	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
 	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
 	ClientEmail  string `bson:"clientEmail" json:"clientEmail" validate:"required"`
@@ -33,6 +36,20 @@ type TravelRequestDto struct {
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
 
+// type BasicInfo struct {
+// 	ProgramTitle   string     `bson:"programTitle" json:"programTitle"`
+// 	ServiceType    string     `bson:"serviceType" json:"serviceType"`
+// 	Purpose        string     `bson:"purpose" json:"purpose"`
+// 	DelegationType string     `bson:"delegationType" json:"delegationType"`
+// 	Source         string     `bson:"source" json:"source"`
+// 	Customer       string     `bson:"customer" json:"customer"`
+// 	Company        string     `bson:"company" json:"company"`
+// 	Coordinator    string     `bson:"coordinator" json:"coordinator"`
+// 	StartDate      *time.Time `bson:"startDate" json:"startDate"`
+// 	EndDate        *time.Time `bson:"endDate" json:"endDate"`
+// 	GroupSize      string     `bson:"groupSize" json:"groupSize"`
+// }
+
 func (t *TravelRequestDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, t)
 }
@@ -42,6 +59,7 @@ type TravelRequest struct {
 	ReqId            string                `bson:"reqId,omitempty" json:"reqId,omitempty"`
 	Package          primitive.ObjectID    `bson:"package,omitempty" json:"package,omitempty"`
 	Program          primitive.ObjectID    `bson:"program,omitempty" json:"program,omitempty"`
+	InvoiceId        primitive.ObjectID    `bson:"invoiceId,omitempty" json:"invoiceId,omitempty"`
 	Date             time.Time             `bson:"date,omitempty" json:"date,omitempty"`
 	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
 	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
@@ -57,4 +75,21 @@ type TravelRequest struct {
 type TravelRequestPagination struct {
 	Requests   []TravelRequest  `json:"requests"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+// change status
+type ChangeStatusDto struct {
+	Status string `bson:"status" json:"status" validate:"required,oneof=pending approved rejected"`
+}
+
+func (c *ChangeStatusDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, c)
+}
+
+//
+
+type TravelRequestWithProgram struct {
+	TravelRequest `bson:",inline"`
+	Program       Program               `bson:"program" json:"program"`
+	Customer      membermodels.Customer `bson:"customer" json:"customer"`
 }

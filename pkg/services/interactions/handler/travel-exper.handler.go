@@ -28,13 +28,15 @@ func NewTravelExperHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/traveler-stories/", helpers.Make(h.AddTravelerStory))
 		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/status", helpers.Make(h.SetTravelerStoryStatus))
 		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/feedback", helpers.Make(h.SendFeedback))
-		r.With(middleware.Auth("authenticate")).Put("/traveler-stories/{id}/", helpers.Make(h.UpdateTravelerStory))
-		r.With(middleware.Auth("authenticate")).Delete("/traveler-stories/{id}/", helpers.Make(h.DeleteTravelerStory))
+		r.With(middleware.Auth("authenticate")).Put("/traveler-stories/{id}", helpers.Make(h.UpdateTravelerStory))
+		r.With(middleware.Auth("authenticate")).Delete("/traveler-stories/{id}", helpers.Make(h.DeleteTravelerStory))
 		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/restore", helpers.Make(h.RestoreTravelerStory))
-		//
+		//client
+		r.With(middleware.Auth("authenticate")).Get("/client-stories/{id}", helpers.Make(h.GetClientStory))
 		r.With(middleware.Auth("authenticate")).Get("/client-stories/", helpers.Make(h.GetClientStories))
 		r.With(middleware.Auth("authenticate")).Post("/client-stories/", helpers.Make(h.AddClientStory))
-
+		r.With(middleware.Auth("authenticate")).Put("/client-stories/{id}", helpers.Make(h.UpdateClientStory))
+		r.With(middleware.Auth("authenticate")).Delete("/client-stories/{id}", helpers.Make(h.DeleteClientStory))
 	})
 }
 
@@ -160,6 +162,19 @@ func (h *TravelExperHandler) RestoreTravelerStory(w http.ResponseWriter, r *http
 
 //client
 
+func (h *TravelExperHandler) GetClientStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id") // story id
+
+	result, err := h.travelexpersvcs.GetClientStory(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
 func (h *TravelExperHandler) GetClientStories(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
@@ -190,4 +205,33 @@ func (h *TravelExperHandler) AddClientStory(w http.ResponseWriter, r *http.Reque
 	}
 
 	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) UpdateClientStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	var data models.ClientStoryDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.UpdateClientStory(ctx, id, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) DeleteClientStory(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id") // story id
+
+	err := h.travelexpersvcs.DeleteClientStory(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
 }

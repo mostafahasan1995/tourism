@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/types"
+
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

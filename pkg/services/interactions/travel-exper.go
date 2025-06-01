@@ -26,8 +26,11 @@ type TravelExperSvcs interface {
 	DeleteTravlerStory(ctx context.Context, storyId string) error
 	RestoreTravlerStory(ctx context.Context, storyId string) error
 	// client
+	GetClientStory(ctx context.Context, storyId string) (*models.ClientStory, error)
 	GetClientStories(ctx context.Context, skip, limit int64) (*models.ClientStoryWithPagination, error)
 	AddClientStory(ctx context.Context, data *models.ClientStoryDto) (*models.ClientStory, error)
+	UpdateClientStory(ctx context.Context, storyId string, data *models.ClientStoryDto) (*models.ClientStory, error)
+	DeleteClientStory(ctx context.Context, storyId string) error
 }
 
 type travelexpersvcs struct {
@@ -57,7 +60,7 @@ func (t *travelexpersvcs) GetTravelerStory(ctx context.Context, storyId string) 
 func (t *travelexpersvcs) GetAllTravelerStories(ctx context.Context) ([]models.TravelerStory, error) {
 
 	pipeline := []bson.M{
-		{"$match": bson.M{}},
+		{"$match": bson.M{"trash": false}},
 	}
 
 	var result []models.TravelerStory
@@ -76,7 +79,7 @@ func (t *travelexpersvcs) GetAllTravelerStories(ctx context.Context) ([]models.T
 }
 
 func (t *travelexpersvcs) GetTravelerStories(ctx context.Context, skip, limit int64) (*models.TravelerStoryWithPagination, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	count, err := t.travelerStoryRepo.Count(ctx, match)
 	if err != nil {
@@ -262,8 +265,20 @@ func (t *travelexpersvcs) RestoreTravlerStory(ctx context.Context, storyId strin
 }
 
 // client
+
+func (t *travelexpersvcs) GetClientStory(ctx context.Context, storyId string) (*models.ClientStory, error) {
+	_id, err := primitive.ObjectIDFromHex(storyId)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": _id, "trash": false}
+
+	return t.clientStoryRepo.GetByFilter(ctx, filter)
+}
+
 func (t *travelexpersvcs) GetClientStories(ctx context.Context, skip, limit int64) (*models.ClientStoryWithPagination, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	count, err := t.clientStoryRepo.Count(ctx, match)
 	if err != nil {
@@ -319,4 +334,49 @@ func (t *travelexpersvcs) AddClientStory(ctx context.Context, data *models.Clien
 
 	return story, nil
 
+}
+
+func (t *travelexpersvcs) UpdateClientStory(ctx context.Context, storyId string, data *models.ClientStoryDto) (*models.ClientStory, error) {
+	_id, err := primitive.ObjectIDFromHex(storyId)
+	if err != nil {
+		return nil, err
+	}
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	story := &models.ClientStory{
+		Id:             _id,
+		ClientStoryDto: *data,
+		UpdatedAt:      time.Now(),
+		UpdatedBy:      cfg.User.Id,
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": story}
+
+	updatedStory, err := t.clientStoryRepo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedStory, nil
+}
+
+func (t *travelexpersvcs) DeleteClientStory(ctx context.Context, storyId string) error {
+	_id, err := primitive.ObjectIDFromHex(storyId)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{"trash": true}}
+
+	if _, err := t.clientStoryRepo.Patch(ctx, filter, update); err != nil {
+		return err
+	}
+
+	return nil
 }

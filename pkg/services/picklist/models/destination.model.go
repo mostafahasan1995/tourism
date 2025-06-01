@@ -11,6 +11,7 @@ import (
 type DestinationDto struct {
 	Name        string            `bson:"name" json:"name"`
 	Images      []types.FileField `bson:"images" json:"images"`
+	Icon        types.FileField   `bson:"icon" json:"icon"`
 	Description string            `bson:"description" json:"description"`
 }
 
