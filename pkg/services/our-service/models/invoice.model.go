@@ -59,7 +59,7 @@ type PaymentDto struct {
 	Unit    string            `bson:"unit" json:"unit"`
 	Status  string            `bson:"status" json:"status"` //paid - unpaid
 	Note    string            `bson:"note" json:"note"`
-	Reciept []types.FileField `bson:"reciept" json:"reciept"`
+	Receipt []types.FileField `bson:"receipt" json:"receipt"`
 }
 
 type Invoice struct {
@@ -116,4 +116,10 @@ func (i *Invoice) SetTotals() error {
 type InvoicePagination struct {
 	Invoices   []Invoice        `bson:"invoices" json:"invoices"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+type PayOrder struct {
+	Amount  float64           `bson:"amount" json:"amount"`
+	Method  string            `bson:"method" json:"method"`
+	Receipt []types.FileField `bson:"receipt" json:"receipt"`
 }

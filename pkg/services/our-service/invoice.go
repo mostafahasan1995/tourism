@@ -289,3 +289,16 @@ func (i *invoiceSvcs) DeletePayment(ctx context.Context, invoiceId, paymentId st
 	return result.(*models.Invoice), nil
 
 }
+
+func (i *invoiceSvcs) PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error) {
+	newPaymentDto := models.PaymentDto{
+		Date:    time.Now(),
+		Method:  data.Method,
+		Amount:  data.Amount,
+		Status:  "unpaid",
+		Receipt: data.Receipt,
+	}
+
+	return i.AddPayment(ctx, invoiceId, &newPaymentDto)
+
+}

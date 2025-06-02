@@ -105,6 +105,5 @@ func (a *hotelssvcs) Update(ctx context.Context, id string, data *models.HotelsD
 }
 
 func (a *hotelssvcs) Delete(ctx context.Context, id string) error {
-
 	return a.repo.Delete(ctx, id)
 }

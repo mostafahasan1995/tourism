@@ -23,8 +23,9 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/agents", func(r chi.Router) {
-		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOne))
-		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.Get))
+		r.Get("/all", helpers.Make(h.GetAll))
+		r.Get("/", helpers.Make(h.Get))
+		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -63,6 +64,19 @@ func (h *AgentHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	query := r.URL.Query().Get("query")
 
 	result, err := h.agentsvcs.Get(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.agentsvcs.GetAll(ctx, query)
 	if err != nil {
 		return err
 	}
