@@ -67,6 +67,8 @@ func (l *HotelsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 
 func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
+
+	// Parse JSON filter parameter if present
 	filterParam := r.URL.Query().Get("query")
 	var filter filter.HotelsFilter
 	if filterParam != "" {
@@ -76,6 +78,25 @@ func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 			return err
 		}
 	}
+
+	// Parse direct query parameters into filter
+	if searchWord := r.URL.Query().Get("searchWord"); searchWord != "" {
+		filter.SearchWord = searchWord
+	}
+	if location := r.URL.Query().Get("location"); location != "" {
+		filter.Locations = []string{location}
+	}
+
+	// Use util.Paginate to get standardized pagination values (this handles perPage parameter)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Always override pagination with util.Paginate values for consistency
+	filter.Page = int((skip / limit) + 1)
+	filter.PerPage = int(limit)
+
 	result, err := l.hotelssvcs.GetAll(ctx, filter)
 	if err != nil {
 		return err
@@ -164,15 +185,20 @@ func (l *HotelsHandler) AddReview(w http.ResponseWriter, r *http.Request) error 
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (l *HotelsHandler) GetHotelReviews(w http.ResponseWriter, r *http.Request) error {
+func (h *HotelsHandler) GetHotelReviews(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-
 	hotelId := chi.URLParam(r, "id")
 
-	// Extract pagination parameters from query string
-	page, size := helpers.ExtractPaginationParams(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
 
-	result, err := l.hotelssvcs.GetHotelReviews(ctx, hotelId, page, size)
+	// Convert skip/limit to page/perPage for the repository
+	page := int((skip / limit) + 1)
+	perPage := int(limit)
+
+	result, err := h.hotelssvcs.GetHotelReviews(ctx, hotelId, page, perPage)
 	if err != nil {
 		return err
 	}
