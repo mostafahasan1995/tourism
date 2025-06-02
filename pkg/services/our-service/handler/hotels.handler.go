@@ -87,17 +87,17 @@ func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		filter.Locations = []string{location}
 	}
 
-	// Use util.Paginate to get standardized pagination values (this handles perPage parameter)
+	// Use util.Paginate to get standardized pagination values
 	skip, limit, err := util.Paginate(r)
 	if err != nil {
 		return err
 	}
 
-	// Always override pagination with util.Paginate values for consistency
-	filter.Page = int((skip / limit) + 1)
-	filter.PerPage = int(limit)
+	// Convert skip/limit to page/perPage
+	page := int((skip / limit) + 1)
+	perPage := int(limit)
 
-	result, err := l.hotelssvcs.GetAll(ctx, filter)
+	result, err := l.hotelssvcs.GetAll(ctx, filter, page, perPage)
 	if err != nil {
 		return err
 	}
