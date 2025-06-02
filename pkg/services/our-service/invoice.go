@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -298,7 +299,7 @@ func (i *invoiceSvcs) PayOrder(ctx context.Context, invoiceId string, data *mode
 		Date:    time.Now(),
 		Method:  data.Method,
 		Amount:  data.Amount,
-		Status:  "unpaid",
+		Status:  enums.InvoiceStatusUnpaid,
 		Receipt: data.Receipt,
 	}
 
