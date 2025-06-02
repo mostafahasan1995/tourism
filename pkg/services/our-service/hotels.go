@@ -21,7 +21,7 @@ type HotelsSvcs interface {
 	Delete(ctx context.Context, id string) error
 	// Hotel Reviews
 	AddReview(ctx context.Context, hotelId string, data *models.HotelReviewDto) (*models.HotelReview, error)
-	GetHotelReviews(ctx context.Context, hotelId string, page, size int) (models.HotelReviewPagination, error)
+	GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error)
 	// Debug method
 	GetAllReviews(ctx context.Context) ([]models.HotelReview, error)
 	// Review management
@@ -136,8 +136,8 @@ func (l *hotelssvcs) AddReview(ctx context.Context, hotelId string, data *models
 	return review, nil
 }
 
-func (l *hotelssvcs) GetHotelReviews(ctx context.Context, hotelId string, page, size int) (models.HotelReviewPagination, error) {
-	return l.repo.GetHotelReviews(ctx, hotelId, page, size)
+func (l *hotelssvcs) GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error) {
+	return l.repo.GetHotelReviews(ctx, hotelId, page, perPage)
 }
 
 func (l *hotelssvcs) GetAllReviews(ctx context.Context) ([]models.HotelReview, error) {
