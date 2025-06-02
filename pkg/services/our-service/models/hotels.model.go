@@ -125,6 +125,7 @@ type Pricing struct {
 	ExtraPersonChargeType string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
 	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 	ActivePricingType     string `bson:"activePricingType" json:"activePricingType"`
+	CurrencyType          string `bson:"currencyType" json:"currencyType"`
 }
 type SeasonPricing struct {
 	NightlyRateBase       int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
@@ -134,6 +135,7 @@ type SeasonPricing struct {
 	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 	SeasonName            string `bson:"seasonName" json:"seasonName"`
 	ActivePricingType     string `bson:"activePricingType" json:"activePricingType"`
+	CurrencyType          string `bson:"currencyType" json:"currencyType"`
 }
 type Advantages struct {
 	Text string          `bson:"text" json:"text"`
