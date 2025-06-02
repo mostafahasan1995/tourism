@@ -19,15 +19,6 @@ type HotelsSvcs interface {
 	Add(ctx context.Context, data *models.HotelsDto) (any, error)
 	Update(ctx context.Context, id string, data *models.HotelsDto) error
 	Delete(ctx context.Context, id string) error
-	// Hotel Reviews
-	AddReview(ctx context.Context, hotelId string, data *models.HotelReviewDto) (*models.HotelReview, error)
-	GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error)
-	// Debug method
-	GetAllReviews(ctx context.Context) ([]models.HotelReview, error)
-	// Review management
-	UpdateReviewStatus(ctx context.Context, reviewId string, status string) error
-	ApproveReview(ctx context.Context, reviewId string) error
-	RejectReview(ctx context.Context, reviewId string) error
 }
 
 type hotelssvcs struct {
@@ -116,42 +107,4 @@ func (a *hotelssvcs) Update(ctx context.Context, id string, data *models.HotelsD
 func (a *hotelssvcs) Delete(ctx context.Context, id string) error {
 
 	return a.repo.Delete(ctx, id)
-}
-
-func (l *hotelssvcs) AddReview(ctx context.Context, hotelId string, data *models.HotelReviewDto) (*models.HotelReview, error) {
-	hotelObjectId, err := primitive.ObjectIDFromHex(hotelId)
-	if err != nil {
-		return nil, helpers.InvalidObjectId()
-	}
-
-	review := &models.HotelReview{
-		HotelReviewDto: *data,
-		HotelId:        hotelObjectId,
-	}
-
-	if err := l.repo.AddReview(ctx, review); err != nil {
-		return nil, err
-	}
-
-	return review, nil
-}
-
-func (l *hotelssvcs) GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error) {
-	return l.repo.GetHotelReviews(ctx, hotelId, page, perPage)
-}
-
-func (l *hotelssvcs) GetAllReviews(ctx context.Context) ([]models.HotelReview, error) {
-	return l.repo.GetAllReviews(ctx)
-}
-
-func (l *hotelssvcs) UpdateReviewStatus(ctx context.Context, reviewId string, status string) error {
-	return l.repo.UpdateReviewStatus(ctx, reviewId, status)
-}
-
-func (l *hotelssvcs) ApproveReview(ctx context.Context, reviewId string) error {
-	return l.repo.UpdateReviewStatus(ctx, reviewId, "approved")
-}
-
-func (l *hotelssvcs) RejectReview(ctx context.Context, reviewId string) error {
-	return l.repo.UpdateReviewStatus(ctx, reviewId, "rejected")
 }

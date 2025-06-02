@@ -17,6 +17,8 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, interactions.NewGameSvcs)
 	do.Provide(i, interactions.NewTravelExperSvcs)
 
+	do.Provide(i, interactions.NewReviewsSvcs)
+
 	do.Provide(i, repo.NewFaveRepo)
 	do.Provide(i, repo.NewTestimonialRepo)
 	do.Provide(i, repo.NewDiaryRepo) //deprecated
@@ -26,12 +28,16 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewTravelerStoryRepo)
 	do.Provide(i, repo.NewClientStoryRepo)
 
+	do.Provide(i, repo.NewReviewsRepo)
+
 	handler.NewFaveHandler(i, r)
 	handler.NewTestimonialHandler(i, r)
 	handler.NewDiaryHandler(i, r) //deprecated
 
 	handler.NewGameHandler(i, r)
 	handler.NewTravelExperHandler(i, r)
+
+	handler.NewReviewsHandler(i, r)
 
 	return i
 }

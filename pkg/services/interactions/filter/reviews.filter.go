@@ -6,16 +6,19 @@ import (
 )
 
 type ReviewsFilter struct {
-	Page   int    `bson:"page" json:"page"`
-	Size   int    `bson:"size" json:"size"`
 	Status string `bson:"status" json:"status"`
+
+	// Entity filters
+	Type string             `bson:"type" json:"type"` // hotel, program, destination, etc.
+	Ref  primitive.ObjectID `bson:"ref" json:"ref"`   // Reference ID
+	Refs []string           `bson:"refs" json:"refs"` // Multiple reference IDs
 
 	// Customer filters
 	Customer string `bson:"customer" json:"customer"` // customer or agent
 	Username string `bson:"username" json:"username"`
 	UserId   string `bson:"userId" json:"userId"`
 
-	// Program filters
+	// Program filters (legacy support)
 	ProgramId primitive.ObjectID `bson:"programId" json:"programId"`
 
 	// Independent destination and countries
@@ -42,6 +45,29 @@ func (f *ReviewsFilter) ToBsonFilter() bson.M {
 		filterConditions = append(filterConditions, bson.M{"status": f.Status})
 	}
 
+	// Entity type filter
+	if f.Type != "" {
+		filterConditions = append(filterConditions, bson.M{"type": f.Type})
+	}
+
+	// Single reference filter
+	if !f.Ref.IsZero() {
+		filterConditions = append(filterConditions, bson.M{"ref": f.Ref})
+	}
+
+	// Multiple references filter
+	if len(f.Refs) > 0 {
+		var refIds []primitive.ObjectID
+		for _, refStr := range f.Refs {
+			if refId, err := primitive.ObjectIDFromHex(refStr); err == nil {
+				refIds = append(refIds, refId)
+			}
+		}
+		if len(refIds) > 0 {
+			filterConditions = append(filterConditions, bson.M{"ref": bson.M{"$in": refIds}})
+		}
+	}
+
 	// Customer type filter
 	if f.Customer != "" {
 		filterConditions = append(filterConditions, bson.M{"customer": f.Customer})
@@ -57,7 +83,7 @@ func (f *ReviewsFilter) ToBsonFilter() bson.M {
 		filterConditions = append(filterConditions, bson.M{"userId": f.UserId})
 	}
 
-	// Program filter
+	// Program filter (legacy support)
 	if !f.ProgramId.IsZero() {
 		filterConditions = append(filterConditions, bson.M{"programId": f.ProgramId})
 	}

@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/home"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/services/interactions"
+	"larsa-tourism-microservices/pkg/services/interactions/filter"
+	"larsa-tourism-microservices/pkg/services/interactions/models"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
@@ -18,12 +18,12 @@ import (
 )
 
 type ReviewsHandler struct {
-	reviewsSvcs home.ReviewsSvcs
+	reviewsSvcs interactions.ReviewsSvcs
 }
 
 func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 	h := &ReviewsHandler{
-		reviewsSvcs: do.MustInvoke[home.ReviewsSvcs](i),
+		reviewsSvcs: do.MustInvoke[interactions.ReviewsSvcs](i),
 	}
 
 	r.Route("/reviews", func(r chi.Router) {
@@ -31,14 +31,21 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/", helpers.Make(h.GetAll))
 		r.Get("/stats", helpers.Make(h.GetStats))
 		r.Get("/{id}", helpers.Make(h.GetOne))
-		r.Post("/", helpers.Make(h.Add)) // Public endpoint for submitting reviews
+		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.Add)) // Public endpoint with optional auth
 
-		// Program-specific endpoints
-		r.Get("/program/{programId}", helpers.Make(h.GetProgramReviews))
-		r.Get("/program/{programId}/stats", helpers.Make(h.GetProgramStats))
+		// Filter endpoints
+		r.Get("/status/{status}", helpers.Make(h.GetByStatus))
+		r.Get("/user/{userId}", helpers.Make(h.GetByUserId))
+
+		// Entity-specific endpoints (e.g., /reviews/hotels/{hotelId})
+		r.Route("/{entityType}/{refId}", func(r chi.Router) {
+			r.Get("/", helpers.Make(h.GetEntityReviews))
+			r.Get("/stats", helpers.Make(h.GetEntityStats))
+			r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.AddEntityReview))
+		})
 
 		// Protected endpoints (require authentication)
-		r.With(middleware.Auth("authenticate")).Post("/many", helpers.Make(h.AddMany))
+
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -46,6 +53,8 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		// Reply management endpoints
 		r.With(middleware.Auth("authenticate")).Post("/{id}/replies", helpers.Make(h.AddReply))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/approve", helpers.Make(h.ApproveReview))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectReview))
 	})
 }
 
@@ -59,19 +68,19 @@ func (h *ReviewsHandler) parseReviewsFilter(r *http.Request) filter.ReviewsFilte
 		json.Unmarshal([]byte(filterParam), &reviewsFilter)
 	}
 
-	// Handle direct parameters
-	if pageParam := r.URL.Query().Get("page"); pageParam != "" {
-		if page, err := strconv.Atoi(pageParam); err == nil && page > 0 {
-			reviewsFilter.Page = page
-		}
-	}
-	if sizeParam := r.URL.Query().Get("size"); sizeParam != "" {
-		if size, err := strconv.Atoi(sizeParam); err == nil && size > 0 {
-			reviewsFilter.Size = size
-		}
-	}
+	// Handle direct parameters (removed page and size)
 	if statusParam := r.URL.Query().Get("status"); statusParam != "" {
 		reviewsFilter.Status = statusParam
+	}
+
+	// Entity filters
+	if typeParam := r.URL.Query().Get("type"); typeParam != "" {
+		reviewsFilter.Type = typeParam
+	}
+	if refParam := r.URL.Query().Get("ref"); refParam != "" {
+		if refId, err := primitive.ObjectIDFromHex(refParam); err == nil {
+			reviewsFilter.Ref = refId
+		}
 	}
 
 	// Customer filters
@@ -85,7 +94,7 @@ func (h *ReviewsHandler) parseReviewsFilter(r *http.Request) filter.ReviewsFilte
 		reviewsFilter.UserId = userIdParam
 	}
 
-	// Program filters
+	// Program filters (legacy support)
 	if programIdParam := r.URL.Query().Get("programId"); programIdParam != "" {
 		if programId, err := primitive.ObjectIDFromHex(programIdParam); err == nil {
 			reviewsFilter.ProgramId = programId
@@ -134,7 +143,22 @@ func (h *ReviewsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	reviewsFilter := h.parseReviewsFilter(r)
 
-	result, err := h.reviewsSvcs.GetAll(ctx, reviewsFilter)
+	// Default to approved reviews if no status filter is provided
+	if reviewsFilter.Status == "" {
+		reviewsFilter.Status = "approved"
+	}
+
+	// Use util.Paginate to get standardized pagination values
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Convert skip/limit to page/perPage
+	page := int((skip / limit) + 1)
+	perPage := int(limit)
+
+	result, err := h.reviewsSvcs.GetAll(ctx, reviewsFilter, page, perPage)
 	if err != nil {
 		return err
 	}
@@ -162,6 +186,41 @@ func (h *ReviewsHandler) GetStats(w http.ResponseWriter, r *http.Request) error 
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
+func (h *ReviewsHandler) GetEntityReviews(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	entityType := chi.URLParam(r, "entityType")
+	refId := chi.URLParam(r, "refId")
+	reviewsFilter := h.parseReviewsFilter(r)
+
+	// Use util.Paginate to get standardized pagination values
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Convert skip/limit to page/perPage
+	page := int((skip / limit) + 1)
+	perPage := int(limit)
+
+	result, err := h.reviewsSvcs.GetEntityReviews(ctx, entityType, refId, reviewsFilter, page, perPage)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *ReviewsHandler) GetEntityStats(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	entityType := chi.URLParam(r, "entityType")
+	refId := chi.URLParam(r, "refId")
+
+	result, err := h.reviewsSvcs.GetEntityStats(ctx, entityType, refId)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
 func (h *ReviewsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	var data models.ReviewDto
@@ -171,17 +230,11 @@ func (h *ReviewsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Validate required fields
-	if data.Customer == "" {
-		return helpers.BadRequest("Customer type is required (customer or agent)")
+	if data.Type == "" {
+		return helpers.BadRequest("Review type is required (e.g., 'hotel', 'program', etc.)")
 	}
-	if data.Customer != "customer" && data.Customer != "agent" {
-		return helpers.BadRequest("Customer type must be either 'customer' or 'agent'")
-	}
-	if data.Username == "" {
-		return helpers.BadRequest("Username is required")
-	}
-	if data.ProgramId.IsZero() {
-		return helpers.BadRequest("Program ID is required")
+	if data.Ref.IsZero() {
+		return helpers.BadRequest("Reference ID is required")
 	}
 	if data.Description == "" {
 		return helpers.BadRequest("Description is required")
@@ -190,55 +243,64 @@ func (h *ReviewsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return helpers.BadRequest("Rating value must be between 1 and 5")
 	}
 
-	// Set default status for new reviews
-	if data.Status == "" {
-		data.Status = "pending"
+	// Check if user is authenticated for additional validation
+	user, _ := r.Context().Value(util.ReqUser).(*types.User)
+	if user == nil {
+		// For unauthenticated users, check type-specific requirements
+		if data.Type == "hotel" && (data.FirstName == "" || data.LastName == "" || data.Email == "") {
+			return helpers.BadRequest("firstName, lastName, and email are required for unauthenticated hotel reviews")
+		}
 	}
 
-	// Set date if not provided
-	if data.Date.IsZero() {
-		data.Date = time.Now()
-	}
-
-	// Initialize replies if nil
-	if data.Replies == nil {
-		data.Replies = []models.ReviewReply{}
-	}
-
-	// Initialize images if nil
-	if data.Images == nil {
-		data.Images = []models.ReviewImage{}
-	}
-
-	err := h.reviewsSvcs.Add(ctx, &data)
+	result, err := h.reviewsSvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]interface{}{
-		"message": "Review submitted successfully",
-		"status":  "pending",
-	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJson(w, http.StatusCreated, result)
 }
 
-func (h *ReviewsHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
+func (h *ReviewsHandler) AddEntityReview(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
+	entityType := chi.URLParam(r, "entityType")
+	refId := chi.URLParam(r, "refId")
 
-	var data []models.ReviewDto
+	var data models.ReviewDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		return helpers.InvalidJSON()
+		return helpers.BadRequest("Invalid JSON format")
 	}
 
-	err := h.reviewsSvcs.AddMany(ctx, data)
+	// Set entity type and ref from URL parameters
+	data.Type = entityType
+	refObjectId, err := primitive.ObjectIDFromHex(refId)
+	if err != nil {
+		return helpers.BadRequest("Invalid reference ID")
+	}
+	data.Ref = refObjectId
+
+	// Validate required fields
+	if data.Description == "" {
+		return helpers.BadRequest("Description is required")
+	}
+	if data.Value < 1 || data.Value > 5 {
+		return helpers.BadRequest("Rating value must be between 1 and 5")
+	}
+
+	// Check if user is authenticated for additional validation
+	user, _ := r.Context().Value(util.ReqUser).(*types.User)
+	if user == nil {
+		// For unauthenticated users, check type-specific requirements
+		if data.Type == "hotel" && (data.FirstName == "" || data.LastName == "" || data.Email == "") {
+			return helpers.BadRequest("firstName, lastName, and email are required for unauthenticated hotel reviews")
+		}
+	}
+
+	result, err := h.reviewsSvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]string{
-		"message": "Reviews created successfully",
-	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJson(w, http.StatusCreated, result)
 }
 
 func (h *ReviewsHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -325,14 +387,12 @@ func (h *ReviewsHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
 
-	var statusUpdate struct {
-		Status string `json:"status"`
-	}
+	var statusUpdate models.ReviewStatusDto
 	if err := json.NewDecoder(r.Body).Decode(&statusUpdate); err != nil {
 		return helpers.InvalidJSON()
 	}
 
-	err := h.reviewsSvcs.UpdateReplyStatus(ctx, id, statusUpdate.Status)
+	err := h.reviewsSvcs.UpdateReviewStatus(ctx, id, statusUpdate.Status)
 	if err != nil {
 		return err
 	}
@@ -343,23 +403,78 @@ func (h *ReviewsHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 	return helpers.WriteJson(w, http.StatusOK, response)
 }
 
-func (h *ReviewsHandler) GetProgramReviews(w http.ResponseWriter, r *http.Request) error {
+func (h *ReviewsHandler) ApproveReview(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-	programId := chi.URLParam(r, "programId")
-	reviewsFilter := h.parseReviewsFilter(r)
+	id := chi.URLParam(r, "id")
 
-	result, err := h.reviewsSvcs.GetProgramReviews(ctx, programId, reviewsFilter)
+	err := h.reviewsSvcs.ApproveReview(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	response := map[string]string{
+		"message": "Review approved successfully",
+	}
+	return helpers.WriteJson(w, http.StatusOK, response)
+}
+
+func (h *ReviewsHandler) RejectReview(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id")
+
+	err := h.reviewsSvcs.RejectReview(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	response := map[string]string{
+		"message": "Review rejected successfully",
+	}
+	return helpers.WriteJson(w, http.StatusOK, response)
+}
+
+func (h *ReviewsHandler) GetByStatus(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	status := chi.URLParam(r, "status")
+
+	reviewsFilter := h.parseReviewsFilter(r)
+	reviewsFilter.Status = status // Override status from URL
+
+	// Use util.Paginate to get standardized pagination values
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Convert skip/limit to page/perPage
+	page := int((skip / limit) + 1)
+	perPage := int(limit)
+
+	result, err := h.reviewsSvcs.GetAll(ctx, reviewsFilter, page, perPage)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *ReviewsHandler) GetProgramStats(w http.ResponseWriter, r *http.Request) error {
+func (h *ReviewsHandler) GetByUserId(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-	programId := chi.URLParam(r, "programId")
+	userId := chi.URLParam(r, "userId")
 
-	result, err := h.reviewsSvcs.GetProgramStats(ctx, programId)
+	reviewsFilter := h.parseReviewsFilter(r)
+	reviewsFilter.UserId = userId // Set userId filter
+
+	// Use util.Paginate to get standardized pagination values
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Convert skip/limit to page/perPage
+	page := int((skip / limit) + 1)
+	perPage := int(limit)
+
+	result, err := h.reviewsSvcs.GetAll(ctx, reviewsFilter, page, perPage)
 	if err != nil {
 		return err
 	}
