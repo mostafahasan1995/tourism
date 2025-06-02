@@ -13,7 +13,6 @@ import (
 
 type TravelRequestDto struct {
 	//basic information
-	//BasicInfo BasicInfo `bson:"basicInfo" json:"basicInfo"`
 
 	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
 	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `

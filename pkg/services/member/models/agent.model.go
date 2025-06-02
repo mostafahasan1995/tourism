@@ -124,7 +124,7 @@ type AgentReply struct {
 type AgentDto struct {
 	Name          string              `bson:"name" json:"name"`
 	Nationality   string              `bson:"nationality" json:"nationality"`
-	SpokenLangs   []string            `bson:"languages" json:"languages"`
+	SpokenLangs   []string            `bson:"Spokenlanguages" json:"Spokenlanguages"`
 	Company       string              `bson:"company" json:"company"`
 	CompanyLogo   types.FileField     `bson:"companyLogo" json:"companyLogo"`
 	Bio           string              `bson:"bio" json:"bio"`
