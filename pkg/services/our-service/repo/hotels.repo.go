@@ -20,9 +20,17 @@ import (
 type HotelsRepo interface {
 	dbrepo.MainRepo[models.Hotels]
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
-	GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error)
+	GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error)
 	Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) error
 	Delete(ctx context.Context, id string) error
+	// Hotel Reviews
+	AddReview(ctx context.Context, review *models.HotelReview) error
+	GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error)
+	GetReview(ctx context.Context, reviewId string) (*models.HotelReview, error)
+	// Debug method
+	GetAllReviews(ctx context.Context) ([]models.HotelReview, error)
+	// Review management
+	UpdateReviewStatus(ctx context.Context, reviewId string, status string) error
 }
 
 type hotelsrepo struct {
@@ -62,7 +70,7 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 
 }
 
-func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error) {
+func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error) {
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -79,45 +87,51 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 		return models.HotelsPagination{}, err
 	}
 
-	// Pagination defaults and limits
-	page := filter.Page
+	// Validate pagination values
 	if page <= 0 {
 		page = 1
 	}
-	size := filter.Size
-	if size <= 0 {
-		size = int(totalCount) // return all if invalid
+	if perPage <= 0 {
+		perPage = 10
 	}
-	skip := int64((page - 1) * size)
-	limit := int64(size)
+	if perPage > 100 {
+		perPage = 100
+	}
+	skip := int64((page - 1) * perPage)
+	limit := int64(perPage)
 
-	// Query options with pagination
-	findOptions := options.Find().SetSkip(skip).SetLimit(limit)
+	// Query options with pagination and sorting
+	findOptions := options.Find().
+		SetSkip(skip).
+		SetLimit(limit).
+		SetSort(bson.M{"createdAt": -1}) // Sort by creation date, newest first
 
 	cur, err := coll.Find(ctx, filterBody, findOptions)
 	if err != nil {
 		return models.HotelsPagination{}, err
 	}
 
-	var programs []models.Hotels
-	if err := cur.All(ctx, &programs); err != nil {
+	var hotels []models.Hotels
+	if err := cur.All(ctx, &hotels); err != nil {
 		return models.HotelsPagination{}, err
 	}
 
-	// Prepare pagination result
-	totalPages := float64(0)
-	if size > 0 {
-		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
+	// Calculate average rating for each hotel
+	for i := range hotels {
+		hotels[i].CalculateAverageRating()
 	}
 
-	for _, p := range programs {
-		p.CalculateAverageRating()
+	// Prepare pagination result
+	totalPages := int64(0)
+	if perPage > 0 {
+		totalPages = (totalCount + int64(perPage) - 1) / int64(perPage)
 	}
+
 	result := models.HotelsPagination{
-		Hotels: programs,
+		Hotels: hotels,
 		Pagination: common.Pagination{
-			TotalPages: totalPages,
-			PerPage:    int64(size),
+			TotalPages: float64(totalPages),
+			PerPage:    int64(perPage),
 			TotalCount: totalCount,
 		},
 	}
@@ -237,4 +251,160 @@ func (l *hotelsrepo) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// AddReview adds a new hotel review
+func (l *hotelsrepo) AddReview(ctx context.Context, review *models.HotelReview) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	coll := l.db.Database(cfg.Db).Collection("hotelReviews")
+
+	review.Id = primitive.NewObjectID()
+	review.CreatedAt = time.Now()
+	review.UpdatedAt = time.Now()
+	review.Trash = false
+
+	if review.Status == "" {
+		review.Status = "pending"
+	}
+
+	if review.Date.IsZero() {
+		review.Date = time.Now()
+	}
+
+	_, err = coll.InsertOne(ctx, review)
+	return err
+}
+
+// GetHotelReviews retrieves reviews for a specific hotel with pagination
+func (l *hotelsrepo) GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return models.HotelReviewPagination{}, err
+	}
+
+	hotelObjectId, err := primitive.ObjectIDFromHex(hotelId)
+	if err != nil {
+		return models.HotelReviewPagination{}, err
+	}
+
+	coll := l.db.Database(cfg.Db).Collection("hotelReviews")
+
+	// Create filter for hotel reviews
+	filter := bson.M{
+		"hotelId": hotelObjectId,
+		"trash":   bson.M{"$ne": true},
+	}
+
+	// Count total documents matching the filter
+	totalCount, err := coll.CountDocuments(ctx, filter)
+	if err != nil {
+		return models.HotelReviewPagination{}, err
+	}
+
+	// Use provided pagination values (already validated by util.Paginate in handler)
+	skip := int64((page - 1) * perPage)
+	limit := int64(perPage)
+
+	// Query options with pagination and sorting
+	findOptions := options.Find().
+		SetSkip(skip).
+		SetLimit(limit).
+		SetSort(bson.M{"createdAt": -1}) // Sort by creation date, newest first
+
+	cur, err := coll.Find(ctx, filter, findOptions)
+	if err != nil {
+		return models.HotelReviewPagination{}, err
+	}
+
+	var reviews []models.HotelReview
+	if err := cur.All(ctx, &reviews); err != nil {
+		return models.HotelReviewPagination{}, err
+	}
+
+	// Prepare pagination result
+	totalPages := int64(0)
+	if perPage > 0 {
+		totalPages = (totalCount + int64(perPage) - 1) / int64(perPage)
+	}
+
+	result := models.HotelReviewPagination{
+		Reviews: reviews,
+		Pagination: common.Pagination{
+			TotalPages: float64(totalPages),
+			PerPage:    int64(perPage),
+			TotalCount: totalCount,
+		},
+	}
+
+	return result, nil
+}
+
+// GetReview retrieves a specific review by ID
+func (l *hotelsrepo) GetReview(ctx context.Context, reviewId string) (*models.HotelReview, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	reviewObjectId, err := primitive.ObjectIDFromHex(reviewId)
+	if err != nil {
+		return nil, err
+	}
+
+	coll := l.db.Database(cfg.Db).Collection("hotelReviews")
+
+	var review models.HotelReview
+	if err := coll.FindOne(ctx, bson.M{"_id": reviewObjectId, "trash": false}).Decode(&review); err != nil {
+		return nil, err
+	}
+
+	return &review, nil
+}
+
+// GetAllReviews retrieves all reviews in the database
+func (l *hotelsrepo) GetAllReviews(ctx context.Context) ([]models.HotelReview, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	coll := l.db.Database(cfg.Db).Collection("hotelReviews")
+
+	cur, err := coll.Find(ctx, bson.M{})
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var reviews []models.HotelReview
+	if err := cur.All(ctx, &reviews); err != nil {
+		return nil, err
+	}
+
+	return reviews, nil
+}
+
+// UpdateReviewStatus updates the status of a specific review
+func (l *hotelsrepo) UpdateReviewStatus(ctx context.Context, reviewId string, status string) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	reviewObjectId, err := primitive.ObjectIDFromHex(reviewId)
+	if err != nil {
+		return err
+	}
+
+	coll := l.db.Database(cfg.Db).Collection("hotelReviews")
+
+	filter := bson.M{"_id": reviewObjectId}
+	update := bson.M{"$set": bson.M{"status": status}}
+
+	_, err = coll.UpdateOne(ctx, filter, update)
+	return err
 }

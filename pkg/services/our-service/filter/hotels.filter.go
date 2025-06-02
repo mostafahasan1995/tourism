@@ -26,8 +26,6 @@ type HotelsFilter struct {
 	CheckInAndCheckOut     CheckInAndCheckOutFilter     `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
 	PriceRange             PriceRangeFilter             `bson:"priceRange" json:"priceRange"`
 	Ratings                float64                      `bson:"ratings" json:"ratings"`
-	Page                   int                          `bson:"page" json:"page"`
-	Size                   int                          `bson:"size" json:"size"`
 	DistanceFromCityCenter DistanceFromCityCenterFilter `bson:"distanceFromCityCenter" json:"distanceFromCityCenter"`
 }
 
