@@ -20,12 +20,12 @@ import (
 type HotelsRepo interface {
 	dbrepo.MainRepo[models.Hotels]
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
-	GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error)
+	GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error)
 	Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) error
 	Delete(ctx context.Context, id string) error
 	// Hotel Reviews
 	AddReview(ctx context.Context, review *models.HotelReview) error
-	GetHotelReviews(ctx context.Context, hotelId string, page, size int) (models.HotelReviewPagination, error)
+	GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error)
 	GetReview(ctx context.Context, reviewId string) (*models.HotelReview, error)
 	// Debug method
 	GetAllReviews(ctx context.Context) ([]models.HotelReview, error)
@@ -70,7 +70,7 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 
 }
 
-func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error) {
+func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error) {
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -87,20 +87,18 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 		return models.HotelsPagination{}, err
 	}
 
-	// Pagination defaults and limits
-	page := filter.Page
+	// Validate pagination values
 	if page <= 0 {
 		page = 1
 	}
-	size := filter.Size
-	if size <= 0 {
-		size = 10 // Default page size instead of returning all
+	if perPage <= 0 {
+		perPage = 10
 	}
-	if size > 100 {
-		size = 100 // Maximum page size limit
+	if perPage > 100 {
+		perPage = 100
 	}
-	skip := int64((page - 1) * size)
-	limit := int64(size)
+	skip := int64((page - 1) * perPage)
+	limit := int64(perPage)
 
 	// Query options with pagination and sorting
 	findOptions := options.Find().
@@ -125,15 +123,15 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter) (mo
 
 	// Prepare pagination result
 	totalPages := int64(0)
-	if size > 0 {
-		totalPages = (totalCount + int64(size) - 1) / int64(size)
+	if perPage > 0 {
+		totalPages = (totalCount + int64(perPage) - 1) / int64(perPage)
 	}
 
 	result := models.HotelsPagination{
 		Hotels: hotels,
 		Pagination: common.Pagination{
 			TotalPages: float64(totalPages),
-			PerPage:    int64(size),
+			PerPage:    int64(perPage),
 			TotalCount: totalCount,
 		},
 	}
@@ -282,7 +280,7 @@ func (l *hotelsrepo) AddReview(ctx context.Context, review *models.HotelReview) 
 }
 
 // GetHotelReviews retrieves reviews for a specific hotel with pagination
-func (l *hotelsrepo) GetHotelReviews(ctx context.Context, hotelId string, page, size int) (models.HotelReviewPagination, error) {
+func (l *hotelsrepo) GetHotelReviews(ctx context.Context, hotelId string, page, perPage int) (models.HotelReviewPagination, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return models.HotelReviewPagination{}, err
@@ -307,18 +305,9 @@ func (l *hotelsrepo) GetHotelReviews(ctx context.Context, hotelId string, page, 
 		return models.HotelReviewPagination{}, err
 	}
 
-	// Pagination defaults and limits
-	if page <= 0 {
-		page = 1
-	}
-	if size <= 0 {
-		size = 10 // Default page size
-	}
-	if size > 100 {
-		size = 100 // Maximum page size limit
-	}
-	skip := int64((page - 1) * size)
-	limit := int64(size)
+	// Use provided pagination values (already validated by util.Paginate in handler)
+	skip := int64((page - 1) * perPage)
+	limit := int64(perPage)
 
 	// Query options with pagination and sorting
 	findOptions := options.Find().
@@ -338,15 +327,15 @@ func (l *hotelsrepo) GetHotelReviews(ctx context.Context, hotelId string, page, 
 
 	// Prepare pagination result
 	totalPages := int64(0)
-	if size > 0 {
-		totalPages = (totalCount + int64(size) - 1) / int64(size)
+	if perPage > 0 {
+		totalPages = (totalCount + int64(perPage) - 1) / int64(perPage)
 	}
 
 	result := models.HotelReviewPagination{
 		Reviews: reviews,
 		Pagination: common.Pagination{
 			TotalPages: float64(totalPages),
-			PerPage:    int64(size),
+			PerPage:    int64(perPage),
 			TotalCount: totalCount,
 		},
 	}

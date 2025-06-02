@@ -15,7 +15,7 @@ import (
 
 type HotelsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
-	GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error)
+	GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error)
 	Add(ctx context.Context, data *models.HotelsDto) (any, error)
 	Update(ctx context.Context, id string, data *models.HotelsDto) error
 	Delete(ctx context.Context, id string) error
@@ -45,9 +45,9 @@ func (l *hotelssvcs) GetOne(ctx context.Context, id string) (*models.Hotels, err
 
 }
 
-func (l *hotelssvcs) GetAll(ctx context.Context, filter filter.HotelsFilter) (models.HotelsPagination, error) {
+func (l *hotelssvcs) GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error) {
 
-	data, err := l.repo.GetAll(ctx, filter)
+	data, err := l.repo.GetAll(ctx, filter, page, perPage)
 
 	if err != nil {
 		return models.HotelsPagination{}, err
