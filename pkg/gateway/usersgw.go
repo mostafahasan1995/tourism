@@ -205,7 +205,7 @@ func (ugw *UsersGw) GetUserById(ctx context.Context, id string) (*common.User, e
 		return nil, err
 	}
 
-	serviceToken, err := common.GetServiceToken("crmservice", &common.HeaderParams{})
+	serviceToken, err := common.GetServiceToken("tourismservice", &common.HeaderParams{})
 	hp := common.HeaderParams{
 		Client:       cfg.Db,
 		ServiceToken: serviceToken,

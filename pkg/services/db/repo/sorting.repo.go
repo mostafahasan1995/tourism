@@ -26,7 +26,7 @@ type sortingrepo struct {
 func NewSortingRepo(i *do.Injector) (SortingRepo, error) {
 	return &sortingrepo{
 		db:       do.MustInvoke[*mongo.Client](i),
-		collName: "crmSorting",
+		collName: "tourismSorting",
 	}, nil
 }
 

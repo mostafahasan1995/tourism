@@ -24,6 +24,7 @@ type Includes struct {
 type DailyItinerary struct {
 	Title   string               `bson:"title" json:"title"`
 	Actions []primitive.ObjectID `bson:"actions" json:"actions"`
+	NewActions []string `bson:"newActions" json:"newActions"`
 	Images  []types.FileField    `bson:"images" json:"images"`
 }
 

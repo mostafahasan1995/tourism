@@ -11,25 +11,28 @@ import (
 
 func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
-	do.Provide(i, ourService.NewTourismProgramSvcs)
+	//do.Provide(i, ourService.NewTourismProgramSvcs)
 	do.Provide(i, ourService.NewHotelsSvcs)
 	do.Provide(i, ourService.NewPackageSvcs)
 	do.Provide(i, ourService.NewTravelRequestSvcs)
 	do.Provide(i, ourService.NewProgramSvcs)
+	do.Provide(i, ourService.NewInvoiceSvcs)
 
 	//repos
-	do.Provide(i, repo.NewTourismProgramRepo)
+	//do.Provide(i, repo.NewTourismProgramRepo)
 	do.Provide(i, repo.NewHotelsRepo)
 	do.Provide(i, repo.NewPackageRepo)
 	do.Provide(i, repo.NewTravelRequestRepo)
 	do.Provide(i, repo.NewProgramRepo)
+	do.Provide(i, repo.NewInvoiceRepo)
 
 	//handlers
-	handler.NewTourismProgramHandler(i, r)
+	//handler.NewTourismProgramHandler(i, r)
 	handler.NewHotelsHandler(i, r)
 	handler.NewPackageHandler(i, r)
 	handler.NewTravelRequestHandler(i, r)
 	handler.NewProgramHandler(i, r)
+	handler.NewInvoiceHandler(i, r)
 
 	return i
 }
