@@ -35,20 +35,6 @@ type TravelRequestDto struct {
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
 
-// type BasicInfo struct {
-// 	ProgramTitle   string     `bson:"programTitle" json:"programTitle"`
-// 	ServiceType    string     `bson:"serviceType" json:"serviceType"`
-// 	Purpose        string     `bson:"purpose" json:"purpose"`
-// 	DelegationType string     `bson:"delegationType" json:"delegationType"`
-// 	Source         string     `bson:"source" json:"source"`
-// 	Customer       string     `bson:"customer" json:"customer"`
-// 	Company        string     `bson:"company" json:"company"`
-// 	Coordinator    string     `bson:"coordinator" json:"coordinator"`
-// 	StartDate      *time.Time `bson:"startDate" json:"startDate"`
-// 	EndDate        *time.Time `bson:"endDate" json:"endDate"`
-// 	GroupSize      string     `bson:"groupSize" json:"groupSize"`
-// }
-
 func (t *TravelRequestDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, t)
 }
