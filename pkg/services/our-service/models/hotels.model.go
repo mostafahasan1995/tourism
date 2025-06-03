@@ -105,17 +105,18 @@ type RoomsAndSuitesPage struct {
 	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
-	RoomType        string            `bson:"roomType" json:"roomType"`
-	TotalRoom       int               `bson:"totalRoom" json:"totalRoom"`
-	RoomSurface     string            `bson:"roomSurface" json:"roomSurface"`
-	BedsCount       int               `bson:"bedsCount" json:"bedsCount"`
-	MaxOccupancy    int               `bson:"maxOccupancy" json:"maxOccupancy"`
-	ViewType        string            `bson:"viewType" json:"viewType"`
-	RoomAmenities   []string          `bson:"roomAmenities" json:"roomAmenities"`
-	Features        []string          `bson:"features" json:"features"`
-	Images          []types.FileField `bson:"images" json:"images"`
-	Pricing         Pricing           `bson:"pricing" json:"pricing"`
-	SeasonalPricing []SeasonPricing   `bson:"seasonalPricing" json:"seasonalPricing"`
+	RoomType          string            `bson:"roomType" json:"roomType"`
+	TotalRoom         int               `bson:"totalRoom" json:"totalRoom"`
+	RoomSurface       string            `bson:"roomSurface" json:"roomSurface"`
+	BedsCount         int               `bson:"bedsCount" json:"bedsCount"`
+	MaxOccupancy      int               `bson:"maxOccupancy" json:"maxOccupancy"`
+	ViewType          string            `bson:"viewType" json:"viewType"`
+	ActivePricingType string            `bson:"activePricingType" json:"activePricingType"`
+	RoomAmenities     []string          `bson:"roomAmenities" json:"roomAmenities"`
+	Features          []string          `bson:"features" json:"features"`
+	Images            []types.FileField `bson:"images" json:"images"`
+	Pricing           Pricing           `bson:"pricing" json:"pricing"`
+	SeasonalPricing   []SeasonPricing   `bson:"seasonalPricing" json:"seasonalPricing"`
 }
 
 type Pricing struct {
@@ -124,8 +125,8 @@ type Pricing struct {
 	ExtraPersonCharge     int    `bson:"extraPersonCharge" json:"extraPersonCharge"`
 	ExtraPersonChargeType string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
 	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
-	ActivePricingType     string `bson:"activePricingType" json:"activePricingType"`
-	CurrencyType          string `bson:"currencyType" json:"currencyType"`
+
+	CurrencyType string `bson:"currencyType" json:"currencyType"`
 }
 type SeasonPricing struct {
 	NightlyRateBase       int    `bson:"nightlyRateBase" json:"nightlyRateBase"`
@@ -134,8 +135,8 @@ type SeasonPricing struct {
 	ExtraPersonChargeType string `bson:"extraPersonChargeType" json:"extraPersonChargeType"`
 	IsIncludeBreakFast    bool   `bson:"isIncludeBreakFast" json:"isIncludeBreakFast"`
 	SeasonName            string `bson:"seasonName" json:"seasonName"`
-	ActivePricingType     string `bson:"activePricingType" json:"activePricingType"`
-	CurrencyType          string `bson:"currencyType" json:"currencyType"`
+
+	CurrencyType string `bson:"currencyType" json:"currencyType"`
 }
 type Advantages struct {
 	Text string          `bson:"text" json:"text"`
