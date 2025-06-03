@@ -27,9 +27,12 @@ type TravelRequestSvcs interface {
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error)
-	UpdateStatus(ctx context.Context, id string, data *models.ChangeStatusDto) (*models.TravelRequest, error)
+	//UpdateStatus(ctx context.Context, id string, data *models.ChangeStatusDto) (*models.TravelRequest, error)
 	Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error)
 	BulkWrite(ctx context.Context, writes []mongo.WriteModel) (*mongo.BulkWriteResult, error)
+	Approve(ctx context.Context, id string) (*models.TravelRequest, error)
+	Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error)
+	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
 }
 
 type travelrequestsvcs struct {
@@ -197,7 +200,7 @@ func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]mo
 	return requests, nil
 }
 
-func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *models.ChangeStatusDto) (*models.TravelRequest, error) {
+func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.TravelRequest, error) {
 	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		cfg, err := util.GetReqAppCfg(ctx)
 		if err != nil {
@@ -245,55 +248,51 @@ func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *m
 		request := result[0]
 
 		if request.CustomerId != cfg.User.Id {
-			return nil, errors.New("unauthorized")
+			return nil, errors.New("only owner of this travel request can approve it")
 		}
 
-		var invoiceId primitive.ObjectID
+		program := request.Program
+		customer := request.Customer
 
-		if data.Status == string(enums.TravelReqStatusApproved) {
-			program := request.Program
-			customer := request.Customer
+		if program.ProgramType != "custom" {
+			return nil, errors.New("error program type")
+		}
 
-			invoiceDto := &models.InvoiceDto{
-				DateOfIssue: time.Now(),
-				TravelReqId: request.Id,
-				Customer: models.InvoiceContact{
-					Name:    customer.Name,
-					Address: "",
-					Phone:   customer.ClientContact.Mobile,
-					Email:   customer.Security.Email,
-					Website: customer.ClientContact.Website,
-				},
-				Company:     models.InvoiceContact{},
-				ProgramName: program.Title,
-				TravelStart: program.StartDate,
-				TravelEnd:   program.EndDate,
-				Services:    []models.InvoiceService{},
-				Adjustments: []models.InvoiceAdjustment{},
-				Note:        "",
-			}
+		invoiceDto := &models.InvoiceDto{
+			DateOfIssue: time.Now(),
+			TravelReqId: request.Id,
+			Customer: models.InvoiceContact{
+				Name:    customer.Name,
+				Address: "",
+				Phone:   customer.ClientContact.Mobile,
+				Email:   customer.Security.Email,
+				Website: customer.ClientContact.Website,
+			},
+			Company:     models.InvoiceContact{},
+			ProgramName: program.Title,
+			TravelStart: program.StartDate,
+			TravelEnd:   program.EndDate,
+			Services:    []models.InvoiceService{},
+			Adjustments: []models.InvoiceAdjustment{},
+			Note:        "",
+		}
 
-			if program.ProgramType == "custom" {
-				svcss, err := program.CustomType.GetAllServicePricing()
-				if err != nil {
-					return nil, errors.New("error get program service list pricing")
-				}
+		svcss, err := program.CustomType.GetAllServicePricing()
+		if err != nil {
+			return nil, errors.New("error get program service list pricing")
+		}
 
-				invoiceDto.Services = svcss
-			}
+		invoiceDto.Services = svcss
 
-			invoice, err := t.invoicesvcs.Add(ctx, invoiceDto)
-			if err != nil {
-				return nil, errors.New("error add invoice")
-			}
-
-			invoiceId = invoice.Id
+		invoice, err := t.invoicesvcs.Add(ctx, invoiceDto)
+		if err != nil {
+			return nil, errors.New("error add invoice")
 		}
 
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": bson.M{
-			"status":    data.Status,
-			"invoiceId": invoiceId,
+			"status":    enums.TravelReqStatusApproved,
+			"invoiceId": invoice.Id,
 			"updatedAt": time.Now(),
 			"updatedBy": cfg.User.Id,
 		}}
@@ -315,10 +314,55 @@ func (t *travelrequestsvcs) UpdateStatus(ctx context.Context, id string, data *m
 
 }
 
+func (t *travelrequestsvcs) Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+	_id, err := primitive.ObjectIDFromHex(id) // travel request id
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{
+		"status":       enums.TravelReqStatusRejected,
+		"rejectReason": data.Reason,
+		"updatedAt":    time.Now(),
+		"updatedBy":    cfg.User.Id,
+	}}
+
+	updatedRequest, err := t.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedRequest, nil
+
+}
+
 func (t *travelrequestsvcs) Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error) {
 	return t.repo.Patch(ctx, filter, update)
 }
 
 func (t *travelrequestsvcs) BulkWrite(ctx context.Context, writes []mongo.WriteModel) (*mongo.BulkWriteResult, error) {
 	return t.repo.BulkWrite(ctx, writes)
+}
+
+func (t *travelrequestsvcs) SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{"status": enums.TravelReqStatusCompleted}}
+
+	updatedTravelReq, err := t.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedTravelReq, nil
+
 }

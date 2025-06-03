@@ -49,6 +49,7 @@ type TravelRequest struct {
 	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
 	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
 	TravelRequestDto `bson:",inline"`
+	RejectReason     string             `bson:"rejectReason" json:"rejectReason"`
 	RevisionNum      int                `bson:"revisionNum,omitempty" json:"revisionNum,omitempty"`
 	Trash            bool               `bson:"trash" json:"trash"`
 	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
@@ -77,4 +78,8 @@ type TravelRequestWithProgram struct {
 	TravelRequest `bson:",inline"`
 	Program       Program               `bson:"program" json:"program"`
 	Customer      membermodels.Customer `bson:"customer" json:"customer"`
+}
+
+type RejectMyReq struct {
+	Reason string `json:"reason"`
 }
