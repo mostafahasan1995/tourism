@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -27,6 +28,7 @@ type InvoiceSvcs interface {
 	AddPayment(ctx context.Context, invoiceId string, data *models.PaymentDto) (*models.Invoice, error)
 	UpdatePayment(ctx context.Context, invoiceId, paymentId string, data *models.PaymentDto) (*models.Invoice, error)
 	DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error)
+	PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error)
 }
 
 type invoiceSvcs struct {
@@ -129,6 +131,7 @@ func (i *invoiceSvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	}, nil
 }
 
+// when add payment by admin
 func (i *invoiceSvcs) AddPayment(ctx context.Context, invoiceId string, data *models.PaymentDto) (*models.Invoice, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -287,5 +290,19 @@ func (i *invoiceSvcs) DeletePayment(ctx context.Context, invoiceId, paymentId st
 	}
 
 	return result.(*models.Invoice), nil
+
+}
+
+// when pay by customer
+func (i *invoiceSvcs) PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error) {
+	newPaymentDto := models.PaymentDto{
+		Date:    time.Now(),
+		Method:  data.Method,
+		Amount:  data.Amount,
+		Status:  enums.InvoiceStatusUnpaid,
+		Receipt: data.Receipt,
+	}
+
+	return i.AddPayment(ctx, invoiceId, &newPaymentDto)
 
 }

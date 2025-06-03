@@ -34,7 +34,7 @@ import (
 )
 
 func Start() error {
-	port := util.GetEnv("PORT", "3259")
+	port := util.GetEnv("PORT", "3277")
 
 	fmt.Println("start server on port:", port)
 

@@ -26,8 +26,8 @@ func NewProgramHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/programs", func(r chi.Router) {
-		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOne))
-		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.Get))
+		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.Get("/", helpers.Make(h.Get))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))

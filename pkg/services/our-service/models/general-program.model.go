@@ -8,11 +8,16 @@ import (
 
 // general program - to show in the website so the customer can book it then we will create a custom program for them
 type GeneralProgram struct {
-	Distinations   []primitive.ObjectID `bson:"distinations" json:"distinations"`
+	Destinations   []DestinationFromTo `bson:"destinations" json:"destinations"`
 	Includes       Includes             `bson:"includes" json:"includes"`
 	Activities     []primitive.ObjectID `bson:"activities" json:"activities"`
 	DailyItinerary []DailyItinerary     `bson:"dailyItinerary" json:"dailyItinerary"`
 	Pricing        GPPricing            `bson:"pricing" json:"pricing"`
+}
+
+type DestinationFromTo struct {
+	From   primitive.ObjectID               `bson:"from" json:"from"`
+	To   primitive.ObjectID               `bson:"to" json:"to"`
 }
 
 type Includes struct {

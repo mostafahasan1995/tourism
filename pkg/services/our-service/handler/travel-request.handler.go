@@ -31,7 +31,9 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Get("/my-requests/{status}", helpers.Make(h.MyRequests))
-		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/approve", helpers.Make(h.Approve))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.Approve))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/complete", helpers.Make(h.SetAsCompleted))
 	})
 }
 
@@ -121,21 +123,43 @@ func (h *TravelRequestHandler) MyRequests(w http.ResponseWriter, r *http.Request
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *TravelRequestHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
+func (h *TravelRequestHandler) Approve(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id") // travel request id
 
-	var data models.ChangeStatusDto
+	result, err := h.travelreqsvcs.Approve(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) Reject(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id") // travel request id
+
+	var data models.RejectMyReq
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return err
 	}
 
-	if err := data.Validate(h.validationInstance); err != nil {
+	result, err := h.travelreqsvcs.Reject(ctx, id, &data)
+	if err != nil {
 		return err
 	}
 
-	result, err := h.travelreqsvcs.UpdateStatus(ctx, id, &data)
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) SetAsCompleted(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id") // travel request id
+
+	result, err := h.travelreqsvcs.SetAsCompleted(ctx, id)
 	if err != nil {
 		return err
 	}

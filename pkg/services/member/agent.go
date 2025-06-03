@@ -26,6 +26,7 @@ type AgentSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error)
 	GetOne(ctx context.Context, agentId string) (*models.Agent, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.AgentWithPagination, error)
+	GetAll(ctx context.Context, query string) ([]models.Agent, error)
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
 	Update(ctx context.Context, agentId string, data *models.AgentDto) (*models.Agent, error)
 	Delete(ctx context.Context, agentId string) error
@@ -111,6 +112,27 @@ func (a *agentsvcs) Get(ctx context.Context, skip, limit int64, query string) (*
 		Agents:     result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (a *agentsvcs) GetAll(ctx context.Context, query string) ([]models.Agent, error) {
+	match := bson.M{"trash": false}
+
+	filters, err := filters.NewAgentFilter(query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	var result []models.Agent
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }
 
 // add from dashboard
