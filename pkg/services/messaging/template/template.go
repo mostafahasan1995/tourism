@@ -13,7 +13,7 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 	enums.INVITATION: &InvitationTpl{
 		Subject: `Welcome to %s on %s`, //no need for html tpl
 		Message: `<div dir="ltr">
-					<p>Hi {{.EmpName}}</p>
+					<p>Hi {{.MemberName}}</p>
 					<p>We're excited to welcome you to {{.CompanyName}} on {{.PlatformName}}. Your account has been successfully created, and you can start using our platform immediately.
 					</p>
 					<p>Here are your login details:</p>
@@ -23,8 +23,6 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 					<p>Looking forward to collaborating with you!</p>
 
 					<p><strong>Best Regards,</strong></p>
-					<p><strong>{{.SenderName}}</strong></p>
-					<p><strong>{{.SenderPosition}}</strong></p>
 					<p><strong>{{.CompanyName}}</strong></p>
 				</div>
 				`,

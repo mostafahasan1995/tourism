@@ -14,9 +14,9 @@ type InvitationTpl struct {
 }
 
 type InvetationTplData struct {
+	MemberName     string
 	CompanyName    string
 	PlatformName   string
-	EmpName        string
 	Email          string
 	Password       string
 	SenderName     string
