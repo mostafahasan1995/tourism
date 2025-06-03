@@ -14,7 +14,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 
 	do.Provide(i, home.NewContactUsSvcs)
 	//do.Provide(i, home.NewOurAgentsSvcs)
-	do.Provide(i, home.NewReviewsSvcs)
+	// Reviews system moved to interactions service - removed from here
 
 	// FAQ services
 	do.Provide(i, home.NewFaqPageSvcs)
@@ -25,7 +25,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 
 	do.Provide(i, repo.NewContactUsRepo)
 	do.Provide(i, repo.NewOurAgentsRepo)
-	do.Provide(i, repo.NewReviewsRepo)
+	// Reviews repo moved to interactions service - removed from here
 
 	// FAQ repos
 	do.Provide(i, repo.NewFaqPageRepo)
@@ -36,7 +36,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 
 	handler.NewContactUsHandler(i, r)
 	//handler.NewOurAgentsHandler(i, r)
-	handler.NewReviewsHandler(i, r)
+	// Reviews handler moved to interactions service - removed from here
 
 	// FAQ handler
 	handler.NewFaqHandler(i, r)
