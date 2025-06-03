@@ -9,6 +9,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"time"
 
 	"github.com/samber/do"
@@ -19,10 +20,8 @@ import (
 
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
-	GetAll(ctx context.Context, filter filter.ReviewsFilter, page, perPage int) (models.ReviewPagination, error)
+	Get(ctx context.Context, skip, limit int64, query string) (*models.ReviewPagination, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
-	GetEntityReviews(ctx context.Context, entityType string, refId string, filter filter.ReviewsFilter, page, perPage int) (models.ReviewPagination, error)
-	GetEntityStats(ctx context.Context, entityType string, refId string) (*models.EntityReviewSummary, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	Update(ctx context.Context, id string, data *models.ReviewDto) error
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
@@ -52,29 +51,66 @@ func (s *reviewsSvcs) GetOne(ctx context.Context, id string) (*models.Review, er
 	return s.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (s *reviewsSvcs) GetAll(ctx context.Context, filter filter.ReviewsFilter, page, perPage int) (models.ReviewPagination, error) {
-	// Set default pagination values
-	if page <= 0 {
-		page = 1
-	}
-	if perPage <= 0 {
-		perPage = 10
+func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.ReviewPagination, error) {
+	match := bson.M{}
+
+	filters, err := filter.NewReviewsFilter(query)
+	if err != nil {
+		return nil, errors.New("invalid query")
 	}
 
-	return s.repo.GetAllByFilter(ctx, filter, page, perPage)
-}
+	if filters.Status == nil {
+		approved := "approved"
+		filters.Status = &approved
+	}
 
-func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error) {
-	// Get total count of approved reviews
-	totalCount, err := s.repo.Count(ctx, bson.M{
-		"trash":  bson.M{"$ne": true},
-		"status": "approved",
-	})
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := s.repo.Count(ctx, countPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	// Initialize stats with default values
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Review
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ReviewPagination{
+		Reviews:    result,
+		Pagination: pagination,
+	}, nil
+}
+
+func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error) {
+	match := bson.M{
+		"trash":  bson.M{"$ne": true},
+		"status": "approved",
+	}
+
+	countPipeline := []bson.M{{"$match": match}}
+	totalCount, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
 	stats := &models.ReviewStats{
 		TotalReviews:      totalCount,
 		AverageRating:     0,
@@ -84,24 +120,16 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 		ReviewsWithImages: 0,
 	}
 
-	// Initialize rating breakdown
 	for i := 1; i <= 5; i++ {
 		stats.RatingBreakdown[i] = 0
 	}
 
-	// If no reviews, return empty stats
 	if totalCount == 0 {
 		return stats, nil
 	}
 
-	// Calculate average rating, rating breakdown, and additional stats
 	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"trash":  bson.M{"$ne": true},
-				"status": "approved",
-			},
-		},
+		{"$match": match},
 		{
 			"$group": bson.M{
 				"_id":           nil,
@@ -141,7 +169,6 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 		stats.AverageRating = result[0].AverageRating
 		stats.ReviewsWithImages = result[0].ReviewsWithImages
 
-		// Calculate rating breakdown
 		for _, rating := range result[0].Ratings {
 			ratingInt := int(rating)
 			if ratingInt >= 1 && ratingInt <= 5 {
@@ -149,7 +176,6 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 			}
 		}
 
-		// Process destinations
 		destinationCount := make(map[string]int)
 		for _, dest := range result[0].Destinations {
 			if dest != "" {
@@ -157,7 +183,6 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 			}
 		}
 
-		// Process countries (flatten the array of arrays)
 		countryCount := make(map[string]int)
 		for _, countryArray := range result[0].Countries {
 			for _, country := range countryArray {
@@ -167,7 +192,6 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 			}
 		}
 
-		// Get top 5 destinations and countries
 		stats.TopDestinations = getTopItems(destinationCount, 5)
 		stats.TopCountries = getTopItems(countryCount, 5)
 	}
@@ -175,7 +199,6 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 	return stats, nil
 }
 
-// Helper function to get top items from a count map
 func getTopItems(countMap map[string]int, limit int) []string {
 	type item struct {
 		name  string
@@ -187,7 +210,6 @@ func getTopItems(countMap map[string]int, limit int) []string {
 		items = append(items, item{name: name, count: count})
 	}
 
-	// Simple bubble sort for small datasets
 	for i := 0; i < len(items)-1; i++ {
 		for j := 0; j < len(items)-i-1; j++ {
 			if items[j].count < items[j+1].count {
@@ -204,150 +226,37 @@ func getTopItems(countMap map[string]int, limit int) []string {
 	return result
 }
 
-func (s *reviewsSvcs) GetEntityReviews(ctx context.Context, entityType string, refId string, filter filter.ReviewsFilter, page, perPage int) (models.ReviewPagination, error) {
-	// Convert refId to ObjectID
-	_refId, err := primitive.ObjectIDFromHex(refId)
-	if err != nil {
-		return models.ReviewPagination{}, helpers.InvalidObjectId()
-	}
-
-	// Set the entity filter
-	filter.Type = entityType
-	filter.Ref = _refId
-
-	// Set default pagination values
-	if page <= 0 {
-		page = 1
-	}
-	if perPage <= 0 {
-		perPage = 10
-	}
-
-	return s.repo.GetAllByFilter(ctx, filter, page, perPage)
-}
-
-func (s *reviewsSvcs) GetEntityStats(ctx context.Context, entityType string, refId string) (*models.EntityReviewSummary, error) {
-	// Convert refId to ObjectID
-	_refId, err := primitive.ObjectIDFromHex(refId)
-	if err != nil {
-		return nil, helpers.InvalidObjectId()
-	}
-
-	// Get total count of approved reviews for this entity
-	totalCount, err := s.repo.Count(ctx, bson.M{
-		"trash":  bson.M{"$ne": true},
-		"status": "approved",
-		"type":   entityType,
-		"ref":    _refId,
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	// Initialize summary with default values
-	summary := &models.EntityReviewSummary{
-		Type:            entityType,
-		RefId:           _refId,
-		TotalReviews:    totalCount,
-		AverageRating:   0,
-		RatingBreakdown: make(map[int]int64),
-	}
-
-	// Initialize rating breakdown
-	for i := 1; i <= 5; i++ {
-		summary.RatingBreakdown[i] = 0
-	}
-
-	// If no reviews for this entity, return empty stats
-	if totalCount == 0 {
-		return summary, nil
-	}
-
-	// Calculate average rating and rating breakdown for this entity
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"trash":  bson.M{"$ne": true},
-				"status": "approved",
-				"type":   entityType,
-				"ref":    _refId,
-			},
-		},
-		{
-			"$group": bson.M{
-				"_id":           nil,
-				"averageRating": bson.M{"$avg": "$value"},
-				"ratings":       bson.M{"$push": "$value"},
-			},
-		},
-	}
-
-	var result []struct {
-		AverageRating float64   `bson:"averageRating"`
-		Ratings       []float64 `bson:"ratings"`
-	}
-
-	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		return cur.All(ctx, &result)
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	if len(result) > 0 {
-		summary.AverageRating = result[0].AverageRating
-
-		// Calculate rating breakdown
-		for _, rating := range result[0].Ratings {
-			ratingInt := int(rating)
-			if ratingInt >= 1 && ratingInt <= 5 {
-				summary.RatingBreakdown[ratingInt]++
-			}
-		}
-	}
-
-	return summary, nil
-}
-
 func (s *reviewsSvcs) Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error) {
-	// Handle user information based on authentication status
 	var createdBy primitive.ObjectID
 
-	// Check if user is authenticated by getting user from context
 	user, _ := ctx.Value(util.ReqUser).(*types.User)
 	if user == nil {
-		// Unauthenticated user - require personal info fields for some review types
 		if data.Type == "hotel" && (data.FirstName == "" || data.LastName == "" || data.Email == "") {
 			return nil, helpers.BadRequest("firstName, lastName, and email are required for unauthenticated hotel reviews")
 		}
 		createdBy = primitive.NilObjectID
-		data.UserId = "000000000000000000000000" // Default ObjectID for unauthenticated users
+		data.UserId = "000000000000000000000000"
 	} else {
-		// Authenticated user - use their information
 		createdBy = user.Id
 		data.UserId = user.Id.Hex()
-		// For authenticated users, clear personal info fields (privacy)
 		data.FirstName = ""
 		data.LastName = ""
 		data.Email = ""
 	}
 
-	// Set default status if not provided
 	if data.Status == "" {
 		data.Status = "pending"
 	}
 
-	// Set date if not provided
 	if data.Date.IsZero() {
 		data.Date = time.Now()
 	}
 
-	// Initialize replies and images if nil
 	if data.Replies == nil {
 		data.Replies = []models.ReviewReply{}
 	}
 	if data.Images == nil {
-		data.Images = []models.ReviewImage{}
+		data.Images = []types.FileField{}
 	}
 
 	review := &models.Review{
@@ -378,13 +287,11 @@ func (s *reviewsSvcs) Update(ctx context.Context, id string, data *models.Review
 		return helpers.InvalidObjectId()
 	}
 
-	// Get existing review to preserve created fields
 	existing, err := s.GetOne(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	// Handle case where user is not authenticated
 	var userId primitive.ObjectID
 	if cfg.User != nil {
 		userId = cfg.User.Id
@@ -392,9 +299,8 @@ func (s *reviewsSvcs) Update(ctx context.Context, id string, data *models.Review
 		userId = primitive.NilObjectID
 	}
 
-	// Set date if not provided
 	if data.Date.IsZero() {
-		data.Date = existing.Date // Preserve original review date
+		data.Date = existing.Date
 	}
 
 	review := &models.Review{
@@ -429,7 +335,6 @@ func (s *reviewsSvcs) Patch(ctx context.Context, id string, updates map[string]i
 		return helpers.InvalidObjectId()
 	}
 
-	// Handle case where user is not authenticated
 	var userId primitive.ObjectID
 	if cfg.User != nil {
 		userId = cfg.User.Id
@@ -437,13 +342,11 @@ func (s *reviewsSvcs) Patch(ctx context.Context, id string, updates map[string]i
 		userId = primitive.NilObjectID
 	}
 
-	// Build the update document with only the fields that are being updated
 	updateDoc := bson.M{
 		"updatedAt": time.Now(),
 		"updatedBy": userId,
 	}
 
-	// Add the specific fields to update
 	for key, value := range updates {
 		switch key {
 		case "status", "username", "userId", "value", "description", "adviceForTravelers":
@@ -475,7 +378,6 @@ func (s *reviewsSvcs) Delete(ctx context.Context, id string) error {
 		return helpers.InvalidObjectId()
 	}
 
-	// Handle case where user is not authenticated
 	var userId primitive.ObjectID
 	if cfg.User != nil {
 		userId = cfg.User.Id
@@ -509,12 +411,10 @@ func (s *reviewsSvcs) AddReply(ctx context.Context, reviewId string, reply model
 		return helpers.InvalidObjectId()
 	}
 
-	// Validate reply text
 	if reply.Text == "" {
 		return helpers.BadRequest("Reply text is required")
 	}
 
-	// Check if review exists
 	existingReview, err := s.GetOne(ctx, reviewId)
 	if err != nil {
 		return err
@@ -523,7 +423,6 @@ func (s *reviewsSvcs) AddReply(ctx context.Context, reviewId string, reply model
 		return errors.New("review not found")
 	}
 
-	// Handle case where user is not authenticated
 	var userId primitive.ObjectID
 	if cfg.User != nil {
 		userId = cfg.User.Id
@@ -531,17 +430,13 @@ func (s *reviewsSvcs) AddReply(ctx context.Context, reviewId string, reply model
 		userId = primitive.NilObjectID
 	}
 
-	// Set reply metadata
 	reply.Date = time.Now()
 
-	// First, ensure replies field is an array (initialize if null)
 	filter := bson.M{"_id": _id, "replies": bson.M{"$type": "null"}}
 	initUpdate := bson.M{"$set": bson.M{"replies": []models.ReviewReply{}}}
 
-	// This will only update documents where replies is null
 	s.repo.Patch(ctx, filter, initUpdate)
 
-	// Now add the reply using $push (replies is guaranteed to be an array)
 	filter = bson.M{"_id": _id}
 	update := bson.M{
 		"$push": bson.M{"replies": reply},
@@ -560,7 +455,36 @@ func (s *reviewsSvcs) AddReply(ctx context.Context, reviewId string, reply model
 }
 
 func (s *reviewsSvcs) UpdateReviewStatus(ctx context.Context, reviewId string, status string) error {
-	return s.repo.UpdateReviewStatus(ctx, reviewId, status)
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(reviewId)
+	if err != nil {
+		return helpers.InvalidObjectId()
+	}
+
+	var userId primitive.ObjectID
+	if cfg.User != nil {
+		userId = cfg.User.Id
+	} else {
+		userId = primitive.NilObjectID
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{
+		"status":    status,
+		"updatedAt": time.Now(),
+		"updatedBy": userId,
+	}}
+
+	_, err = s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *reviewsSvcs) ApproveReview(ctx context.Context, reviewId string) error {
