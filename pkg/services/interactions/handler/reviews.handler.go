@@ -176,15 +176,12 @@ func (h *ReviewsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	err := h.reviewsSvcs.Update(ctx, id, &data)
+	result, err := h.reviewsSvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]string{
-		"message": "Review updated successfully",
-	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -196,15 +193,12 @@ func (h *ReviewsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 		return helpers.InvalidJSON()
 	}
 
-	err := h.reviewsSvcs.Patch(ctx, id, updates)
+	result, err := h.reviewsSvcs.Patch(ctx, id, updates)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]string{
-		"message": "Review updated successfully",
-	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -255,45 +249,36 @@ func (h *ReviewsHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 		return helpers.InvalidJSON()
 	}
 
-	err := h.reviewsSvcs.UpdateReviewStatus(ctx, id, statusUpdate.Status)
+	result, err := h.reviewsSvcs.UpdateReviewStatus(ctx, id, statusUpdate.Status)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]string{
-		"message": "Review status updated successfully",
-	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) ApproveReview(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
 
-	err := h.reviewsSvcs.ApproveReview(ctx, id)
+	result, err := h.reviewsSvcs.ApproveReview(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]string{
-		"message": "Review approved successfully",
-	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) RejectReview(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
 
-	err := h.reviewsSvcs.RejectReview(ctx, id)
+	result, err := h.reviewsSvcs.RejectReview(ctx, id)
 	if err != nil {
 		return err
 	}
 
-	response := map[string]string{
-		"message": "Review rejected successfully",
-	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetStats(w http.ResponseWriter, r *http.Request) error {

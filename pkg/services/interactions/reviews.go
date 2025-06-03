@@ -23,13 +23,13 @@ type ReviewsSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ReviewPagination, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
-	Update(ctx context.Context, id string, data *models.ReviewDto) error
-	Patch(ctx context.Context, id string, updates map[string]interface{}) error
+	Update(ctx context.Context, id string, data *models.ReviewDto) (*models.Review, error)
+	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Review, error)
 	Delete(ctx context.Context, id string) error
 	AddReply(ctx context.Context, reviewId string, reply models.ReviewReply) error
-	UpdateReviewStatus(ctx context.Context, reviewId string, status string) error
-	ApproveReview(ctx context.Context, reviewId string) error
-	RejectReview(ctx context.Context, reviewId string) error
+	UpdateReviewStatus(ctx context.Context, reviewId string, status string) (*models.Review, error)
+	ApproveReview(ctx context.Context, reviewId string) (*models.Review, error)
+	RejectReview(ctx context.Context, reviewId string) (*models.Review, error)
 }
 
 type reviewsSvcs struct {
@@ -276,28 +276,23 @@ func (s *reviewsSvcs) Add(ctx context.Context, data *models.ReviewDto) (*models.
 	return review, nil
 }
 
-func (s *reviewsSvcs) Update(ctx context.Context, id string, data *models.ReviewDto) error {
+func (s *reviewsSvcs) Update(ctx context.Context, id string, data *models.ReviewDto) (*models.Review, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return helpers.InvalidObjectId()
+		return nil, helpers.InvalidObjectId()
 	}
 
 	existing, err := s.GetOne(ctx, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	var userId primitive.ObjectID
-	if cfg.User != nil {
-		userId = cfg.User.Id
-	} else {
-		userId = primitive.NilObjectID
-	}
+	userId := cfg.User.Id
 
 	if data.Date.IsZero() {
 		data.Date = existing.Date
@@ -318,29 +313,24 @@ func (s *reviewsSvcs) Update(ctx context.Context, id string, data *models.Review
 
 	_, err = s.repo.Patch(ctx, filter, update)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return review, nil
 }
 
-func (s *reviewsSvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) error {
+func (s *reviewsSvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Review, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return helpers.InvalidObjectId()
+		return nil, helpers.InvalidObjectId()
 	}
 
-	var userId primitive.ObjectID
-	if cfg.User != nil {
-		userId = cfg.User.Id
-	} else {
-		userId = primitive.NilObjectID
-	}
+	userId := cfg.User.Id
 
 	updateDoc := bson.M{
 		"updatedAt": time.Now(),
@@ -361,10 +351,10 @@ func (s *reviewsSvcs) Patch(ctx context.Context, id string, updates map[string]i
 
 	_, err = s.repo.Patch(ctx, filter, update)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return s.GetOne(ctx, id)
 }
 
 func (s *reviewsSvcs) Delete(ctx context.Context, id string) error {
@@ -378,12 +368,7 @@ func (s *reviewsSvcs) Delete(ctx context.Context, id string) error {
 		return helpers.InvalidObjectId()
 	}
 
-	var userId primitive.ObjectID
-	if cfg.User != nil {
-		userId = cfg.User.Id
-	} else {
-		userId = primitive.NilObjectID
-	}
+	userId := cfg.User.Id
 
 	filter := bson.M{"_id": _id}
 	update := bson.M{"$set": bson.M{
@@ -423,12 +408,7 @@ func (s *reviewsSvcs) AddReply(ctx context.Context, reviewId string, reply model
 		return errors.New("review not found")
 	}
 
-	var userId primitive.ObjectID
-	if cfg.User != nil {
-		userId = cfg.User.Id
-	} else {
-		userId = primitive.NilObjectID
-	}
+	userId := cfg.User.Id
 
 	reply.Date = time.Now()
 
@@ -454,23 +434,18 @@ func (s *reviewsSvcs) AddReply(ctx context.Context, reviewId string, reply model
 	return nil
 }
 
-func (s *reviewsSvcs) UpdateReviewStatus(ctx context.Context, reviewId string, status string) error {
+func (s *reviewsSvcs) UpdateReviewStatus(ctx context.Context, reviewId string, status string) (*models.Review, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_id, err := primitive.ObjectIDFromHex(reviewId)
 	if err != nil {
-		return helpers.InvalidObjectId()
+		return nil, helpers.InvalidObjectId()
 	}
 
-	var userId primitive.ObjectID
-	if cfg.User != nil {
-		userId = cfg.User.Id
-	} else {
-		userId = primitive.NilObjectID
-	}
+	userId := cfg.User.Id
 
 	filter := bson.M{"_id": _id}
 	update := bson.M{"$set": bson.M{
@@ -481,16 +456,16 @@ func (s *reviewsSvcs) UpdateReviewStatus(ctx context.Context, reviewId string, s
 
 	_, err = s.repo.Patch(ctx, filter, update)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return s.GetOne(ctx, reviewId)
 }
 
-func (s *reviewsSvcs) ApproveReview(ctx context.Context, reviewId string) error {
+func (s *reviewsSvcs) ApproveReview(ctx context.Context, reviewId string) (*models.Review, error) {
 	return s.UpdateReviewStatus(ctx, reviewId, "approved")
 }
 
-func (s *reviewsSvcs) RejectReview(ctx context.Context, reviewId string) error {
+func (s *reviewsSvcs) RejectReview(ctx context.Context, reviewId string) (*models.Review, error) {
 	return s.UpdateReviewStatus(ctx, reviewId, "rejected")
 }
