@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -166,6 +167,7 @@ func (p *programsvcs) AssignProgramToTravelRequest(ctx context.Context, program 
 	update := bson.M{"$set": bson.M{
 		"program":     program.Id,
 		"package":     program.Package,
+		"status":      enums.TravelReqStatusWaiting,
 		"revisionNum": 1,
 	}}
 
@@ -200,9 +202,10 @@ func (p *programsvcs) UpdateTravelRequestRevisionNum(ctx context.Context, progra
 		"_id":     program.TravelReqId,
 		"program": program.Id,
 	}
-	update := bson.M{"$inc": bson.M{
-		"revisionNum": 1,
-	}}
+	update := bson.M{
+		"$inc": bson.M{"revisionNum": 1},
+		"$set": bson.M{"status": enums.TravelReqStatusWaiting},
+	}
 
 	if _, err := p.travelreqsvcs.Patch(ctx, filter, update); err != nil {
 		return errors.New("error updating travel request")

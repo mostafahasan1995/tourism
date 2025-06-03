@@ -13,7 +13,6 @@ import (
 
 type TravelRequestDto struct {
 	//basic information
-	//BasicInfo BasicInfo `bson:"basicInfo" json:"basicInfo"`
 
 	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
 	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
@@ -36,20 +35,6 @@ type TravelRequestDto struct {
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
 
-// type BasicInfo struct {
-// 	ProgramTitle   string     `bson:"programTitle" json:"programTitle"`
-// 	ServiceType    string     `bson:"serviceType" json:"serviceType"`
-// 	Purpose        string     `bson:"purpose" json:"purpose"`
-// 	DelegationType string     `bson:"delegationType" json:"delegationType"`
-// 	Source         string     `bson:"source" json:"source"`
-// 	Customer       string     `bson:"customer" json:"customer"`
-// 	Company        string     `bson:"company" json:"company"`
-// 	Coordinator    string     `bson:"coordinator" json:"coordinator"`
-// 	StartDate      *time.Time `bson:"startDate" json:"startDate"`
-// 	EndDate        *time.Time `bson:"endDate" json:"endDate"`
-// 	GroupSize      string     `bson:"groupSize" json:"groupSize"`
-// }
-
 func (t *TravelRequestDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, t)
 }
@@ -64,6 +49,7 @@ type TravelRequest struct {
 	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
 	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
 	TravelRequestDto `bson:",inline"`
+	RejectReason     string             `bson:"rejectReason" json:"rejectReason"`
 	RevisionNum      int                `bson:"revisionNum,omitempty" json:"revisionNum,omitempty"`
 	Trash            bool               `bson:"trash" json:"trash"`
 	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
@@ -92,4 +78,8 @@ type TravelRequestWithProgram struct {
 	TravelRequest `bson:",inline"`
 	Program       Program               `bson:"program" json:"program"`
 	Customer      membermodels.Customer `bson:"customer" json:"customer"`
+}
+
+type RejectMyReq struct {
+	Reason string `json:"reason"`
 }

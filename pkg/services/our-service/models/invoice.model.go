@@ -2,9 +2,12 @@ package models
 
 import (
 	"errors"
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -53,13 +56,17 @@ type Payment struct {
 }
 
 type PaymentDto struct {
-	Date    time.Time         `bson:"date" json:"date"`
-	Method  string            `bson:"method" json:"method"`
-	Amount  float64           `bson:"amount" json:"amount"`
-	Unit    string            `bson:"unit" json:"unit"`
-	Status  string            `bson:"status" json:"status"` //paid - unpaid
-	Note    string            `bson:"note" json:"note"`
-	Reciept []types.FileField `bson:"reciept" json:"reciept"`
+	Date    time.Time           `bson:"date" json:"date" validate:"required"`
+	Method  string              `bson:"method" json:"method" validate:"required"`
+	Amount  float64             `bson:"amount" json:"amount" validate:"required"`
+	Unit    string              `bson:"unit" json:"unit"`
+	Status  enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=paid unpaid"` //paid - unpaid
+	Note    string              `bson:"note" json:"note"`
+	Receipt []types.FileField   `bson:"receipt" json:"receipt"`
+}
+
+func (p *PaymentDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, p)
 }
 
 type Invoice struct {
@@ -116,4 +123,10 @@ func (i *Invoice) SetTotals() error {
 type InvoicePagination struct {
 	Invoices   []Invoice        `bson:"invoices" json:"invoices"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+type PayOrder struct {
+	Amount  float64           `bson:"amount" json:"amount"`
+	Method  string            `bson:"method" json:"method"`
+	Receipt []types.FileField `bson:"receipt" json:"receipt"`
 }
