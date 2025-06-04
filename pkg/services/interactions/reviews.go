@@ -21,6 +21,7 @@ import (
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ReviewPagination, error)
+	GetAll(ctx context.Context) ([]models.Review, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	Update(ctx context.Context, id string, data *models.ReviewDto) (*models.Review, error)
@@ -42,6 +43,25 @@ func NewReviewsSvcs(i *do.Injector) (ReviewsSvcs, error) {
 	}, nil
 }
 
+func (s *reviewsSvcs) GetAll(ctx context.Context) ([]models.Review, error) {
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+	}
+
+	var result []models.Review
+	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+
+}
 func (s *reviewsSvcs) GetOne(ctx context.Context, id string) (*models.Review, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
