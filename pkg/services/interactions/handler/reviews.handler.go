@@ -38,6 +38,7 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 			r.Get("/", helpers.Make(h.GetEntityReviews))
 			r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.AddEntityReview))
 		})
+		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -47,7 +48,15 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectReview))
 	})
 }
+func (h *ReviewsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
 
+	result, err := h.reviewsSvcs.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
 func (h *ReviewsHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
