@@ -13,11 +13,11 @@ import (
 	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
+	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
+	marketing "larsa-tourism-microservices/pkg/services/marketing/di"
 	member "larsa-tourism-microservices/pkg/services/member/di"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
-
-	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 
 	"larsa-tourism-microservices/pkg/util"
 	"log"
@@ -96,7 +96,7 @@ func Start() error {
 	ourService.Init(injector, r)
 	interactions.Init(injector, r)
 	member.Init(injector, r)
-
+	marketing.Init(injector, r)
 	//deprecated
 	//travelreq.Init(injector, r)
 
