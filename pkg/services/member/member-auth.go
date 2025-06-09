@@ -183,6 +183,16 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 		platformName = "[Platform Name]"
 	}
 
+	fUrl, err := common.GetOptionValue("FRONTEND_URL", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting frontend url")
+	}
+
+	frontEndUrl, ok := fUrl.(string)
+	if !ok {
+		return errors.New("error getting frontend url")
+	}
+
 	var invitationTplData *messagingtpls.InvetationTplData
 	var email string
 
@@ -194,7 +204,7 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 			PlatformName: platformName,
 			Email:        member.Security.Email,
 			Password:     password,
-			Link:         "https://imkan.com/register",
+			Link:         frontEndUrl + "/auth/login",
 		}
 
 		email = member.Security.Email
@@ -205,7 +215,7 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 			PlatformName: platformName,
 			Email:        member.Security.Email,
 			Password:     password,
-			Link:         "https://imkan.com/register",
+			Link:         frontEndUrl + "/auth/login",
 		}
 		email = member.Security.Email
 	}
@@ -256,6 +266,16 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 		platformName = "[Platform Name]"
 	}
 
+	fUrl, err := common.GetOptionValue("FRONTEND_URL", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting frontend url")
+	}
+
+	frontEndUrl, ok := fUrl.(string)
+	if !ok {
+		return errors.New("error getting frontend url")
+	}
+
 	var accountUpdatedTplData *messagingtpls.AccountUpdatedTplData
 	var email string
 
@@ -267,7 +287,7 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 			PlatformName: platformName,
 			Email:        member.Security.Email,
 			Password:     password,
-			Link:         "https://imkan.com/register",
+			Link:         frontEndUrl + "/auth/login",
 		}
 
 		email = member.Security.Email
@@ -278,7 +298,7 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 			PlatformName: platformName,
 			Email:        member.Security.Email,
 			Password:     password,
-			Link:         "https://imkan.com/register",
+			Link:         frontEndUrl + "/auth/login",
 		}
 		email = member.Security.Email
 	}
