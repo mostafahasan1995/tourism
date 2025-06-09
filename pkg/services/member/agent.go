@@ -37,24 +37,18 @@ type AgentSvcs interface {
 }
 
 type agentsvcs struct {
-	repo          repo.AgentRepo
-	agentjoinrepo repo.AgentJoinRepo
-	sortingsvcs   dbsvcs.SortingSvcs
-	//usersgw       *gateway.UsersGw
-	//messagesvcs messaging.MessageSvcs
-	//gateway        gateway.Gateway
+	repo           repo.AgentRepo
+	agentjoinrepo  repo.AgentJoinRepo
+	sortingsvcs    dbsvcs.SortingSvcs
 	memberAuthSvcs MemberAuthSvcs
 	withtxn        *db.WithTxn
 }
 
 func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 	return &agentsvcs{
-		repo:          do.MustInvoke[repo.AgentRepo](i),
-		agentjoinrepo: do.MustInvoke[repo.AgentJoinRepo](i),
-		sortingsvcs:   do.MustInvoke[dbsvcs.SortingSvcs](i),
-		//usersgw:       do.MustInvoke[*gateway.UsersGw](i),
-		//messagesvcs: do.MustInvoke[messaging.MessageSvcs](i),
-		//gateway:        do.MustInvoke[gateway.Gateway](i),
+		repo:           do.MustInvoke[repo.AgentRepo](i),
+		agentjoinrepo:  do.MustInvoke[repo.AgentJoinRepo](i),
+		sortingsvcs:    do.MustInvoke[dbsvcs.SortingSvcs](i),
 		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
 		withtxn:        do.MustInvoke[*db.WithTxn](i),
 	}, nil
@@ -232,120 +226,6 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 	return result.(*models.Agent), nil
 }
 
-// func (a *agentsvcs) sendInvitationEmail(ctx context.Context, password string, data *models.Agent) error {
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
-// 	if err != nil {
-// 		return errors.New("error getting business name")
-// 	}
-// 	businessName, ok := val.(string)
-// 	if !ok {
-// 		businessName = "[Business Name]"
-// 	}
-
-// 	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
-// 	if err != nil {
-// 		return errors.New("error getting platform name")
-// 	}
-// 	platformName, ok := plat.(string)
-// 	if !ok {
-// 		platformName = "[Platform Name]"
-// 	}
-
-// 	invitationTplData := &messagingtpls.InvetationTplData{
-// 		MemberName:   data.Name,
-// 		CompanyName:  businessName,
-// 		PlatformName: platformName,
-// 		Email:        data.Security.Email,
-// 		Password:     password,
-// 		Link:         "https://imkan.com/register",
-// 	}
-
-// 	message, subject, err := a.messagesvcs.GetTemplateMessage(ctx, messagingenums.INVITATION, invitationTplData)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	msg := messagingmodels.Message{
-// 		Type:        messagingenums.INVITATION,
-// 		Email:       data.Security.Email,
-// 		Subject:     subject,
-// 		Message:     message,
-// 		MessageHtml: message,
-// 		Target:      "email", //todo: must set in message service
-// 		Others:      map[string]any{},
-// 	}
-
-// 	if err := a.messagesvcs.SendEmail(ctx, &msg); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
-// func (a *agentsvcs) sendAccountUpdatedEmail(ctx context.Context, password string, data *models.Agent) error {
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
-// 	if err != nil {
-// 		return errors.New("error getting business name")
-// 	}
-// 	businessName, ok := val.(string)
-// 	if !ok {
-// 		businessName = "[Business Name]"
-// 	}
-
-// 	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
-// 	if err != nil {
-// 		return errors.New("error getting platform name")
-// 	}
-// 	platformName, ok := plat.(string)
-// 	if !ok {
-// 		platformName = "[Platform Name]"
-// 	}
-
-// 	accountUpdatedTplData := &messagingtpls.AccountUpdatedTplData{
-// 		MemberName:   data.Name,
-// 		CompanyName:  businessName,
-// 		PlatformName: platformName,
-// 		Email:        data.Security.Email,
-// 		Password:     password,
-// 		Link:         "https://imkan.com/register",
-// 	}
-
-// 	if password == "" {
-// 		accountUpdatedTplData.Password = "Your password"
-// 	}
-
-// 	message, subject, err := a.messagesvcs.GetTemplateMessage(ctx, messagingenums.ACCOUNTUPDATED, accountUpdatedTplData)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	msg := messagingmodels.Message{
-// 		Type:        messagingenums.INVITATION,
-// 		Email:       data.Security.Email,
-// 		Subject:     subject,
-// 		Message:     message,
-// 		MessageHtml: message,
-// 		Target:      "email", //todo: must set in message service
-// 		Others:      map[string]any{},
-// 	}
-
-// 	if err := a.messagesvcs.SendEmail(ctx, &msg); err != nil {
-// 		return err
-// 	}
-
-// 	return nil
-// }
-
 func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -371,67 +251,6 @@ func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
 
 	return nil
 }
-
-// func (a *agentsvcs) AddUpdateAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, pass string, err error) {
-// 	zeroId := primitive.NilObjectID
-
-// 	var path, method string
-// 	if data.Id == primitive.NilObjectID {
-// 		path = "users/"
-// 		method = "POST"
-// 	} else {
-// 		path = "users/" + data.Id.Hex()
-// 		method = "PATCH"
-// 	}
-
-// 	password := data.Security.NewPassword
-// 	if method == "POST" && password == "" {
-// 		password = util.GeneratePassword(8, 2, 2, 2)
-// 	}
-
-// 	user := map[string]any{
-// 		"firstName": data.Name,
-// 		"lastName":  "-",
-// 		"email":     data.Security.Email,
-// 	}
-
-// 	if password != "" {
-// 		user["password"] = password
-// 	}
-
-// 	resp, err := a.gateway.Request(ctx, "users", path, method, "", user)
-
-// 	if err != nil {
-// 		return zeroId, "", errors.New("error adding user")
-// 	} else if resp.StatusCode != 200 {
-// 		switch resp.StatusCode {
-// 		case 409:
-// 			return zeroId, "", ErrDupliateEmail
-// 		case 401:
-// 			return zeroId, "", ErrUnauthorized
-// 		case 403:
-// 			return zeroId, "", ErrForbidden
-// 		default:
-// 			return zeroId, "", errors.New("error adding user")
-// 		}
-
-// 	}
-
-// 	type TempUser struct {
-// 		Id primitive.ObjectID `json:"_id"`
-// 	}
-
-// 	type AddedUser struct {
-// 		User TempUser `json:"user"`
-// 	}
-
-// 	var _data AddedUser
-// 	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
-// 		return zeroId, "", errDec
-// 	}
-
-// 	return _data.User.Id, password, nil
-// }
 
 // agent join
 func (a *agentsvcs) GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error) {
