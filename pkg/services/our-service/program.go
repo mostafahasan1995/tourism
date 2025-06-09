@@ -24,6 +24,7 @@ import (
 type ProgramSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Program, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
+	GetAll(ctx context.Context, query string) ([]models.Program, error)
 	Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error)
 	Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error)
 	Delete(ctx context.Context, id string) error
@@ -97,6 +98,27 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 		Programs:   result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Program, error) {
+	match := bson.M{"trash": false}
+
+	filters, err := filter.NewProgramFilter(query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	var result []models.Program
+	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }
 
 // add general or custom program - update related travel request
