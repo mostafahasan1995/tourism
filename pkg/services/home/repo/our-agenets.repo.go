@@ -1,222 +1,204 @@
 package repo
 
-import (
-	"context"
-	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
-	"larsa-tourism-microservices/pkg/services/home/filter"
-	"larsa-tourism-microservices/pkg/services/home/models"
-	"larsa-tourism-microservices/pkg/util"
+// deprecated
+// type OurAgentsRepo interface {
+// 	dbrepo.MainRepo[models.OurAgents]
+// 	GetOne(ctx context.Context, id string) (*models.OurAgents, error)
+// 	GetAll(ctx context.Context, filter filter.OurAgentsFilter) (models.OurAgentsPagination, error)
+// 	Update(ctx context.Context, id primitive.ObjectID, data *models.OurAgentsDto) error
+// 	Delete(ctx context.Context, id string) error
+// }
 
-	"time"
+// type ourAgentsrepo struct {
+// 	dbrepo.MainRepoImpl[models.OurAgents]
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
-	"github.com/samber/do"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
+// 	db       *mongo.Client
+// 	collName string
+// }
 
-type OurAgentsRepo interface {
-	dbrepo.MainRepo[models.OurAgents]
-	GetOne(ctx context.Context, id string) (*models.OurAgents, error)
-	GetAll(ctx context.Context, filter filter.OurAgentsFilter) (models.OurAgentsPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.OurAgentsDto) error
-	Delete(ctx context.Context, id string) error
-}
+// func NewOurAgentsRepo(i *do.Injector) (OurAgentsRepo, error) {
+// 	return &ourAgentsrepo{
+// 		MainRepoImpl: dbrepo.MainRepoImpl[models.OurAgents]{
+// 			Db:       do.MustInvoke[*mongo.Client](i),
+// 			CollName: "tourismOurAgents",
+// 		},
+// 		db:       do.MustInvoke[*mongo.Client](i),
+// 		collName: "tourismOurAgents",
+// 	}, nil
+// }
 
-type ourAgentsrepo struct {
-	dbrepo.MainRepoImpl[models.OurAgents]
+// func (l *ourAgentsrepo) GetOne(ctx context.Context, id string) (*models.OurAgents, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	_id, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	db       *mongo.Client
-	collName string
-}
+// 	var data models.OurAgents
+// 	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
+// 		return nil, err
+// 	}
+// 	return &data, nil
 
-func NewOurAgentsRepo(i *do.Injector) (OurAgentsRepo, error) {
-	return &ourAgentsrepo{
-		MainRepoImpl: dbrepo.MainRepoImpl[models.OurAgents]{
-			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "tourismOurAgents",
-		},
-		db:       do.MustInvoke[*mongo.Client](i),
-		collName: "tourismOurAgents",
-	}, nil
-}
+// }
 
-func (l *ourAgentsrepo) GetOne(ctx context.Context, id string) (*models.OurAgents, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// func (l *ourAgentsrepo) GetAll(ctx context.Context, filter filter.OurAgentsFilter) (models.OurAgentsPagination, error) {
 
-	var data models.OurAgents
-	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
-		return nil, err
-	}
-	return &data, nil
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return models.OurAgentsPagination{}, err
+// 	}
 
-}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-func (l *ourAgentsrepo) GetAll(ctx context.Context, filter filter.OurAgentsFilter) (models.OurAgentsPagination, error) {
+// 	filterBody := filter.ToBsonFilter()
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return models.OurAgentsPagination{}, err
-	}
+// 	// Count total documents matching the filter
+// 	totalCount, err := coll.CountDocuments(ctx, filterBody)
+// 	if err != nil {
+// 		return models.OurAgentsPagination{}, err
+// 	}
 
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 	// Pagination defaults and limits
+// 	page := filter.Page
+// 	if page <= 0 {
+// 		page = 1
+// 	}
+// 	size := filter.Size
+// 	if size <= 0 {
+// 		size = int(totalCount) // return all if invalid
+// 	}
+// 	skip := int64((page - 1) * size)
+// 	limit := int64(size)
 
-	filterBody := filter.ToBsonFilter()
+// 	// Query options with pagination
+// 	findOptions := options.Find().SetSkip(skip).SetLimit(limit)
 
-	// Count total documents matching the filter
-	totalCount, err := coll.CountDocuments(ctx, filterBody)
-	if err != nil {
-		return models.OurAgentsPagination{}, err
-	}
+// 	cur, err := coll.Find(ctx, filterBody, findOptions)
+// 	if err != nil {
+// 		return models.OurAgentsPagination{}, err
+// 	}
 
-	// Pagination defaults and limits
-	page := filter.Page
-	if page <= 0 {
-		page = 1
-	}
-	size := filter.Size
-	if size <= 0 {
-		size = int(totalCount) // return all if invalid
-	}
-	skip := int64((page - 1) * size)
-	limit := int64(size)
+// 	var programs []models.OurAgents
+// 	if err := cur.All(ctx, &programs); err != nil {
+// 		return models.OurAgentsPagination{}, err
+// 	}
 
-	// Query options with pagination
-	findOptions := options.Find().SetSkip(skip).SetLimit(limit)
+// 	// Prepare pagination result
+// 	totalPages := float64(0)
+// 	if size > 0 {
+// 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
+// 	}
 
-	cur, err := coll.Find(ctx, filterBody, findOptions)
-	if err != nil {
-		return models.OurAgentsPagination{}, err
-	}
+// 	result := models.OurAgentsPagination{
+// 		OurAgents: programs,
+// 		Pagination: common.Pagination{
+// 			TotalPages: totalPages,
+// 			PerPage:    int64(size),
+// 			TotalCount: totalCount,
+// 		},
+// 	}
 
-	var programs []models.OurAgents
-	if err := cur.All(ctx, &programs); err != nil {
-		return models.OurAgentsPagination{}, err
-	}
+// 	return result, nil
+// }
 
-	// Prepare pagination result
-	totalPages := float64(0)
-	if size > 0 {
-		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
-	}
+// func (l *ourAgentsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurAgentsDto) error {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	result := models.OurAgentsPagination{
-		OurAgents: programs,
-		Pagination: common.Pagination{
-			TotalPages: totalPages,
-			PerPage:    int64(size),
-			TotalCount: totalCount,
-		},
-	}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	return result, nil
-}
+// 	preOurAgents, err := l.GetOne(ctx, id.Hex())
+// 	if err != nil {
+// 		return err
+// 	}
 
-func (l *ourAgentsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurAgentsDto) error {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return err
-	}
+// 	ourAgents := &models.OurAgents{
+// 		OurAgentsDto: models.OurAgentsDto{
+// 			FullName:          data.FullName,
+// 			Email:             data.Email,
+// 			PhoneNumber:       data.PhoneNumber,
+// 			Bio:               data.Bio,
+// 			Nationality:       data.Nationality,
+// 			LanguagesSpoken:   data.LanguagesSpoken,
+// 			CountriesYouServe: data.CountriesYouServe,
+// 			CompanyName:       data.CompanyName,
+// 			CompanyLogo:       data.CompanyLogo,
+// 		},
 
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 		Id:        id,
+// 		Trash:     false,
+// 		CreatedAt: preOurAgents.CreatedAt,
+// 		CreatedBy: preOurAgents.CreatedBy,
+// 		UpdatedBy: cfg.User.Id,
+// 		UpdatedAt: time.Now(),
+// 	}
 
-	preOurAgents, err := l.GetOne(ctx, id.Hex())
-	if err != nil {
-		return err
-	}
+// 	filter := bson.M{"_id": id}
+// 	update := bson.M{"$set": ourAgents}
 
-	ourAgents := &models.OurAgents{
-		OurAgentsDto: models.OurAgentsDto{
-			FullName:          data.FullName,
-			Email:             data.Email,
-			PhoneNumber:       data.PhoneNumber,
-			Bio:               data.Bio,
-			Nationality:       data.Nationality,
-			LanguagesSpoken:   data.LanguagesSpoken,
-			CountriesYouServe: data.CountriesYouServe,
-			CompanyName:       data.CompanyName,
-			CompanyLogo:       data.CompanyLogo,
-		},
-		
-		
+// 	upsert := false
+// 	after := options.After
+// 	opts := &options.FindOneAndUpdateOptions{
+// 		ReturnDocument: &after,
+// 		Upsert:         &upsert,
+// 	}
 
-		Id:        id,
-		Trash:     false,
-		CreatedAt: preOurAgents.CreatedAt,
-		CreatedBy: preOurAgents.CreatedBy,
-		UpdatedBy: cfg.User.Id,
-		UpdatedAt: time.Now(),
-	}
+// 	var updatedOurAgents models.OurAgents
+// 	if err := coll.FindOneAndUpdate(
+// 		ctx,
+// 		filter,
+// 		update,
+// 		opts,
+// 	).Decode(&updatedOurAgents); err != nil {
+// 		return err
+// 	}
 
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": ourAgents}
+// 	return nil
+// }
+// func (l *ourAgentsrepo) Delete(ctx context.Context, id string) error {
 
-	upsert := false
-	after := options.After
-	opts := &options.FindOneAndUpdateOptions{
-		ReturnDocument: &after,
-		Upsert:         &upsert,
-	}
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	var updatedOurAgents models.OurAgents
-	if err := coll.FindOneAndUpdate(
-		ctx,
-		filter,
-		update,
-		opts,
-	).Decode(&updatedOurAgents); err != nil {
-		return err
-	}
+// 	_id, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
-func (l *ourAgentsrepo) Delete(ctx context.Context, id string) error {
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return err
-	}
+// 	filter := bson.M{"_id": _id}
+// 	update := bson.M{"$set": bson.M{
+// 		"trash":     true,
+// 		"updatedAt": time.Now(),
+// 		"updatedBy": primitive.NilObjectID,
+// 	}}
 
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
+// 	upsert := false
+// 	after := options.After
+// 	opt := options.FindOneAndUpdateOptions{
+// 		ReturnDocument: &after,
+// 		Upsert:         &upsert,
+// 	}
+// 	result := coll.FindOneAndUpdate(
+// 		ctx,
+// 		filter,
+// 		update,
+// 		&opt,
+// 	)
 
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 	if result.Err() != nil {
+// 		return result.Err()
+// 	}
 
-	filter := bson.M{"_id": _id}
-	update := bson.M{"$set": bson.M{
-		"trash":     true,
-		"updatedAt": time.Now(),
-		"updatedBy": primitive.NilObjectID,
-	}}
-
-	upsert := false
-	after := options.After
-	opt := options.FindOneAndUpdateOptions{
-		ReturnDocument: &after,
-		Upsert:         &upsert,
-	}
-	result := coll.FindOneAndUpdate(
-		ctx,
-		filter,
-		update,
-		&opt,
-	)
-
-	if result.Err() != nil {
-		return result.Err()
-	}
-
-	return nil
-}
+// 	return nil
+// }

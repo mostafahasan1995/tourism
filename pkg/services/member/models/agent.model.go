@@ -163,17 +163,17 @@ type FinancialUnit struct {
 }
 
 type Agent struct {
-	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // same as user id
-	AgentId    string             `bson:"agentId,omitempty" json:"agentId,omitempty"`
-	AgentDto   `bson:",inline"`
-	Status     string             `bson:"status" json:"status"` // active, inactive
-	IsJoinReq  bool               `bson:"isJoinReq" json:"isJoinReq"`
-	JoinStatus string             `bson:"joinStatus" json:"joinStatus"` //converted, pending, rejected
-	Trash      bool               `bson:"trash" json:"trash"`
-	CreatedAt  time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	CreatedBy  primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	UpdatedAt  time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
-	UpdatedBy  primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+	Id       primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // same as user id
+	AgentId  string             `bson:"agentId,omitempty" json:"agentId,omitempty"`
+	AgentDto `bson:",inline"`
+	Status   string `bson:"status" json:"status"` // active, inactive
+	//IsJoinReq  bool               `bson:"isJoinReq" json:"isJoinReq"`
+	//JoinStatus string             `bson:"joinStatus" json:"joinStatus"` //converted, pending, rejected
+	Trash     bool               `bson:"trash" json:"trash"`
+	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
 type AgentWithPagination struct {

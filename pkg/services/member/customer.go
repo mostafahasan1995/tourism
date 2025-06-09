@@ -42,18 +42,20 @@ type CustomerSvcs interface {
 type customerSvcs struct {
 	repo        repo.CustomerRepo
 	sortingsvcs dbsvcs.SortingSvcs
-	usersgw     *gateway.UsersGw
-	gateway     gateway.Gateway
-	withtxn     *db.WithTxn
+	//usersgw     *gateway.UsersGw
+	gateway        gateway.Gateway
+	memberAuthSvcs MemberAuthSvcs
+	withtxn        *db.WithTxn
 }
 
 func NewCustomerSvcs(i *do.Injector) (CustomerSvcs, error) {
 	return &customerSvcs{
 		repo:        do.MustInvoke[repo.CustomerRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		usersgw:     do.MustInvoke[*gateway.UsersGw](i),
-		gateway:     do.MustInvoke[gateway.Gateway](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		//usersgw:     do.MustInvoke[*gateway.UsersGw](i),
+		gateway:        do.MustInvoke[gateway.Gateway](i),
+		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
+		withtxn:        do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -125,7 +127,7 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			CreatedBy:   cfg.User.Id,
 		}
 
-		userId, err := c.AddUpdateCustomerCredentials(ctx, customer)
+		userId, password, err := c.memberAuthSvcs.AddCredentials(ctx, customer)
 		if err != nil {
 			return nil, err
 		}
@@ -140,6 +142,10 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 		customer.CustomerId = fmt.Sprintf("CUSTOMER-%d", seq)
 
 		if err := c.repo.Add(ctx, customer); err != nil {
+			return nil, err
+		}
+
+		if err := c.memberAuthSvcs.SendInvitationEmail(ctx, password, customer); err != nil {
 			return nil, err
 		}
 
@@ -172,7 +178,7 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			UpdatedBy:   cfg.User.Id,
 		}
 
-		_, err := c.AddUpdateCustomerCredentials(ctx, customer)
+		_, password, err := c.memberAuthSvcs.UpdateCredentials(ctx, customer)
 		if err != nil {
 			return nil, err
 		}
@@ -182,6 +188,10 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 
 		updatedCustomer, err := c.repo.Patch(ctx, filter, update)
 		if err != nil {
+			return nil, err
+		}
+
+		if err := c.memberAuthSvcs.SendAccountUpdatedEmail(ctx, password, updatedCustomer); err != nil {
 			return nil, err
 		}
 
@@ -223,66 +233,66 @@ func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
 	return nil
 }
 
-func (c *customerSvcs) AddUpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
-	zeroId := primitive.NilObjectID
+// func (c *customerSvcs) AddUpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
+// 	zeroId := primitive.NilObjectID
 
-	var path, method string
-	if data.Id == primitive.NilObjectID {
-		path = "users/"
-		method = "POST"
-	} else {
-		path = "users/" + data.Id.Hex()
-		method = "PATCH"
-	}
+// 	var path, method string
+// 	if data.Id == primitive.NilObjectID {
+// 		path = "users/"
+// 		method = "POST"
+// 	} else {
+// 		path = "users/" + data.Id.Hex()
+// 		method = "PATCH"
+// 	}
 
-	password := data.Security.NewPassword
-	if method == "POST" && password == "" {
-		password = util.GeneratePassword(8, 2, 2, 2)
-	}
+// 	password := data.Security.NewPassword
+// 	if method == "POST" && password == "" {
+// 		password = util.GeneratePassword(8, 2, 2, 2)
+// 	}
 
-	user := map[string]any{
-		"firstName": data.Name,
-		"lastName":  "-",
-		"email":     data.Security.Email,
-	}
+// 	user := map[string]any{
+// 		"firstName": data.Name,
+// 		"lastName":  "-",
+// 		"email":     data.Security.Email,
+// 	}
 
-	if password != "" {
-		user["password"] = password
-	}
+// 	if password != "" {
+// 		user["password"] = password
+// 	}
 
-	resp, err := c.gateway.Request(ctx, "users", path, method, "", user)
+// 	resp, err := c.gateway.Request(ctx, "users", path, method, "", user)
 
-	if err != nil {
-		return zeroId, errors.New("error adding user")
-	} else if resp.StatusCode != 200 {
-		switch resp.StatusCode {
-		case 409:
-			return zeroId, ErrDupliateEmail
-		case 401:
-			return zeroId, ErrUnauthorized
-		case 403:
-			return zeroId, ErrForbidden
-		default:
-			return zeroId, errors.New("error adding user")
-		}
+// 	if err != nil {
+// 		return zeroId, errors.New("error adding user")
+// 	} else if resp.StatusCode != 200 {
+// 		switch resp.StatusCode {
+// 		case 409:
+// 			return zeroId, ErrDupliateEmail
+// 		case 401:
+// 			return zeroId, ErrUnauthorized
+// 		case 403:
+// 			return zeroId, ErrForbidden
+// 		default:
+// 			return zeroId, errors.New("error adding user")
+// 		}
 
-	}
+// 	}
 
-	type TempUser struct {
-		Id primitive.ObjectID `json:"_id"`
-	}
+// 	type TempUser struct {
+// 		Id primitive.ObjectID `json:"_id"`
+// 	}
 
-	type AddedUser struct {
-		User TempUser `json:"user"`
-	}
+// 	type AddedUser struct {
+// 		User TempUser `json:"user"`
+// 	}
 
-	var _data AddedUser
-	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
-		return zeroId, errDec
-	}
+// 	var _data AddedUser
+// 	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
+// 		return zeroId, errDec
+// 	}
 
-	return _data.User.Id, nil
-}
+// 	return _data.User.Id, nil
+// }
 
 func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
 	zeroId := primitive.NilObjectID

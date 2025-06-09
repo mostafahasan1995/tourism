@@ -1,0 +1,306 @@
+package member
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"larsa-tourism-microservices/pkg/gateway"
+	"larsa-tourism-microservices/pkg/services/member/models"
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingenums "larsa-tourism-microservices/pkg/services/messaging/enums"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
+	messagingtpls "larsa-tourism-microservices/pkg/services/messaging/template"
+	"larsa-tourism-microservices/pkg/util"
+
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
+	"github.com/samber/do"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type MemberAuthSvcs interface {
+	AddCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error)
+	UpdateCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error)
+	SendInvitationEmail(ctx context.Context, password string, data any) error
+	SendAccountUpdatedEmail(ctx context.Context, password string, data any) error
+}
+
+type memberAuthSvcs struct {
+	gateway     gateway.Gateway
+	messagesvcs messaging.MessageSvcs
+}
+
+func NewMemberAuthSvcs(i *do.Injector) (MemberAuthSvcs, error) {
+	return &memberAuthSvcs{
+		gateway:     do.MustInvoke[gateway.Gateway](i),
+		messagesvcs: do.MustInvoke[messaging.MessageSvcs](i),
+	}, nil
+}
+
+func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error) {
+	var user map[string]any
+	var password string
+
+	switch member := data.(type) {
+	case *models.Agent:
+		user = map[string]any{
+			"firstName": member.Name,
+			"lastName":  "-",
+			"email":     member.Security.Email,
+		}
+		password = member.Security.NewPassword
+	case *models.Customer:
+		user = map[string]any{
+			"firstName": member.Name,
+			"lastName":  "-",
+			"email":     member.Security.Email,
+		}
+		password = member.Security.NewPassword
+	}
+
+	if password == "" {
+		password = util.GeneratePassword(8, 2, 2, 2)
+	}
+
+	user["password"] = password
+
+	resp, err := m.gateway.Request(ctx, "users", "users/", "POST", "", user)
+
+	zeroId := primitive.NilObjectID
+
+	if err != nil {
+		return zeroId, "", errors.New("error adding user")
+	} else if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 409:
+			return zeroId, "", ErrDupliateEmail
+		case 401:
+			return zeroId, "", ErrUnauthorized
+		case 403:
+			return zeroId, "", ErrForbidden
+		default:
+			return zeroId, "", errors.New("error adding user")
+		}
+
+	}
+
+	type aux struct {
+		User struct {
+			Id primitive.ObjectID `json:"_id"`
+		} `json:"user"`
+	}
+
+	var _data aux
+	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
+		return zeroId, "", errDec
+	}
+
+	return _data.User.Id, password, nil
+
+}
+
+func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error) {
+	var user map[string]any
+	var password, id string
+
+	switch member := data.(type) {
+	case *models.Agent:
+		user = map[string]any{
+			"firstName": member.Name,
+			"lastName":  "-",
+			"email":     member.Security.Email,
+		}
+		password = member.Security.NewPassword
+		id = member.Id.Hex()
+	case *models.Customer:
+		user = map[string]any{
+			"firstName": member.Name,
+			"lastName":  "-",
+			"email":     member.Security.Email,
+		}
+		password = member.Security.NewPassword
+		id = member.Id.Hex()
+	}
+
+	if password != "" {
+		user["password"] = password
+	}
+
+	resp, err := m.gateway.Request(ctx, "users", "users/"+id, "PATCH", "", user)
+
+	zeroId := primitive.NilObjectID
+
+	if err != nil {
+		return zeroId, "", errors.New("error update user")
+	} else if resp.StatusCode != 200 {
+		switch resp.StatusCode {
+		case 409:
+			return zeroId, "", ErrDupliateEmail
+		case 401:
+			return zeroId, "", ErrUnauthorized
+		case 403:
+			return zeroId, "", ErrForbidden
+		default:
+			return zeroId, "", errors.New("error adding user")
+		}
+
+	}
+
+	type aux struct {
+		User struct {
+			Id primitive.ObjectID `json:"_id"`
+		} `json:"user"`
+	}
+
+	var _data aux
+	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
+		return zeroId, "", errDec
+	}
+
+	return _data.User.Id, password, nil
+}
+
+func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password string, data any) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting business name")
+	}
+	businessName, ok := val.(string)
+	if !ok {
+		businessName = "[Business Name]"
+	}
+
+	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting platform name")
+	}
+	platformName, ok := plat.(string)
+	if !ok {
+		platformName = "[Platform Name]"
+	}
+
+	var invitationTplData *messagingtpls.InvetationTplData
+	var email string
+
+	switch member := data.(type) {
+	case *models.Agent:
+		invitationTplData = &messagingtpls.InvetationTplData{
+			MemberName:   member.Name,
+			CompanyName:  businessName,
+			PlatformName: platformName,
+			Email:        member.Security.Email,
+			Password:     password,
+			Link:         "https://imkan.com/register",
+		}
+
+		email = member.Security.Email
+	case *models.Customer:
+		invitationTplData = &messagingtpls.InvetationTplData{
+			MemberName:   member.Name,
+			CompanyName:  businessName,
+			PlatformName: platformName,
+			Email:        member.Security.Email,
+			Password:     password,
+			Link:         "https://imkan.com/register",
+		}
+		email = member.Security.Email
+	}
+
+	message, subject, err := m.messagesvcs.GetTemplateMessage(ctx, messagingenums.INVITATION, invitationTplData)
+	if err != nil {
+		return err
+	}
+
+	msg := messagingmodels.Message{
+		Type:        messagingenums.INVITATION,
+		Email:       email,
+		Subject:     subject,
+		Message:     message,
+		MessageHtml: message,
+		Target:      "email", //todo: must set in message service
+		Others:      map[string]any{},
+	}
+
+	if err := m.messagesvcs.SendEmail(ctx, &msg); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password string, data any) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting business name")
+	}
+	businessName, ok := val.(string)
+	if !ok {
+		businessName = "[Business Name]"
+	}
+
+	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting platform name")
+	}
+	platformName, ok := plat.(string)
+	if !ok {
+		platformName = "[Platform Name]"
+	}
+
+	var accountUpdatedTplData *messagingtpls.AccountUpdatedTplData
+	var email string
+
+	switch member := data.(type) {
+	case *models.Agent:
+		accountUpdatedTplData = &messagingtpls.AccountUpdatedTplData{
+			MemberName:   member.Name,
+			CompanyName:  businessName,
+			PlatformName: platformName,
+			Email:        member.Security.Email,
+			Password:     password,
+			Link:         "https://imkan.com/register",
+		}
+
+		email = member.Security.Email
+	case *models.Customer:
+		accountUpdatedTplData = &messagingtpls.AccountUpdatedTplData{
+			MemberName:   member.Name,
+			CompanyName:  businessName,
+			PlatformName: platformName,
+			Email:        member.Security.Email,
+			Password:     password,
+			Link:         "https://imkan.com/register",
+		}
+		email = member.Security.Email
+	}
+
+	message, subject, err := m.messagesvcs.GetTemplateMessage(ctx, messagingenums.ACCOUNTUPDATED, accountUpdatedTplData)
+	if err != nil {
+		return err
+	}
+
+	msg := messagingmodels.Message{
+		Type:        messagingenums.INVITATION,
+		Email:       email,
+		Subject:     subject,
+		Message:     message,
+		MessageHtml: message,
+		Target:      "email", //todo: must set in message service
+		Others:      map[string]any{},
+	}
+
+	if err := m.messagesvcs.SendEmail(ctx, &msg); err != nil {
+		return err
+	}
+
+	return nil
+}
