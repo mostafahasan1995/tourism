@@ -25,6 +25,7 @@ func NewCustomerHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/customers", func(r chi.Router) {
 		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.Get))
+		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.Post("/register", helpers.Make(h.Register))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
@@ -56,6 +57,17 @@ func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	query := r.URL.Query().Get("query")
 
 	result, err := h.customersvcs.Get(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.customersvcs.GetAll(ctx)
 	if err != nil {
 		return err
 	}

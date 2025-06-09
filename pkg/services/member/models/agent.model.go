@@ -104,50 +104,50 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Rating and review structures for agents (similar to hotels)
-type AgentRatingObject struct {
-	Username string          `bson:"username" json:"username"`
-	UserId   string          `bson:"userId" json:"userId"`
-	UserImg  types.FileField `bson:"userImg" json:"userImg"`
-	Value    float64         `bson:"value" json:"value"`
-	Text     string          `bson:"text" json:"text"`
-	Status   string          `bson:"status" json:"status"`
-	Date     *time.Time      `bson:"date" json:"date"`
-	Replies  []AgentReply    `bson:"replies" json:"replies"`
-}
+// // Rating and review structures for agents (similar to hotels)
+// type AgentRatingObject struct {
+// 	Username string          `bson:"username" json:"username"`
+// 	UserId   string          `bson:"userId" json:"userId"`
+// 	UserImg  types.FileField `bson:"userImg" json:"userImg"`
+// 	Value    float64         `bson:"value" json:"value"`
+// 	Text     string          `bson:"text" json:"text"`
+// 	Status   string          `bson:"status" json:"status"`
+// 	Date     *time.Time      `bson:"date" json:"date"`
+// 	Replies  []AgentReply    `bson:"replies" json:"replies"`
+// }
 
-type AgentReply struct {
-	Text string     `bson:"text" json:"text"`
-	Date *time.Time `bson:"date" json:"date"`
-}
+// type AgentReply struct {
+// 	Text string     `bson:"text" json:"text"`
+// 	Date *time.Time `bson:"date" json:"date"`
+// }
 
 type AgentDto struct {
-	Name          string              `bson:"name" json:"name"`
-	Nationality   string              `bson:"nationality" json:"nationality"`
-	SpokenLangs   []string            `bson:"spokenLangs" json:"spokenLangs"`
-	Company       string              `bson:"company" json:"company"`
-	CompanyLogo   types.FileField     `bson:"companyLogo" json:"companyLogo"`
-	Bio           string              `bson:"bio" json:"bio"`
-	Image         types.FileField     `bson:"image" json:"image"` // Changed from array to single object
-	Countries     []string            `bson:"countries" json:"countries"`
-	Contact       AgentContact        `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
-	Security      MemberSecurity      `bson:"security" json:"security"`
-	Financial     AgentFinancial      `bson:"financial" json:"financial"`
-	RatingObjects []AgentRatingObject `bson:"ratingObjects" json:"ratingObjects"` // Added rating objects
-	Ratings       float64             `bson:"ratings" json:"ratings"`             // Added average rating
+	Name        string          `bson:"name" json:"name"`
+	Nationality string          `bson:"nationality" json:"nationality"`
+	SpokenLangs []string        `bson:"spokenLangs" json:"spokenLangs"`
+	Company     string          `bson:"company" json:"company"`
+	CompanyLogo types.FileField `bson:"companyLogo" json:"companyLogo"`
+	Bio         string          `bson:"bio" json:"bio"`
+	Image       types.FileField `bson:"image" json:"image"` // Changed from array to single object
+	Countries   []string        `bson:"countries" json:"countries"`
+	Contact     AgentContact    `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
+	Security    MemberSecurity  `bson:"security" json:"security"`
+	Financial   AgentFinancial  `bson:"financial" json:"financial"`
+	//RatingObjects []AgentRatingObject `bson:"ratingObjects" json:"ratingObjects"` // Added rating objects
+	//Ratings       float64             `bson:"ratings" json:"ratings"`             // Added average rating
 }
 
 // CalculateAverageRating calculates the average rating from RatingObjects
-func (a *AgentDto) CalculateAverageRating() {
-	if len(a.RatingObjects) == 0 {
-		return
-	}
-	var total float64
-	for _, rating := range a.RatingObjects {
-		total += rating.Value
-	}
-	a.Ratings = total / float64(len(a.RatingObjects))
-}
+// func (a *AgentDto) CalculateAverageRating() {
+// 	if len(a.RatingObjects) == 0 {
+// 		return
+// 	}
+// 	var total float64
+// 	for _, rating := range a.RatingObjects {
+// 		total += rating.Value
+// 	}
+// 	a.Ratings = total / float64(len(a.RatingObjects))
+// }
 
 type AgentFinancial struct {
 	Stays           FinancialUnit `bson:"stays" json:"stays"`
