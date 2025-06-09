@@ -122,32 +122,32 @@ type AgentReply struct {
 }
 
 type AgentDto struct {
-	Name          string              `bson:"name" json:"name"`
-	Nationality   string              `bson:"nationality" json:"nationality"`
-	SpokenLangs   []string            `bson:"spokenLangs" json:"spokenLangs"`
-	Company       string              `bson:"company" json:"company"`
-	CompanyLogo   types.FileField     `bson:"companyLogo" json:"companyLogo"`
-	Bio           string              `bson:"bio" json:"bio"`
-	Image         types.FileField     `bson:"image" json:"image"` // Changed from array to single object
-	Countries     []string            `bson:"countries" json:"countries"`
-	Contact       AgentContact        `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
-	Security      MemberSecurity      `bson:"security" json:"security"`
-	Financial     AgentFinancial      `bson:"financial" json:"financial"`
-	RatingObjects []AgentRatingObject `bson:"ratingObjects" json:"ratingObjects"` // Added rating objects
-	Ratings       float64             `bson:"ratings" json:"ratings"`             // Added average rating
+	Name        string          `bson:"name" json:"name"`
+	Nationality string          `bson:"nationality" json:"nationality"`
+	SpokenLangs []string        `bson:"spokenLangs" json:"spokenLangs"`
+	Company     string          `bson:"company" json:"company"`
+	CompanyLogo types.FileField `bson:"companyLogo" json:"companyLogo"`
+	Bio         string          `bson:"bio" json:"bio"`
+	Image       types.FileField `bson:"image" json:"image"` // Changed from array to single object
+	Countries   []string        `bson:"countries" json:"countries"`
+	Contact     AgentContact    `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
+	Security    MemberSecurity  `bson:"security" json:"security"`
+	Financial   AgentFinancial  `bson:"financial" json:"financial"`
+	//RatingObjects []AgentRatingObject `bson:"ratingObjects" json:"ratingObjects"` // Added rating objects
+	//Ratings       float64             `bson:"ratings" json:"ratings"`             // Added average rating
 }
 
 // CalculateAverageRating calculates the average rating from RatingObjects
-func (a *AgentDto) CalculateAverageRating() {
-	if len(a.RatingObjects) == 0 {
-		return
-	}
-	var total float64
-	for _, rating := range a.RatingObjects {
-		total += rating.Value
-	}
-	a.Ratings = total / float64(len(a.RatingObjects))
-}
+// func (a *AgentDto) CalculateAverageRating() {
+// 	if len(a.RatingObjects) == 0 {
+// 		return
+// 	}
+// 	var total float64
+// 	for _, rating := range a.RatingObjects {
+// 		total += rating.Value
+// 	}
+// 	a.Ratings = total / float64(len(a.RatingObjects))
+// }
 
 type AgentFinancial struct {
 	Stays           FinancialUnit `bson:"stays" json:"stays"`
@@ -163,12 +163,10 @@ type FinancialUnit struct {
 }
 
 type Agent struct {
-	Id       primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // same as user id
-	AgentId  string             `bson:"agentId,omitempty" json:"agentId,omitempty"`
-	AgentDto `bson:",inline"`
-	Status   string `bson:"status" json:"status"` // active, inactive
-	//IsJoinReq  bool               `bson:"isJoinReq" json:"isJoinReq"`
-	//JoinStatus string             `bson:"joinStatus" json:"joinStatus"` //converted, pending, rejected
+	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // same as user id
+	AgentId   string             `bson:"agentId,omitempty" json:"agentId,omitempty"`
+	AgentDto  `bson:",inline"`
+	Status    string             `bson:"status" json:"status"` // active, inactive
 	Trash     bool               `bson:"trash" json:"trash"`
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
