@@ -25,7 +25,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//repos
 
 	do.Provide(i, repo.NewContactUsRepo)
-	do.Provide(i, repo.NewOurAgentsRepo)
+	// do.Provide(i, repo.NewOurAgentsRepo)
 	do.Provide(i, repo.NewTrustedPartnersRepo)
 	// Reviews repo moved to interactions service - removed from here
 
