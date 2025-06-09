@@ -19,7 +19,7 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 					<p>Here are your login details:</p>
 					<p>Email: {{.Email}}</p>
 					<p>Temp password: {{.Password}}</p>
-					<p>Please log in using the link below and update your password for security reasons: <a href="{{.RegisterLink}}">Click here to login</a></p>
+					<p>Please log in using the link below and update your password for security reasons: <a href="{{.Link}}">Click here to login</a></p>
 					<p>Looking forward to collaborating with you!</p>
 
 					<p><strong>Best Regards,</strong></p>

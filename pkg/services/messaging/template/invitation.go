@@ -14,14 +14,12 @@ type InvitationTpl struct {
 }
 
 type InvetationTplData struct {
-	MemberName     string
-	CompanyName    string
-	PlatformName   string
-	Email          string
-	Password       string
-	SenderName     string
-	SenderPosition string
-	RegisterLink   string
+	MemberName   string
+	CompanyName  string
+	PlatformName string
+	Email        string
+	Password     string
+	Link         string
 }
 
 func (i *InvitationTpl) Construct(ctx context.Context, data any) (string, string, error) {

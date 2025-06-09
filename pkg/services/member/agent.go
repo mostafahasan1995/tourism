@@ -11,11 +11,16 @@ import (
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/member/repo"
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingenums "larsa-tourism-microservices/pkg/services/messaging/enums"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
+	messagingtpls "larsa-tourism-microservices/pkg/services/messaging/template"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
 
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,6 +48,7 @@ type agentsvcs struct {
 	agentjoinrepo repo.AgentJoinRepo
 	sortingsvcs   dbsvcs.SortingSvcs
 	usersgw       *gateway.UsersGw
+	messagesvcs   messaging.MessageSvcs
 	gateway       gateway.Gateway
 	withtxn       *db.WithTxn
 }
@@ -53,6 +59,7 @@ func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 		agentjoinrepo: do.MustInvoke[repo.AgentJoinRepo](i),
 		sortingsvcs:   do.MustInvoke[dbsvcs.SortingSvcs](i),
 		usersgw:       do.MustInvoke[*gateway.UsersGw](i),
+		messagesvcs:   do.MustInvoke[messaging.MessageSvcs](i),
 		gateway:       do.MustInvoke[gateway.Gateway](i),
 		withtxn:       do.MustInvoke[*db.WithTxn](i),
 	}, nil
@@ -167,6 +174,10 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			return nil, err
 		}
 
+		if err := a.sendInvitationEmail(ctx, agent); err != nil {
+			return nil, err
+		}
+
 		return agent, nil
 	})
 
@@ -175,6 +186,61 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 	}
 
 	return result.(*models.Agent), nil
+}
+
+func (a *agentsvcs) sendInvitationEmail(ctx context.Context, data *models.Agent) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting business name")
+	}
+	businessName, ok := val.(string)
+	if !ok {
+		businessName = "[Business Name]"
+	}
+
+	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
+	if err != nil {
+		return errors.New("error getting platform name")
+	}
+	platformName, ok := plat.(string)
+	if !ok {
+		platformName = "[Platform Name]"
+	}
+
+	invitationTplData := &messagingtpls.InvetationTplData{
+		MemberName:   data.Name,
+		CompanyName:  businessName,
+		PlatformName: platformName,
+		Email:        data.Security.Email,
+		Password:     data.Security.NewPassword,
+		Link:         "https://imkan.com/register",
+	}
+
+	message, subject, err := a.messagesvcs.GetTemplateMessage(ctx, messagingenums.INVITATION, invitationTplData)
+	if err != nil {
+		return err
+	}
+
+	msg := messagingmodels.Message{
+		Type:        messagingenums.INVITATION,
+		Email:       data.Security.Email,
+		Subject:     subject,
+		Message:     message,
+		MessageHtml: message,
+		Target:      "email",
+		Others:      map[string]any{},
+	}
+
+	if err := a.messagesvcs.SendEmail(ctx, &msg); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.AgentDto) (*models.Agent, error) {
