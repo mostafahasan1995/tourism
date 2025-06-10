@@ -69,24 +69,26 @@ func (s *customerPersonaSvcs) Get(ctx context.Context, skip int64, limit int64, 
 		return nil, 0, err
 	}
 
-	// Get base filter
+	// Get base filter and build pipeline
 	baseFilter := bson.M{}
-
-	// Build pipeline
 	pipeline := filter.BuildPipeline(baseFilter)
 
-	// Add pagination
+	// Create a copy of the pipeline for counting
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	// Count total documents using the same pipeline
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Add pagination to the main pipeline
 	if len(pipeline) > 0 && pipeline[len(pipeline)-1]["$sort"] == nil {
 		pipeline = append(pipeline, bson.M{"$sort": bson.M{"displayOrder": 1}})
 	}
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
-
-	// Count total documents using the same filter
-	totalCount, err := s.repo.Count(ctx, baseFilter)
-	if err != nil {
-		return nil, 0, err
-	}
 
 	// Execute query
 	var cursor *mongo.Cursor
@@ -99,7 +101,7 @@ func (s *customerPersonaSvcs) Get(ctx context.Context, skip int64, limit int64, 
 		return nil, 0, err
 	}
 
-	return cursor, totalCount, nil
+	return cursor, count, nil
 }
 
 func (s *customerPersonaSvcs) Add(ctx context.Context, data *models.CustomerPersonaDto) (*models.CustomerPersona, error) {
