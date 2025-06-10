@@ -1,6 +1,7 @@
 package models
 
 import (
+	picklistmodels "larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -38,8 +39,14 @@ type TravelerStory struct {
 }
 
 type TravelerStoryWithPagination struct {
-	TravelerStories []TravelerStory  `bson:"travelerStories" json:"travelerStories"`
-	Pagination      types.Pagination `bson:"pagination" json:"pagination"`
+	TravelerStories []TravelerStoryRes `bson:"travelerStories" json:"travelerStories"`
+	Pagination      types.Pagination   `bson:"pagination" json:"pagination"`
+}
+
+type TravelerStoryRes struct {
+	TravelerStory    `bson:",inline"`
+	DestinationsData []picklistmodels.Destination
+	ActivitiesData   []picklistmodels.Activities
 }
 
 //

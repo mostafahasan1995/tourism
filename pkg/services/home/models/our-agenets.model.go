@@ -1,42 +1,33 @@
 package models
 
-import (
-	// "larsa-tourism-microservices/pkg/types"
-	// "larsa-tourism-microservices/pkg/types"
-	"larsa-tourism-microservices/pkg/types"
-	"time"
+// deprecated
+// type OurAgentsDto struct {
+// 	FullName          string          `bson:"fullName" json:"fullName"`
+// 	Email             string          `bson:"email" json:"email"`
+// 	PhoneNumber       string          `bson:"phoneNumber" json:"phoneNumber"`
+// 	Bio               string          `bson:"bio" json:"bio"`
+// 	Nationality       string          `bson:"nationality" json:"nationality"`
+// 	LanguagesSpoken   []string        `bson:"languagesSpoken" json:"languagesSpoken"`
+// 	CountriesYouServe []string        `bson:"countriesYouServe" json:"countriesYouServe"`
+// 	CompanyName       string          `bson:"companyName" json:"companyName"`
+// 	CompanyLogo       types.FileField `bson:"companyLogo" json:"companyLogo"`
+// }
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-)
+// type OurAgents struct {
+// 	OurAgentsDto `bson:",inline"`
 
-type OurAgentsDto struct {
-	FullName          string          `bson:"fullName" json:"fullName"`
-	Email             string          `bson:"email" json:"email"`
-	PhoneNumber       string          `bson:"phoneNumber" json:"phoneNumber"`
-	Bio               string          `bson:"bio" json:"bio"`
-	Nationality       string          `bson:"nationality" json:"nationality"`
-	LanguagesSpoken   []string        `bson:"languagesSpoken" json:"languagesSpoken"`
-	CountriesYouServe []string        `bson:"countriesYouServe" json:"countriesYouServe"`
-	CompanyName       string          `bson:"companyName" json:"companyName"`
-	CompanyLogo       types.FileField `bson:"companyLogo" json:"companyLogo"`
-}
+// 	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 
-type OurAgents struct {
-	OurAgentsDto `bson:",inline"`
+// 	Trash bool `bson:"trash" json:"trash"`
 
-	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+// 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+// 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+// 	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+// 	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+// }
 
-	Trash bool `bson:"trash" json:"trash"`
+// type OurAgentsPagination struct {
+// 	OurAgents []OurAgents `bson:"ourAgents" json:"ourAgents"`
 
-	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
-	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
-}
-
-type OurAgentsPagination struct {
-	OurAgents []OurAgents `bson:"ourAgents" json:"ourAgents"`
-
-	Pagination common.Pagination `bson:"pagination" json:"pagination"`
-}
+// 	Pagination common.Pagination `bson:"pagination" json:"pagination"`
+// }

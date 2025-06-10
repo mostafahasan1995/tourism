@@ -13,6 +13,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
 	do.Provide(i, member.NewAgentSvcs)
 	do.Provide(i, member.NewCustomerSvcs)
+	do.Provide(i, member.NewMemberAuthSvcs)
 
 	//repos
 	do.Provide(i, repo.NewAgentRepo)

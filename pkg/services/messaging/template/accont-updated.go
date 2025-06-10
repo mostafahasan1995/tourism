@@ -8,12 +8,12 @@ import (
 	"html/template"
 )
 
-type InvitationTpl struct {
+type AccountUpdatedTpl struct {
 	Subject string `bson:"subject" json:"subject"`
 	Message string `bson:"message" json:"message"`
 }
 
-type InvetationTplData struct {
+type AccountUpdatedTplData struct {
 	MemberName   string
 	CompanyName  string
 	PlatformName string
@@ -22,15 +22,15 @@ type InvetationTplData struct {
 	Link         string
 }
 
-func (i *InvitationTpl) Construct(ctx context.Context, data any) (string, string, error) {
-	d, ok := data.(*InvetationTplData)
+func (tpl *AccountUpdatedTpl) Construct(ctx context.Context, data any) (string, string, error) {
+	d, ok := data.(*AccountUpdatedTplData)
 	if !ok {
 		return "", "", errors.New("invalid data type")
 	}
 
 	temp := new(bytes.Buffer)
 	t := template.New("t")
-	t, errParse := t.Parse(i.Message)
+	t, errParse := t.Parse(tpl.Message)
 
 	if errParse != nil {
 		return "", "", errParse

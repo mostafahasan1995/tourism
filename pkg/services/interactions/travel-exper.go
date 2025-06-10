@@ -16,8 +16,8 @@ import (
 )
 
 type TravelExperSvcs interface {
-	GetTravelerStory(ctx context.Context, storyId string) (*models.TravelerStory, error)
-	GetAllTravelerStories(ctx context.Context) ([]models.TravelerStory, error)
+	GetTravelerStory(ctx context.Context, storyId string) (*models.TravelerStoryRes, error)
+	GetAllTravelerStories(ctx context.Context) ([]models.TravelerStoryRes, error)
 	GetTravelerStories(ctx context.Context, skip, limit int64) (*models.TravelerStoryWithPagination, error)
 	AddTravelerStory(ctx context.Context, data *models.TravelerStoryDto) (*models.TravelerStory, error)
 	SetTravelerStoryStatus(ctx context.Context, storyId string, data *models.TravelerStoryStatusDto) (*models.TravelerStory, error)
@@ -46,24 +46,74 @@ func NewTravelExperSvcs(i *do.Injector) (TravelExperSvcs, error) {
 }
 
 // traveler
-func (t *travelexpersvcs) GetTravelerStory(ctx context.Context, storyId string) (*models.TravelerStory, error) {
+func (t *travelexpersvcs) GetTravelerStory(ctx context.Context, storyId string) (*models.TravelerStoryRes, error) {
 	_id, err := primitive.ObjectIDFromHex(storyId)
 	if err != nil {
 		return nil, err
 	}
 
-	filter := bson.M{"_id": _id}
+	pipeline := []bson.M{
+		{"$match": bson.M{"_id": _id, "trash": false}},
+		{
+			"$lookup": bson.M{
+				"from":         "tourismDestinations",
+				"localField":   "destinations",
+				"foreignField": "_id",
+				"as":           "destinationsData",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "tourismActivities",
+				"localField":   "activities",
+				"foreignField": "_id",
+				"as":           "activitiesData",
+			},
+		},
+	}
 
-	return t.travelerStoryRepo.GetByFilter(ctx, filter)
+	var result []models.TravelerStoryRes
+	err = t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return &result[0], nil
 }
 
-func (t *travelexpersvcs) GetAllTravelerStories(ctx context.Context) ([]models.TravelerStory, error) {
+func (t *travelexpersvcs) GetAllTravelerStories(ctx context.Context) ([]models.TravelerStoryRes, error) {
 
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false}},
+		{
+			"$lookup": bson.M{
+				"from":         "tourismDestinations",
+				"localField":   "destinations",
+				"foreignField": "_id",
+				"as":           "destinationsData",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "tourismActivities",
+				"localField":   "activities",
+				"foreignField": "_id",
+				"as":           "activitiesData",
+			},
+		},
 	}
 
-	var result []models.TravelerStory
+	var result []models.TravelerStoryRes
 	err := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
 			return err
@@ -89,10 +139,26 @@ func (t *travelexpersvcs) GetTravelerStories(ctx context.Context, skip, limit in
 	pipeline := []bson.M{
 		{"$match": match},
 		{"$sort": bson.M{"_id": -1}},
+		{
+			"$lookup": bson.M{
+				"from":         "tourismDestinations",
+				"localField":   "destinations",
+				"foreignField": "_id",
+				"as":           "destinationsData",
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "tourismActivities",
+				"localField":   "activities",
+				"foreignField": "_id",
+				"as":           "activitiesData",
+			},
+		},
 		{"$skip": skip},
 		{"$limit": limit},
 	}
-	var result []models.TravelerStory
+	var result []models.TravelerStoryRes
 	errAg := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
 			return err

@@ -2,11 +2,9 @@ package member
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
-	"larsa-tourism-microservices/pkg/gateway"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -39,22 +37,20 @@ type AgentSvcs interface {
 }
 
 type agentsvcs struct {
-	repo          repo.AgentRepo
-	agentjoinrepo repo.AgentJoinRepo
-	sortingsvcs   dbsvcs.SortingSvcs
-	usersgw       *gateway.UsersGw
-	gateway       gateway.Gateway
-	withtxn       *db.WithTxn
+	repo           repo.AgentRepo
+	agentjoinrepo  repo.AgentJoinRepo
+	sortingsvcs    dbsvcs.SortingSvcs
+	memberAuthSvcs MemberAuthSvcs
+	withtxn        *db.WithTxn
 }
 
 func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 	return &agentsvcs{
-		repo:          do.MustInvoke[repo.AgentRepo](i),
-		agentjoinrepo: do.MustInvoke[repo.AgentJoinRepo](i),
-		sortingsvcs:   do.MustInvoke[dbsvcs.SortingSvcs](i),
-		usersgw:       do.MustInvoke[*gateway.UsersGw](i),
-		gateway:       do.MustInvoke[gateway.Gateway](i),
-		withtxn:       do.MustInvoke[*db.WithTxn](i),
+		repo:           do.MustInvoke[repo.AgentRepo](i),
+		agentjoinrepo:  do.MustInvoke[repo.AgentJoinRepo](i),
+		sortingsvcs:    do.MustInvoke[dbsvcs.SortingSvcs](i),
+		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
+		withtxn:        do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -149,7 +145,7 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			Status:    "inactive", //active, inactive
 		}
 
-		userId, err := a.AddUpdateAgentCredentials(ctx, agent)
+		userId, password, err := a.memberAuthSvcs.AddCredentials(ctx, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -162,8 +158,13 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 		}
 
 		agent.AgentId = fmt.Sprintf("AG-%d", seq)
+		agent.Security.NewPassword = ""
 
 		if err := a.repo.Add(ctx, agent); err != nil {
+			return nil, err
+		}
+
+		if err := a.memberAuthSvcs.SendInvitationEmail(ctx, password, agent); err != nil {
 			return nil, err
 		}
 
@@ -196,16 +197,22 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 			UpdatedBy: cfg.User.Id,
 		}
 
-		_, err := a.AddUpdateAgentCredentials(ctx, agent)
+		_, password, err := a.memberAuthSvcs.UpdateCredentials(ctx, agent)
 		if err != nil {
 			return nil, err
 		}
+
+		agent.Security.NewPassword = ""
 
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": agent}
 
 		updatedAgent, err := a.repo.Patch(ctx, filter, update)
 		if err != nil {
+			return nil, err
+		}
+
+		if err := a.memberAuthSvcs.SendAccountUpdatedEmail(ctx, password, updatedAgent); err != nil {
 			return nil, err
 		}
 
@@ -243,67 +250,6 @@ func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
 	}
 
 	return nil
-}
-
-func (a *agentsvcs) AddUpdateAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, err error) {
-	zeroId := primitive.NilObjectID
-
-	var path, method string
-	if data.Id == primitive.NilObjectID {
-		path = "users/"
-		method = "POST"
-	} else {
-		path = "users/" + data.Id.Hex()
-		method = "PATCH"
-	}
-
-	password := data.Security.NewPassword
-	if method == "POST" && password == "" {
-		password = util.GeneratePassword(8, 2, 2, 2)
-	}
-
-	user := map[string]any{
-		"firstName": data.Name,
-		"lastName":  "-",
-		"email":     data.Security.Email,
-	}
-
-	if password != "" {
-		user["password"] = password
-	}
-
-	resp, err := a.gateway.Request(ctx, "users", path, method, "", user)
-
-	if err != nil {
-		return zeroId, errors.New("error adding user")
-	} else if resp.StatusCode != 200 {
-		switch resp.StatusCode {
-		case 409:
-			return zeroId, ErrDupliateEmail
-		case 401:
-			return zeroId, ErrUnauthorized
-		case 403:
-			return zeroId, ErrForbidden
-		default:
-			return zeroId, errors.New("error adding user")
-		}
-
-	}
-
-	type TempUser struct {
-		Id primitive.ObjectID `json:"_id"`
-	}
-
-	type AddedUser struct {
-		User TempUser `json:"user"`
-	}
-
-	var _data AddedUser
-	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
-		return zeroId, errDec
-	}
-
-	return _data.User.Id, nil
 }
 
 // agent join
