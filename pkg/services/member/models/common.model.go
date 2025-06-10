@@ -2,7 +2,7 @@ package models
 
 type MemberContact struct {
 	Mobile   AgentPhone `bson:"mobile" json:"mobile"`
-	Whatsapp string     `bson:"whatsapp" json:"whatsapp"`
+	Whatsapp AgentPhone `bson:"whatsapp" json:"whatsapp"`
 	Website  string     `bson:"website" json:"website"`
 	Email    string     `bson:"email" json:"email"`
 }
