@@ -31,7 +31,7 @@ func NewTrustedPartnersHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
-		r.With(middleware.Auth("authenticate")).Post("/many", helpers.Make(h.AddMany))
+
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -89,31 +89,6 @@ func (h *TrustedPartnersHandler) Add(w http.ResponseWriter, r *http.Request) err
 	}
 
 	return helpers.WriteJson(w, http.StatusCreated, result)
-}
-
-func (h *TrustedPartnersHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
-
-	var data []models.TrustedPartnerDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		return helpers.InvalidJSON()
-	}
-
-	// Validate each item
-	for _, item := range data {
-		if err := helpers.GenericValidation(h.validationInstance, item); err != nil {
-			return err
-		}
-	}
-
-	err := h.partnersSvcs.AddMany(ctx, data)
-	if err != nil {
-		return err
-	}
-
-	return helpers.WriteJson(w, http.StatusCreated, map[string]string{
-		"message": "Partners added successfully",
-	})
 }
 
 func (h *TrustedPartnersHandler) Update(w http.ResponseWriter, r *http.Request) error {

@@ -2,7 +2,6 @@ package home
 
 import (
 	"context"
-	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
@@ -19,7 +18,7 @@ type TrustedPartnersSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.TrustedPartner, error)
 	GetAll(ctx context.Context) ([]models.TrustedPartner, error)
 	Add(ctx context.Context, data *models.TrustedPartnerDto) (*models.TrustedPartner, error)
-	AddMany(ctx context.Context, data []models.TrustedPartnerDto) error
+
 	Update(ctx context.Context, id string, data *models.TrustedPartnerDto) (*models.TrustedPartner, error)
 	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.TrustedPartner, error)
 	Delete(ctx context.Context, id string) error
@@ -94,52 +93,6 @@ func (s *trustedPartnerssvcs) Add(ctx context.Context, data *models.TrustedPartn
 	}
 
 	return partner, nil
-}
-
-func (s *trustedPartnerssvcs) AddMany(ctx context.Context, data []models.TrustedPartnerDto) error {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return err
-	}
-
-	var writeOps []mongo.WriteModel
-
-	for _, item := range data {
-		partner := &models.TrustedPartner{
-			TrustedPartnerDto: models.TrustedPartnerDto{
-				Title:        item.Title,
-				ProgramTitle: item.ProgramTitle,
-				ProgramId:    item.ProgramId,
-				Description:  item.Description,
-				Image:        item.Image,
-				URL:          item.URL,
-				DisplayOrder: item.DisplayOrder,
-				IsActive:     item.IsActive,
-			},
-
-			Id:        primitive.NewObjectID(),
-			Trash:     false,
-			CreatedAt: time.Now(),
-			CreatedBy: cfg.User.Id,
-			UpdatedAt: time.Now(),
-			UpdatedBy: cfg.User.Id,
-		}
-
-		writeOp := mongo.NewInsertOneModel()
-		writeOp.SetDocument(partner)
-		writeOps = append(writeOps, writeOp)
-	}
-
-	if len(writeOps) == 0 {
-		return errors.New("empty write ops")
-	}
-
-	_, errInsrt := s.repo.BulkWrite(ctx, writeOps)
-	if errInsrt != nil {
-		return errInsrt
-	}
-
-	return nil
 }
 
 func (s *trustedPartnerssvcs) Update(ctx context.Context, id string, data *models.TrustedPartnerDto) (*models.TrustedPartner, error) {
