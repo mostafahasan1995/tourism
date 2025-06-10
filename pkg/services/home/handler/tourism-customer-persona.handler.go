@@ -15,42 +15,41 @@ import (
 	"github.com/samber/do"
 )
 
-type TrustedPartnersHandler struct {
-	partnersSvcs       home.TrustedPartnersSvcs
+type CustomerPersonaHandler struct {
+	personaSvcs        home.CustomerPersonaSvcs
 	validationInstance *validator.Validate
 }
 
-func NewTrustedPartnersHandler(i *do.Injector, r *chi.Mux) {
-	h := &TrustedPartnersHandler{
-		partnersSvcs:       do.MustInvoke[home.TrustedPartnersSvcs](i),
+func NewCustomerPersonaHandler(i *do.Injector, r *chi.Mux) {
+	h := &CustomerPersonaHandler{
+		personaSvcs:        do.MustInvoke[home.CustomerPersonaSvcs](i),
 		validationInstance: do.MustInvoke[*validator.Validate](i),
 	}
 
-	r.Route("/trusted-partners", func(r chi.Router) {
+	r.Route("/customer-personas", func(r chi.Router) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/all", helpers.Make(h.GetAll))
 		r.Get("/", helpers.Make(h.Get))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
-
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
 }
 
-func (h *TrustedPartnersHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	w.Header().Set("Content-Type", "application/json")
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id")
 
-	result, err := h.partnersSvcs.GetOne(ctx, id)
+	result, err := h.personaSvcs.GetOne(ctx, id)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
-func (h *TrustedPartnersHandler) Get(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	skip, limit, err := util.Paginate(r)
 	if err != nil {
@@ -59,7 +58,7 @@ func (h *TrustedPartnersHandler) Get(w http.ResponseWriter, r *http.Request) err
 
 	query := r.URL.Query().Get("query")
 
-	result, err := h.partnersSvcs.Get(ctx, skip, limit, query)
+	result, err := h.personaSvcs.Get(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}
@@ -67,20 +66,20 @@ func (h *TrustedPartnersHandler) Get(w http.ResponseWriter, r *http.Request) err
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *TrustedPartnersHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.partnersSvcs.GetAll(ctx)
+	result, err := h.personaSvcs.GetAll(ctx)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *TrustedPartnersHandler) Add(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.TrustedPartnerDto
+	var data models.CustomerPersonaDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
@@ -89,7 +88,7 @@ func (h *TrustedPartnersHandler) Add(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	result, err := h.partnersSvcs.Add(ctx, &data)
+	result, err := h.personaSvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
@@ -97,10 +96,10 @@ func (h *TrustedPartnersHandler) Add(w http.ResponseWriter, r *http.Request) err
 	return helpers.WriteJson(w, http.StatusCreated, result)
 }
 
-func (h *TrustedPartnersHandler) Update(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.TrustedPartnerDto
+	var data models.CustomerPersonaDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return helpers.InvalidJSON()
 	}
@@ -110,7 +109,7 @@ func (h *TrustedPartnersHandler) Update(w http.ResponseWriter, r *http.Request) 
 	}
 
 	id := chi.URLParam(r, "id")
-	result, err := h.partnersSvcs.Update(ctx, id, &data)
+	result, err := h.personaSvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}
@@ -118,7 +117,7 @@ func (h *TrustedPartnersHandler) Update(w http.ResponseWriter, r *http.Request) 
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *TrustedPartnersHandler) Patch(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
 
@@ -127,7 +126,7 @@ func (h *TrustedPartnersHandler) Patch(w http.ResponseWriter, r *http.Request) e
 		return helpers.InvalidJSON()
 	}
 
-	result, err := h.partnersSvcs.Patch(ctx, id, updates)
+	result, err := h.personaSvcs.Patch(ctx, id, updates)
 	if err != nil {
 		return err
 	}
@@ -135,16 +134,16 @@ func (h *TrustedPartnersHandler) Patch(w http.ResponseWriter, r *http.Request) e
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *TrustedPartnersHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+func (h *CustomerPersonaHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
 
-	err := h.partnersSvcs.Delete(ctx, id)
+	err := h.personaSvcs.Delete(ctx, id)
 	if err != nil {
 		return err
 	}
 
 	return helpers.WriteJson(w, http.StatusOK, map[string]string{
-		"message": "Partner deleted successfully",
+		"message": "Customer persona deleted successfully",
 	})
 }

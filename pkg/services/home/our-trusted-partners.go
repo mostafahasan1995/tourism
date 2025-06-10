@@ -17,6 +17,7 @@ import (
 type TrustedPartnersSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.TrustedPartner, error)
 	GetAll(ctx context.Context) ([]models.TrustedPartner, error)
+	Get(ctx context.Context, skip, limit int64, query string) (models.TrustedPartnerPagination, error)
 	Add(ctx context.Context, data *models.TrustedPartnerDto) (*models.TrustedPartner, error)
 
 	Update(ctx context.Context, id string, data *models.TrustedPartnerDto) (*models.TrustedPartner, error)
@@ -42,7 +43,26 @@ func (s *trustedPartnerssvcs) GetOne(ctx context.Context, id string) (*models.Tr
 
 	return s.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
+func (s *trustedPartnerssvcs) Get(ctx context.Context, skip, limit int64, query string) (models.TrustedPartnerPagination, error) {
+	filter := bson.M{"trash": false}
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$sort": bson.M{"_id": -1}},
+	}
 
+	var result models.TrustedPartnerPagination
+	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return models.TrustedPartnerPagination{}, err
+	}
+
+	return result, nil
+}
 func (s *trustedPartnerssvcs) GetAll(ctx context.Context) ([]models.TrustedPartner, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false}},
