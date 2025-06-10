@@ -2,11 +2,10 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/home"
-	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
@@ -53,16 +52,6 @@ func (h *TrustedPartnersHandler) GetOne(w http.ResponseWriter, r *http.Request) 
 
 func (h *TrustedPartnersHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-	filterParam := r.URL.Query().Get("query")
-
-	var filterObj filter.TrustedPartnersFilter
-	if filterParam != "" {
-		err := json.Unmarshal([]byte(filterParam), &filterObj)
-		if err != nil {
-			fmt.Println("Error:", err)
-			return err
-		}
-	}
 
 	result, err := h.partnersSvcs.GetAll(ctx)
 	if err != nil {
