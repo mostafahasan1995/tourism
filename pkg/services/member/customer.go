@@ -11,6 +11,8 @@ import (
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/member/repo"
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -44,6 +46,7 @@ type customerSvcs struct {
 	sortingsvcs    dbsvcs.SortingSvcs
 	gateway        gateway.Gateway
 	memberAuthSvcs MemberAuthSvcs
+	messagesvcs    messaging.MessageSvcs
 	withtxn        *db.WithTxn
 }
 
@@ -53,6 +56,7 @@ func NewCustomerSvcs(i *do.Injector) (CustomerSvcs, error) {
 		sortingsvcs:    do.MustInvoke[dbsvcs.SortingSvcs](i),
 		gateway:        do.MustInvoke[gateway.Gateway](i),
 		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
+		messagesvcs:    do.MustInvoke[messaging.MessageSvcs](i),
 		withtxn:        do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -118,6 +122,10 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 	if err != nil {
 		return nil, err
 	}
+
+	var userId primitive.ObjectID
+	var msg *messagingmodels.Message
+
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		customer := &models.Customer{
 			CustomerDto: *data,
@@ -125,12 +133,16 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			CreatedBy:   cfg.User.Id,
 		}
 
-		userId, password, err := c.memberAuthSvcs.AddCredentials(ctx, customer)
+		var password string
+		var err error
+
+		userId, password, err = c.memberAuthSvcs.AddCredentials(ctx, customer)
 		if err != nil {
 			return nil, err
 		}
 
 		customer.Id = userId
+		customer.Security.NewPassword = ""
 
 		seq, err := c.sortingsvcs.GetAndUpdateSourceSeq(ctx, "customer")
 		if err != nil {
@@ -143,7 +155,8 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			return nil, err
 		}
 
-		if err := c.memberAuthSvcs.SendInvitationEmail(ctx, password, customer); err != nil {
+		msg, err = c.memberAuthSvcs.GetInvitationEmail(ctx, password, customer)
+		if err != nil {
 			return nil, err
 		}
 
@@ -151,7 +164,17 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 	})
 
 	if err != nil {
+		if userId != primitive.NilObjectID {
+			if err := c.memberAuthSvcs.DeleteCredentials(ctx, userId.Hex()); err != nil {
+				fmt.Println("error deleting user", err)
+			}
+			fmt.Println("user deleted")
+		}
 		return nil, err
+	}
+
+	if err := c.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
 	}
 
 	return result.(*models.Customer), nil
@@ -168,6 +191,8 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 		return nil, err
 	}
 
+	var msg *messagingmodels.Message
+
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		customer := &models.Customer{
 			Id:          _id,
@@ -176,10 +201,8 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			UpdatedBy:   cfg.User.Id,
 		}
 
-		_, password, err := c.memberAuthSvcs.UpdateCredentials(ctx, customer)
-		if err != nil {
-			return nil, err
-		}
+		pass := data.Security.NewPassword
+		customer.Security.NewPassword = ""
 
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": customer}
@@ -189,7 +212,12 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			return nil, err
 		}
 
-		if err := c.memberAuthSvcs.SendAccountUpdatedEmail(ctx, password, updatedCustomer); err != nil {
+		msg, err = c.memberAuthSvcs.GetAccountUpdatedEmail(ctx, pass, updatedCustomer)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := c.memberAuthSvcs.UpdateCredentials(ctx, pass, customer); err != nil {
 			return nil, err
 		}
 
@@ -199,6 +227,10 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 
 	if err != nil {
 		return nil, err
+	}
+
+	if err := c.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
 	}
 
 	return result.(*models.Customer), nil

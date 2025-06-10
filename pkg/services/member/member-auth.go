@@ -19,9 +19,9 @@ import (
 
 type MemberAuthSvcs interface {
 	AddCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error)
-	UpdateCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error)
-	SendInvitationEmail(ctx context.Context, password string, data any) error
-	SendAccountUpdatedEmail(ctx context.Context, password string, data any) error
+	UpdateCredentials(ctx context.Context, password string, data any) error
+	GetInvitationEmail(ctx context.Context, password string, data any) (*messagingmodels.Message, error)
+	GetAccountUpdatedEmail(ctx context.Context, password string, data any) (*messagingmodels.Message, error)
 	DeleteCredentials(ctx context.Context, userId string) (err error)
 }
 
@@ -99,9 +99,9 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 
 }
 
-func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error) {
+func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, password string, data any) error {
 	var user map[string]any
-	var password, id string
+	var id string
 
 	switch member := data.(type) {
 	case *models.Agent:
@@ -110,7 +110,6 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, data any) (userI
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
-		password = member.Security.NewPassword
 		id = member.Id.Hex()
 	case *models.Customer:
 		user = map[string]any{
@@ -118,7 +117,6 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, data any) (userI
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
-		password = member.Security.NewPassword
 		id = member.Id.Hex()
 	}
 
@@ -128,36 +126,23 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, data any) (userI
 
 	resp, err := m.gateway.Request(ctx, "users", "users/"+id, "PATCH", "", user)
 
-	zeroId := primitive.NilObjectID
-
 	if err != nil {
-		return zeroId, "", errors.New("error update user")
+		return errors.New("error update user")
 	} else if resp.StatusCode != 200 {
 		switch resp.StatusCode {
 		case 409:
-			return zeroId, "", ErrDupliateEmail
+			return ErrDupliateEmail
 		case 401:
-			return zeroId, "", ErrUnauthorized
+			return ErrUnauthorized
 		case 403:
-			return zeroId, "", ErrForbidden
+			return ErrForbidden
 		default:
-			return zeroId, "", errors.New("error adding user")
+			return errors.New("error adding user")
 		}
 
 	}
 
-	type aux struct {
-		User struct {
-			Id primitive.ObjectID `json:"_id"`
-		} `json:"user"`
-	}
-
-	var _data aux
-	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
-		return zeroId, "", errDec
-	}
-
-	return _data.User.Id, password, nil
+	return nil
 }
 
 func (m *memberAuthSvcs) DeleteCredentials(ctx context.Context, userId string) (err error) {
@@ -168,15 +153,15 @@ func (m *memberAuthSvcs) DeleteCredentials(ctx context.Context, userId string) (
 	return nil
 }
 
-func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password string, data any) error {
+func (m *memberAuthSvcs) GetInvitationEmail(ctx context.Context, password string, data any) (*messagingmodels.Message, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
 	if err != nil {
-		return errors.New("error getting business name")
+		return nil, errors.New("error getting business name")
 	}
 	businessName, ok := val.(string)
 	if !ok {
@@ -185,7 +170,7 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 
 	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
 	if err != nil {
-		return errors.New("error getting platform name")
+		return nil, errors.New("error getting platform name")
 	}
 	platformName, ok := plat.(string)
 	if !ok {
@@ -194,12 +179,12 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 
 	fUrl, err := common.GetOptionValue("FRONTEND_URL", cfg.Hp)
 	if err != nil {
-		return errors.New("error getting frontend url")
+		return nil, errors.New("error getting frontend url")
 	}
 
 	frontEndUrl, ok := fUrl.(string)
 	if !ok {
-		return errors.New("error getting frontend url")
+		return nil, errors.New("error getting frontend url")
 	}
 
 	var invitationTplData *messagingtpls.InvetationTplData
@@ -231,10 +216,10 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 
 	message, subject, err := m.messagesvcs.GetTemplateMessage(ctx, messagingenums.INVITATION, invitationTplData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	msg := messagingmodels.Message{
+	msg := &messagingmodels.Message{
 		Type:        messagingenums.INVITATION,
 		Email:       email,
 		Subject:     subject,
@@ -244,22 +229,18 @@ func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password strin
 		Others:      map[string]any{},
 	}
 
-	if err := m.messagesvcs.SendEmail(ctx, &msg); err != nil {
-		return err
-	}
-
-	return nil
+	return msg, nil
 }
 
-func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password string, data any) error {
+func (m *memberAuthSvcs) GetAccountUpdatedEmail(ctx context.Context, password string, data any) (*messagingmodels.Message, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	val, err := common.GetOptionValue("BUSINESS_NAME", cfg.Hp)
 	if err != nil {
-		return errors.New("error getting business name")
+		return nil, errors.New("error getting business name")
 	}
 	businessName, ok := val.(string)
 	if !ok {
@@ -268,7 +249,7 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 
 	plat, err := common.GetOptionValue("PLATFORM_NAME", cfg.Hp)
 	if err != nil {
-		return errors.New("error getting platform name")
+		return nil, errors.New("error getting platform name")
 	}
 	platformName, ok := plat.(string)
 	if !ok {
@@ -277,12 +258,12 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 
 	fUrl, err := common.GetOptionValue("FRONTEND_URL", cfg.Hp)
 	if err != nil {
-		return errors.New("error getting frontend url")
+		return nil, errors.New("error getting frontend url")
 	}
 
 	frontEndUrl, ok := fUrl.(string)
 	if !ok {
-		return errors.New("error getting frontend url")
+		return nil, errors.New("error getting frontend url")
 	}
 
 	var accountUpdatedTplData *messagingtpls.AccountUpdatedTplData
@@ -314,10 +295,10 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 
 	message, subject, err := m.messagesvcs.GetTemplateMessage(ctx, messagingenums.ACCOUNTUPDATED, accountUpdatedTplData)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	msg := messagingmodels.Message{
+	msg := &messagingmodels.Message{
 		Type:        messagingenums.INVITATION,
 		Email:       email,
 		Subject:     subject,
@@ -327,9 +308,5 @@ func (m *memberAuthSvcs) SendAccountUpdatedEmail(ctx context.Context, password s
 		Others:      map[string]any{},
 	}
 
-	if err := m.messagesvcs.SendEmail(ctx, &msg); err != nil {
-		return err
-	}
-
-	return nil
+	return msg, nil
 }

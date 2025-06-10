@@ -9,6 +9,8 @@ import (
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/member/repo"
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -41,6 +43,7 @@ type agentsvcs struct {
 	agentjoinrepo  repo.AgentJoinRepo
 	sortingsvcs    dbsvcs.SortingSvcs
 	memberAuthSvcs MemberAuthSvcs
+	messagesvcs    messaging.MessageSvcs
 	withtxn        *db.WithTxn
 }
 
@@ -50,6 +53,7 @@ func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 		agentjoinrepo:  do.MustInvoke[repo.AgentJoinRepo](i),
 		sortingsvcs:    do.MustInvoke[dbsvcs.SortingSvcs](i),
 		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
+		messagesvcs:    do.MustInvoke[messaging.MessageSvcs](i),
 		withtxn:        do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -139,6 +143,7 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 	}
 
 	var userId primitive.ObjectID
+	var msg *messagingmodels.Message
 
 	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		agent := &models.Agent{
@@ -170,7 +175,8 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			return nil, err
 		}
 
-		if err := a.memberAuthSvcs.SendInvitationEmail(ctx, password, agent); err != nil {
+		msg, err = a.memberAuthSvcs.GetInvitationEmail(ctx, password, agent)
+		if err != nil {
 			return nil, err
 		}
 
@@ -187,6 +193,10 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 		return nil, err
 	}
 
+	if err := a.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
+	}
+
 	return result.(*models.Agent), nil
 }
 
@@ -201,6 +211,8 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 		return nil, err
 	}
 
+	var msg *messagingmodels.Message
+
 	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		agent := &models.Agent{
 			Id:        _id,
@@ -209,11 +221,7 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 			UpdatedBy: cfg.User.Id,
 		}
 
-		_, password, err := a.memberAuthSvcs.UpdateCredentials(ctx, agent)
-		if err != nil {
-			return nil, err
-		}
-
+		pass := data.Security.NewPassword
 		agent.Security.NewPassword = ""
 
 		filter := bson.M{"_id": _id}
@@ -224,7 +232,12 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 			return nil, err
 		}
 
-		if err := a.memberAuthSvcs.SendAccountUpdatedEmail(ctx, password, updatedAgent); err != nil {
+		msg, err = a.memberAuthSvcs.GetAccountUpdatedEmail(ctx, pass, updatedAgent)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := a.memberAuthSvcs.UpdateCredentials(ctx, pass, agent); err != nil {
 			return nil, err
 		}
 
@@ -233,6 +246,10 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 
 	if err != nil {
 		return nil, err
+	}
+
+	if err := a.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
 	}
 
 	return result.(*models.Agent), nil
