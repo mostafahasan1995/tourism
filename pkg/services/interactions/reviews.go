@@ -256,7 +256,7 @@ func (s *reviewsSvcs) Add(ctx context.Context, data *models.ReviewDto) (*models.
 		}
 		createdBy = primitive.NilObjectID
 		data.UserId = "000000000000000000000000"
-		data.ProfileImage = nil
+		data.UserImg = nil
 	} else {
 		createdBy = user.Id
 		data.UserId = user.Id.Hex()
@@ -265,11 +265,11 @@ func (s *reviewsSvcs) Add(ctx context.Context, data *models.ReviewDto) (*models.
 		data.Email = ""
 
 		if user.UserData.Picture != "" {
-			data.ProfileImage = &types.FileField{
+			data.UserImg = &types.FileField{
 				Path: user.UserData.Picture,
 			}
 		} else {
-			data.ProfileImage = nil
+			data.UserImg = nil
 		}
 	}
 
