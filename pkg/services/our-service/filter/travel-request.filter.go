@@ -1,30 +1,32 @@
 package filter
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type TravelReqFilters struct {
-	CustomerName *string `json:"customerName"`
+	CustomerName *string             `json:"customerName"`
+	Status       *string             `json:"status"`
+	CustomerId   *primitive.ObjectID `json:"customerId"`
 }
 
-func NewTravelReqFilters(query string) (*TravelReqFilters, error) {
-	f := &TravelReqFilters{}
+// func NewTravelReqFilters(query string) (*TravelReqFilters, error) {
+// 	f := &TravelReqFilters{}
 
-	if query != "" {
-		if err := json.Unmarshal([]byte(query), &f); err != nil {
-			return nil, err
-		}
-	}
+// 	if query != "" {
+// 		if err := json.Unmarshal([]byte(query), &f); err != nil {
+// 			return nil, err
+// 		}
+// 	}
 
-	return f, nil
-}
+// 	return f, nil
+// }
 
-func (f *TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
+func (f TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
 	var ands bson.A
 	if f.CustomerName != nil {
 		pattern := fmt.Sprintf(".*%s.*", *f.CustomerName)
@@ -40,6 +42,14 @@ func (f *TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
 		}
 
 		ands = append(ands, nameFilter)
+	}
+
+	if f.Status != nil {
+		m["status"] = *f.Status
+	}
+
+	if f.CustomerId != nil {
+		m["customerId"] = *f.CustomerId
 	}
 
 	if len(ands) > 0 {

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
@@ -22,7 +23,8 @@ import (
 )
 
 type TravelRequestSvcs interface {
-	Get(ctx context.Context, skip, limit int64, query string) (*models.TravelRequestPagination, error)
+	Get(ctx context.Context, skip, limit int64, query any) (*models.TravelRequestPagination, error)
+	GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.TravelRequestPagination, error)
 	GetOne(ctx context.Context, id string) (*models.TravelRequest, error)
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
@@ -60,15 +62,16 @@ func (t *travelrequestsvcs) GetOne(ctx context.Context, id string) (*models.Trav
 	return t.repo.GetByFilter(ctx, bson.M{"_id": _id})
 }
 
-func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.TravelRequestPagination, error) {
+func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.TravelRequestPagination, error) {
 	match := bson.M{}
 
-	filters, err := filter.NewTravelReqFilters(query)
+	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}
 
-	pipeline := filters.BuildPipeline(match)
+	pipeline := f.BuildPipeline(match)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
@@ -101,6 +104,23 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query st
 		Requests:   result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (t *travelrequestsvcs) GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.TravelRequestPagination, error) {
+	_id, err := primitive.ObjectIDFromHex(customerId)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	f.CustomerId = &_id
+
+	return t.Get(ctx, skip, limit, f)
+
 }
 
 func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error) {
