@@ -49,8 +49,10 @@ func (h *CustomerPersonaHandler) GetOne(w http.ResponseWriter, r *http.Request) 
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
+
 func (h *CustomerPersonaHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
+
 	skip, limit, err := util.Paginate(r)
 	if err != nil {
 		return err
@@ -58,12 +60,40 @@ func (h *CustomerPersonaHandler) Get(w http.ResponseWriter, r *http.Request) err
 
 	query := r.URL.Query().Get("query")
 
-	result, err := h.personaSvcs.Get(ctx, skip, limit, query)
+	cursor, count, err := h.personaSvcs.Get(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}
+	defer cursor.Close(ctx)
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	var personas []models.CustomerPersona
+	if err := cursor.All(ctx, &personas); err != nil {
+		return err
+	}
+
+	// Create response with pagination info
+	totalPages := int64(0)
+	if limit > 0 {
+		totalPages = (count + limit - 1) / limit
+	}
+
+	response := struct {
+		Data       []models.CustomerPersona `json:"data"`
+		Pagination struct {
+			TotalCount int64 `json:"totalCount"`
+			Page       int64 `json:"page"`
+			PerPage    int64 `json:"perPage"`
+			TotalPages int64 `json:"totalPages"`
+		} `json:"pagination"`
+	}{
+		Data: personas,
+	}
+	response.Pagination.TotalCount = count
+	response.Pagination.Page = (skip / limit) + 1
+	response.Pagination.PerPage = limit
+	response.Pagination.TotalPages = totalPages
+
+	return helpers.WriteJson(w, http.StatusOK, response)
 }
 
 func (h *CustomerPersonaHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
