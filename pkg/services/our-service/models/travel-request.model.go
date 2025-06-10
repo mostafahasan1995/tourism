@@ -58,9 +58,16 @@ type TravelRequest struct {
 	UpdatedBy        primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
+type TravelRequestRes struct {
+	TravelRequest `bson:",inline"`
+	ProgramData   Program               `bson:"programData" json:"programData"`
+	CustomerData  membermodels.Customer `bson:"customerData" json:"customerData"`
+	PackageData   Package               `bson:"packageData" json:"packageData"`
+}
+
 type TravelRequestPagination struct {
-	Requests   []TravelRequest  `json:"requests"`
-	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+	Requests   []TravelRequestRes `json:"requests"`
+	Pagination types.Pagination   `bson:"pagination" json:"pagination"`
 }
 
 // change status
@@ -72,8 +79,6 @@ func (c *ChangeStatusDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, c)
 }
 
-//
-
 type TravelRequestWithProgram struct {
 	TravelRequest `bson:",inline"`
 	Program       Program               `bson:"program" json:"program"`
@@ -82,4 +87,16 @@ type TravelRequestWithProgram struct {
 
 type RejectMyReq struct {
 	Reason string `json:"reason"`
+}
+
+// customer requests
+
+type CustomerTravelRequest struct {
+	TravelRequestRes `bson:",inline"`
+	Price            float64 `bson:"price" json:"price"`
+}
+
+type CustomerTravelRequestPagination struct {
+	Requests   []CustomerTravelRequest `json:"requests"`
+	Pagination types.Pagination        `bson:"pagination" json:"pagination"`
 }

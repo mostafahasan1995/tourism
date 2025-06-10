@@ -210,3 +210,16 @@ func (cp *CustomProgram) GetAllServicePricing() ([]InvoiceService, error) {
 
 	return services, nil
 }
+
+func (cp *CustomProgram) GetTotalPrice() (float64, error) {
+	services, err := cp.GetAllServicePricing()
+	if err != nil {
+		return 0, err
+	}
+
+	var total float64
+	for _, service := range services {
+		total += service.Price * float64(service.Qty)
+	}
+	return total, nil
+}

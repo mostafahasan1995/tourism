@@ -24,7 +24,7 @@ import (
 
 type TravelRequestSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query any) (*models.TravelRequestPagination, error)
-	GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.TravelRequestPagination, error)
+	GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.CustomerTravelRequestPagination, error)
 	GetOne(ctx context.Context, id string) (*models.TravelRequest, error)
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
@@ -85,7 +85,18 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query an
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.TravelRequest
+	pipeline = append(pipeline, bson.M{"$lookup": bson.M{
+		"from":         "tourismPrograms",
+		"localField":   "program",
+		"foreignField": "_id",
+		"as":           "programData",
+	}})
+	pipeline = append(pipeline, bson.M{"$unwind": bson.M{
+		"path":                       "$programData",
+		"preserveNullAndEmptyArrays": true,
+	}})
+
+	var result []models.TravelRequestRes
 	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -106,7 +117,7 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query an
 	}, nil
 }
 
-func (t *travelrequestsvcs) GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.TravelRequestPagination, error) {
+func (t *travelrequestsvcs) GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.CustomerTravelRequestPagination, error) {
 	_id, err := primitive.ObjectIDFromHex(customerId)
 	if err != nil {
 		return nil, err
@@ -119,8 +130,30 @@ func (t *travelrequestsvcs) GetCustomerRequests(ctx context.Context, customerId 
 
 	f.CustomerId = &_id
 
-	return t.Get(ctx, skip, limit, f)
+	result, err := t.Get(ctx, skip, limit, f)
+	if err != nil {
+		return nil, err
+	}
 
+	var r []models.CustomerTravelRequest
+	for _, req := range result.Requests {
+		var price float64
+		var err error
+		if req.ProgramData.Id != primitive.NilObjectID {
+			price, err = req.ProgramData.CustomType.GetTotalPrice()
+			if err != nil {
+				return nil, err
+			}
+
+		}
+
+		r = append(r, models.CustomerTravelRequest{TravelRequestRes: req, Price: price})
+	}
+
+	return &models.CustomerTravelRequestPagination{
+		Requests:   r,
+		Pagination: result.Pagination,
+	}, nil
 }
 
 func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error) {
