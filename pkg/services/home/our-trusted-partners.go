@@ -2,8 +2,8 @@ package home
 
 import (
 	"context"
-	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
 	"larsa-tourism-microservices/pkg/util"
@@ -64,32 +64,29 @@ func (s *trustedPartnerssvcs) GetAll(ctx context.Context) ([]models.TrustedPartn
 }
 
 func (s *trustedPartnerssvcs) Get(ctx context.Context, skip int64, limit int64, queryString string) (*mongo.Cursor, int64, error) {
-	// Prepare filter
-	filter := bson.M{"trash": false}
-	if queryString != "" {
-		var queryFilter map[string]interface{}
-		if err := json.Unmarshal([]byte(queryString), &queryFilter); err == nil {
-			for k, v := range queryFilter {
-				filter[k] = v
-			}
-		} else {
-			// If not a JSON object, treat as a search term for title
-			filter["title"] = bson.M{"$regex": queryString, "$options": "i"}
-		}
-	}
-
-	// Count total matching documents
-	totalCount, err := s.repo.Count(ctx, filter)
+	// Create filter from query string
+	filter, err := filter.NewTrustedPartnersFilter(queryString)
 	if err != nil {
 		return nil, 0, err
 	}
 
-	// Build pipeline for search
-	pipeline := []bson.M{
-		{"$match": filter},
-		{"$sort": bson.M{"displayOrder": 1}},
-		{"$skip": skip},
-		{"$limit": limit},
+	// Get base filter
+	baseFilter := bson.M{}
+
+	// Build pipeline
+	pipeline := filter.BuildPipeline(baseFilter)
+
+	// Add pagination
+	if len(pipeline) > 0 && pipeline[len(pipeline)-1]["$sort"] == nil {
+		pipeline = append(pipeline, bson.M{"$sort": bson.M{"displayOrder": 1}})
+	}
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	// Count total documents using the same filter
+	totalCount, err := s.repo.Count(ctx, baseFilter)
+	if err != nil {
+		return nil, 0, err
 	}
 
 	// Execute query
