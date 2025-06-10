@@ -64,7 +64,7 @@ func (h *TrustedPartnersHandler) GetAll(w http.ResponseWriter, r *http.Request) 
 		}
 	}
 
-	result, err := h.partnersSvcs.GetAll(ctx, filterObj)
+	result, err := h.partnersSvcs.GetAll(ctx)
 	if err != nil {
 		return err
 	}

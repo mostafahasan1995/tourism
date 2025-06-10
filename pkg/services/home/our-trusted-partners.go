@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
 	"larsa-tourism-microservices/pkg/util"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -19,7 +17,7 @@ import (
 
 type TrustedPartnersSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.TrustedPartner, error)
-	GetAll(ctx context.Context, filter filter.TrustedPartnersFilter) (models.TrustedPartnerPagination, error)
+	GetAll(ctx context.Context) ([]models.TrustedPartner, error)
 	Add(ctx context.Context, data *models.TrustedPartnerDto) (*models.TrustedPartner, error)
 	AddMany(ctx context.Context, data []models.TrustedPartnerDto) error
 	Update(ctx context.Context, id string, data *models.TrustedPartnerDto) (*models.TrustedPartner, error)
@@ -46,59 +44,23 @@ func (s *trustedPartnerssvcs) GetOne(ctx context.Context, id string) (*models.Tr
 	return s.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (s *trustedPartnerssvcs) GetAll(ctx context.Context, filter filter.TrustedPartnersFilter) (models.TrustedPartnerPagination, error) {
-	filterBody := filter.ToBsonFilter()
-
-	// Count total documents
-	totalCount, err := s.repo.Count(ctx, filterBody)
-	if err != nil {
-		return models.TrustedPartnerPagination{}, err
-	}
-
-	// Pagination defaults and limits
-	page := filter.Page
-	if page <= 0 {
-		page = 1
-	}
-	size := filter.Size
-	if size <= 0 {
-		size = int(totalCount) // return all if invalid
-	}
-	skip := int64((page - 1) * size)
-	limit := int64(size)
-
-	// Build aggregation pipeline
+func (s *trustedPartnerssvcs) GetAll(ctx context.Context) ([]models.TrustedPartner, error) {
 	pipeline := []bson.M{
-		{"$match": filterBody},
-		{"$sort": bson.M{"displayOrder": 1}},
-		{"$skip": skip},
-		{"$limit": limit},
+		{"$match": bson.M{"trash": false}},
 	}
 
-	var partners []models.TrustedPartner
-	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		return cur.All(ctx, &partners)
+	var result []models.TrustedPartner
+	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
 	})
 	if err != nil {
-		return models.TrustedPartnerPagination{}, err
+		return nil, err
 	}
-
-	// Prepare pagination result
-	totalPages := float64(0)
-	if size > 0 {
-		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
-	}
-
-	result := models.TrustedPartnerPagination{
-		Partners: partners,
-		Pagination: common.Pagination{
-			TotalPages: totalPages,
-			PerPage:    int64(size),
-			TotalCount: totalCount,
-		},
-	}
-
 	return result, nil
+
 }
 
 func (s *trustedPartnerssvcs) Add(ctx context.Context, data *models.TrustedPartnerDto) (*models.TrustedPartner, error) {
