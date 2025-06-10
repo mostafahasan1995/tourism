@@ -137,6 +137,9 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 	if err != nil {
 		return nil, err
 	}
+
+	var userId primitive.ObjectID
+
 	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		agent := &models.Agent{
 			AgentDto:  *data,
@@ -145,7 +148,10 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			Status:    "inactive", //active, inactive
 		}
 
-		userId, password, err := a.memberAuthSvcs.AddCredentials(ctx, agent)
+		var password string
+		var err error
+
+		userId, password, err = a.memberAuthSvcs.AddCredentials(ctx, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -172,6 +178,12 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 	})
 
 	if err != nil {
+		if userId != primitive.NilObjectID {
+			if err := a.memberAuthSvcs.DeleteCredentials(ctx, userId.Hex()); err != nil {
+				fmt.Println("error deleting user", err)
+			}
+			fmt.Println("user deleted")
+		}
 		return nil, err
 	}
 

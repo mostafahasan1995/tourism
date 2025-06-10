@@ -22,6 +22,7 @@ type MemberAuthSvcs interface {
 	UpdateCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error)
 	SendInvitationEmail(ctx context.Context, password string, data any) error
 	SendAccountUpdatedEmail(ctx context.Context, password string, data any) error
+	DeleteCredentials(ctx context.Context, userId string) (err error)
 }
 
 type memberAuthSvcs struct {
@@ -157,6 +158,14 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, data any) (userI
 	}
 
 	return _data.User.Id, password, nil
+}
+
+func (m *memberAuthSvcs) DeleteCredentials(ctx context.Context, userId string) (err error) {
+	resp, err := m.gateway.Request(ctx, "users", "users/"+userId, "DELETE", "", map[string]any{})
+	if err != nil || resp.StatusCode != 200 {
+		return errors.New("error deleting user")
+	}
+	return nil
 }
 
 func (m *memberAuthSvcs) SendInvitationEmail(ctx context.Context, password string, data any) error {
