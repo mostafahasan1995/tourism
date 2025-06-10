@@ -104,22 +104,22 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-// Rating and review structures for agents (similar to hotels)
-type AgentRatingObject struct {
-	Username string          `bson:"username" json:"username"`
-	UserId   string          `bson:"userId" json:"userId"`
-	UserImg  types.FileField `bson:"userImg" json:"userImg"`
-	Value    float64         `bson:"value" json:"value"`
-	Text     string          `bson:"text" json:"text"`
-	Status   string          `bson:"status" json:"status"`
-	Date     *time.Time      `bson:"date" json:"date"`
-	Replies  []AgentReply    `bson:"replies" json:"replies"`
-}
+// // Rating and review structures for agents (similar to hotels)
+// type AgentRatingObject struct {
+// 	Username string          `bson:"username" json:"username"`
+// 	UserId   string          `bson:"userId" json:"userId"`
+// 	UserImg  types.FileField `bson:"userImg" json:"userImg"`
+// 	Value    float64         `bson:"value" json:"value"`
+// 	Text     string          `bson:"text" json:"text"`
+// 	Status   string          `bson:"status" json:"status"`
+// 	Date     *time.Time      `bson:"date" json:"date"`
+// 	Replies  []AgentReply    `bson:"replies" json:"replies"`
+// }
 
-type AgentReply struct {
-	Text string     `bson:"text" json:"text"`
-	Date *time.Time `bson:"date" json:"date"`
-}
+// type AgentReply struct {
+// 	Text string     `bson:"text" json:"text"`
+// 	Date *time.Time `bson:"date" json:"date"`
+// }
 
 type AgentDto struct {
 	Name        string          `bson:"name" json:"name"`

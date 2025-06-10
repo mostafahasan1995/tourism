@@ -34,6 +34,7 @@ type CustomerSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Customer, error)
 	GetOne(ctx context.Context, customerId string) (*models.Customer, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error)
+	GetAll(ctx context.Context) ([]models.Customer, error)
 	Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
 	Update(ctx context.Context, customerId string, data *models.CustomerDto) (*models.Customer, error)
 	Delete(ctx context.Context, customerId string) error
@@ -115,6 +116,24 @@ func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query string)
 		Customers:  result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (c *customerSvcs) GetAll(ctx context.Context) ([]models.Customer, error) {
+	match := bson.M{"trash": false}
+	pipeline := []bson.M{
+		{"$match": match},
+		{"$sort": bson.M{"_id": -1}},
+	}
+
+	var result []models.Customer
+	err := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error) {
@@ -311,8 +330,11 @@ func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.Cust
 				Name:        data.ClientName,
 				Nationality: data.Nationality,
 				ClientContact: models.MemberContact{
-					Mobile: data.ClientPhone,
-					Email:  data.ClientEmail,
+					Mobile: models.AgentPhone{
+						Pre:     "",
+						Content: data.ClientPhone,
+					},
+					Email: data.ClientEmail,
 				},
 				Security: models.MemberSecurity{
 					Email:       data.ClientEmail,

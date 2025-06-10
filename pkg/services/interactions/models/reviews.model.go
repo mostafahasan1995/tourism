@@ -35,7 +35,7 @@ type ReviewDto struct {
 	Customer           string                 `bson:"customer,omitempty" json:"customer,omitempty"`
 	Metadata           map[string]interface{} `bson:"metadata,omitempty" json:"metadata,omitempty"`
 	Text               string                 `bson:"text,omitempty" json:"text,omitempty"`
-	ProfileImage       *types.FileField       `bson:"profileImage" json:"profileImage"`
+	//ProfileImage       *types.FileField       `bson:"profileImage" json:"profileImage"`
 }
 
 func (r *ReviewDto) Validate(v *validator.Validate) error {
