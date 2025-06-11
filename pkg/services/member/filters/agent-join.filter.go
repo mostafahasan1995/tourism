@@ -8,8 +8,9 @@ import (
 )
 
 type AgentJoinFilter struct {
-	Name   *string `json:"name"`
-	Status *string `json:"status"`
+	Name    *string `json:"name"`
+	Status  *string `json:"status"`
+	Country *string `json:"country"`
 }
 
 func (f AgentJoinFilter) BuildPipeline(m bson.M) []bson.M {
@@ -32,6 +33,10 @@ func (f AgentJoinFilter) BuildPipeline(m bson.M) []bson.M {
 
 	if f.Status != nil {
 		m["status"] = *f.Status
+	}
+
+	if f.Country != nil {
+		m["countries"] = bson.M{"$in": []string{*f.Country}}
 	}
 
 	if len(ands) > 0 {

@@ -4,7 +4,8 @@
 
 
 var f = encodeURIComponent(JSON.stringify({
-    "statusNotEqual": "converted"
+    "status":"converted",
+    "country": "syria"
 }))
 
 
