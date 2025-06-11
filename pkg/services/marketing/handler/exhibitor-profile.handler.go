@@ -32,9 +32,13 @@ func NewExhibitorProfileHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/hotel/{hotelId}", helpers.Make(h.GetByHotelId))
 
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+		r.With(middleware.Auth("authenticate")).Post("/request", helpers.Make(h.AddExhibitorRequest))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+
+		r.With(middleware.Auth("authenticate")).Get("/requests", helpers.Make(h.GetExhibitorRequests))
+		r.With(middleware.Auth("authenticate")).Patch("/requests/{id}/status", helpers.Make(h.UpdateExhibitorRequestStatus))
 
 		r.With(middleware.Auth("authenticate")).Post("/{id}/dynamic-sections", helpers.Make(h.AddDynamicSection))
 		r.With(middleware.Auth("authenticate")).Put("/{id}/dynamic-sections/{sectionId}", helpers.Make(h.UpdateDynamicSection))
@@ -310,6 +314,72 @@ func (h *ExhibitorProfileHandler) ToggleActive(w http.ResponseWriter, r *http.Re
 	id := chi.URLParam(r, "id")
 
 	result, err := h.exhibitorProfileSvcs.ToggleActive(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *ExhibitorProfileHandler) AddExhibitorRequest(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var data models.ExhibitorRequestDto
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.exhibitorProfileSvcs.AddExhibitorRequest(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusCreated, result)
+}
+
+func (h *ExhibitorProfileHandler) GetExhibitorRequests(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Parse filter parameters
+	var filterQuery filter.ExhibitorRequestFilter
+
+	// Use the filter's ParseQueryParams method
+	filterQuery.ParseQueryParams(r.URL.Query())
+
+	result, err := h.exhibitorProfileSvcs.GetExhibitorRequests(ctx, skip, limit, filterQuery)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *ExhibitorProfileHandler) UpdateExhibitorRequestStatus(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id")
+
+	var data struct {
+		Status string `json:"status" validate:"required,oneof=Pending Replied Closed"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	if err := helpers.GenericValidation(h.validationInstance, &data); err != nil {
+		return err
+	}
+
+	result, err := h.exhibitorProfileSvcs.UpdateExhibitorRequestStatus(ctx, id, data.Status)
 	if err != nil {
 		return err
 	}
