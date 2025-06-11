@@ -1,6 +1,10 @@
 package filter
 
 import (
+	"net/url"
+	"strconv"
+	"time"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -76,4 +80,105 @@ func (f *ExhibitorProfileFilter) ToBsonFilter() bson.M {
 	}
 
 	return bson.M{"$and": filterConditions}
+}
+
+// ExhibitorRequestFilter defines the filter criteria for exhibitor requests
+type ExhibitorRequestFilter struct {
+	HotelName       *string    `json:"hotelName,omitempty"`
+	Location        *string    `json:"location,omitempty"`
+	Email           *string    `json:"email,omitempty"`
+	Status          *string    `json:"status,omitempty"`
+	RequestDateFrom *time.Time `json:"requestDateFrom,omitempty"`
+	RequestDateTo   *time.Time `json:"requestDateTo,omitempty"`
+	Page            int        `json:"page"`
+	Size            int        `json:"size"`
+}
+
+// ParseQueryParams parses URL query parameters into filter values
+func (f *ExhibitorRequestFilter) ParseQueryParams(q url.Values) {
+	// Hotel name filter
+	if hotelName := q.Get("hotelName"); hotelName != "" {
+		f.HotelName = &hotelName
+	}
+
+	// Location filter
+	if location := q.Get("location"); location != "" {
+		f.Location = &location
+	}
+
+	// Email filter
+	if email := q.Get("email"); email != "" {
+		f.Email = &email
+	}
+
+	// Status filter
+	if status := q.Get("status"); status != "" {
+		f.Status = &status
+	}
+
+	// Date filters
+	if from := q.Get("requestDateFrom"); from != "" {
+		date, err := time.Parse("2006-01-02", from)
+		if err == nil {
+			f.RequestDateFrom = &date
+		}
+	}
+
+	if to := q.Get("requestDateTo"); to != "" {
+		date, err := time.Parse("2006-01-02", to)
+		if err == nil {
+			// Set to end of day
+			date = date.Add(24*time.Hour - time.Second)
+			f.RequestDateTo = &date
+		}
+	}
+
+	// Set pagination
+	page, _ := strconv.Atoi(q.Get("page"))
+	if page < 1 {
+		page = 1
+	}
+	f.Page = page
+
+	size, _ := strconv.Atoi(q.Get("size"))
+	if size < 1 {
+		size = 10 // Default size
+	}
+	f.Size = size
+}
+
+// ToBsonFilter converts the filter to a BSON filter for MongoDB
+func (f *ExhibitorRequestFilter) ToBsonFilter() bson.M {
+	filter := bson.M{"trash": false}
+
+	if f.HotelName != nil && *f.HotelName != "" {
+		filter["heroSection.hotelName"] = bson.M{"$regex": *f.HotelName, "$options": "i"}
+	}
+
+	if f.Location != nil && *f.Location != "" {
+		filter["contactInfo.location"] = bson.M{"$regex": *f.Location, "$options": "i"}
+	}
+
+	if f.Email != nil && *f.Email != "" {
+		filter["contactInfo.email"] = bson.M{"$regex": *f.Email, "$options": "i"}
+	}
+
+	if f.Status != nil && *f.Status != "" {
+		filter["status"] = *f.Status
+	}
+
+	dateFilter := bson.M{}
+	if f.RequestDateFrom != nil {
+		dateFilter["$gte"] = f.RequestDateFrom
+	}
+
+	if f.RequestDateTo != nil {
+		dateFilter["$lte"] = f.RequestDateTo
+	}
+
+	if len(dateFilter) > 0 {
+		filter["createdAt"] = dateFilter
+	}
+
+	return filter
 }

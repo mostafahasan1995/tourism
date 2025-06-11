@@ -22,9 +22,13 @@ type ExhibitorProfileSvcs interface {
 	GetByHotelId(ctx context.Context, hotelId string) (*models.ExhibitorProfile, error)
 	Get(ctx context.Context, skip, limit int64, filterQuery filter.ExhibitorProfileFilter) (*models.ExhibitorProfilePagination, error)
 	Add(ctx context.Context, data *models.ExhibitorProfileDto) (*models.ExhibitorProfile, error)
+	AddExhibitorRequest(ctx context.Context, data *models.ExhibitorRequestDto) (*models.ExhibitorProfile, error)
 	Update(ctx context.Context, id string, data *models.ExhibitorProfileDto) (*models.ExhibitorProfile, error)
 	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.ExhibitorProfile, error)
 	Delete(ctx context.Context, id string) error
+
+	GetExhibitorRequests(ctx context.Context, skip, limit int64, filterQuery filter.ExhibitorRequestFilter) (*models.ExhibitorRequestPagination, error)
+	UpdateExhibitorRequestStatus(ctx context.Context, id string, status string) (*models.ExhibitorProfile, error)
 
 	AddDynamicSection(ctx context.Context, profileId string, section *models.AddDynamicSectionDto) (*models.ExhibitorProfile, error)
 	UpdateDynamicSection(ctx context.Context, profileId string, sectionId string, updates *models.UpdateDynamicSectionDto) (*models.ExhibitorProfile, error)
@@ -123,6 +127,61 @@ func (s *exhibitorProfileSvcs) Add(ctx context.Context, data *models.ExhibitorPr
 		CreatedBy:           cfg.User.Id,
 		UpdatedAt:           time.Now(),
 		UpdatedBy:           cfg.User.Id,
+	}
+
+	if err := s.repo.Add(ctx, profile); err != nil {
+		return nil, err
+	}
+
+	return profile, nil
+}
+
+func (s *exhibitorProfileSvcs) AddExhibitorRequest(ctx context.Context, data *models.ExhibitorRequestDto) (*models.ExhibitorProfile, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	existing, _ := s.GetByHotelId(ctx, data.HotelId.Hex())
+	if existing != nil {
+		return nil, helpers.BadRequest("Exhibitor profile already exists for this hotel")
+	}
+
+	// Create contact info map
+	contactInfo := map[string]interface{}{
+		"website":  data.HotelWebsite,
+		"phone":    data.Phone,
+		"email":    data.Email,
+		"location": data.Location,
+	}
+
+	// Initialize a full profile with provided data
+	profileDto := &models.ExhibitorProfileDto{
+		HotelId: data.HotelId,
+		HeroSection: models.HeroSection{
+			HotelName:    data.HotelName,
+			Rating:       0,
+			PropertyType: data.PropertyType,
+			Overview:     data.Overview,
+			Images:       []types.FileField{}, // Empty array for images to be added later
+			Logo:         nil,                 // Null logo to be added later
+		},
+		FacilitiesSection: models.GetDefaultFacilityOptions(),
+		DynamicSections:   []models.DynamicSection{},
+		ContactInfo:       contactInfo,
+		IsActive:          false,
+		IsPublished:       false,
+	}
+
+	profile := &models.ExhibitorProfile{
+		ExhibitorProfileDto: *profileDto,
+		Id:                  primitive.NewObjectID(),
+		Trash:               false,
+		CreatedAt:           time.Now(),
+		CreatedBy:           cfg.User.Id,
+		UpdatedAt:           time.Now(),
+		UpdatedBy:           cfg.User.Id,
+		Status:              "Pending", // Set initial status as Pending
 	}
 
 	if err := s.repo.Add(ctx, profile); err != nil {
@@ -472,4 +531,55 @@ func (s *exhibitorProfileSvcs) ToggleActive(ctx context.Context, profileId strin
 	}
 
 	return s.Patch(ctx, profileId, map[string]interface{}{"isActive": !profile.IsActive})
+}
+
+func (s *exhibitorProfileSvcs) GetExhibitorRequests(ctx context.Context, skip, limit int64, filterQuery filter.ExhibitorRequestFilter) (*models.ExhibitorRequestPagination, error) {
+	match := filterQuery.ToBsonFilter()
+
+	// Add status condition if not already specified
+	if _, ok := match["status"]; !ok {
+		match["status"] = bson.M{"$exists": true}
+	}
+
+	countPipeline := []bson.M{{"$match": match}}
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+		{"$sort": bson.M{"createdAt": -1}},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+
+	var result []models.ExhibitorProfile
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ExhibitorRequestPagination{
+		Profiles:   result,
+		Pagination: pagination,
+	}, nil
+}
+
+func (s *exhibitorProfileSvcs) UpdateExhibitorRequestStatus(ctx context.Context, id string, status string) (*models.ExhibitorProfile, error) {
+	// Validate status
+	if status != "Pending" && status != "Replied" && status != "Closed" {
+		return nil, helpers.BadRequest("Invalid status value. Must be 'Pending', 'Replied', or 'Closed'")
+	}
+
+	return s.Patch(ctx, id, map[string]interface{}{"status": status})
 }

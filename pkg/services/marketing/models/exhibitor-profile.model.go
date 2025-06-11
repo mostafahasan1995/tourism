@@ -47,12 +47,13 @@ type DynamicSection struct {
 }
 
 type ExhibitorProfileDto struct {
-	HotelId           primitive.ObjectID `bson:"hotelId" json:"hotelId" validate:"required"`
-	HeroSection       HeroSection        `bson:"heroSection" json:"heroSection" validate:"required"`
-	FacilitiesSection FacilitiesSection  `bson:"facilitiesSection" json:"facilitiesSection"`
-	DynamicSections   []DynamicSection   `bson:"dynamicSections" json:"dynamicSections"`
-	IsActive          bool               `bson:"isActive" json:"isActive"`
-	IsPublished       bool               `bson:"isPublished" json:"isPublished"`
+	HotelId           primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
+	HeroSection       HeroSection            `bson:"heroSection" json:"heroSection" validate:"required"`
+	FacilitiesSection FacilitiesSection      `bson:"facilitiesSection" json:"facilitiesSection"`
+	DynamicSections   []DynamicSection       `bson:"dynamicSections" json:"dynamicSections"`
+	ContactInfo       map[string]interface{} `bson:"contactInfo" json:"contactInfo"`
+	IsActive          bool                   `bson:"isActive" json:"isActive"`
+	IsPublished       bool                   `bson:"isPublished" json:"isPublished"`
 }
 
 func (e *ExhibitorProfileDto) Validate(v *validator.Validate) error {
@@ -67,6 +68,7 @@ type ExhibitorProfile struct {
 	CreatedAt           time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedBy           primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 	UpdatedAt           time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	Status              string             `bson:"status,omitempty" json:"status,omitempty"`
 }
 
 type ExhibitorProfilePagination struct {
@@ -99,4 +101,31 @@ type FacilityUpdateDto struct {
 
 func (f *FacilityUpdateDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, f)
+}
+
+type PhoneDto struct {
+	Pre     string `bson:"pre" json:"pre"`
+	Content string `bson:"content" json:"content"`
+}
+
+type ExhibitorRequestDto struct {
+	HotelId      primitive.ObjectID `bson:"hotelId" json:"hotelId" validate:"required"`
+	HotelName    string             `bson:"hotelName" json:"hotelName" validate:"required"`
+	HotelWebsite string             `bson:"hotelWebsite" json:"hotelWebsite"`
+	Phone        PhoneDto           `bson:"phone" json:"phone"`
+	Email        string             `bson:"email" json:"email"`
+	Location     string             `bson:"location" json:"location"`
+	PropertyType string             `bson:"propertyType" json:"propertyType" validate:"required"`
+	Overview     string             `bson:"overview" json:"overview" validate:"required"`
+	Status       string             `bson:"status" json:"status" validate:"omitempty,oneof=Pending Replied Closed"`
+}
+
+func (e *ExhibitorRequestDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, e)
+}
+
+// ExhibitorRequestPagination represents paginated exhibitor request results
+type ExhibitorRequestPagination struct {
+	Profiles   []ExhibitorProfile `bson:"profiles" json:"profiles"`
+	Pagination types.Pagination   `bson:"pagination" json:"pagination"`
 }
