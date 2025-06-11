@@ -15,18 +15,6 @@ type TravelReqFilters struct {
 	ProgramId    *primitive.ObjectID `json:"programId"`
 }
 
-// func NewTravelReqFilters(query string) (*TravelReqFilters, error) {
-// 	f := &TravelReqFilters{}
-
-// 	if query != "" {
-// 		if err := json.Unmarshal([]byte(query), &f); err != nil {
-// 			return nil, err
-// 		}
-// 	}
-
-// 	return f, nil
-// }
-
 func (f TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
 	var ands bson.A
 	if f.CustomerName != nil {
@@ -54,7 +42,17 @@ func (f TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	if f.ProgramId != nil {
-		m["program"] = *f.ProgramId
+		if f.ProgramId.IsZero() {
+			o := bson.M{
+				"$or": bson.A{
+					bson.M{"program": bson.M{"$exists": false}},
+					bson.M{"program": primitive.NilObjectID},
+				},
+			}
+			ands = append(ands, o)
+		} else {
+			m["program"] = *f.ProgramId
+		}
 	}
 
 	if len(ands) > 0 {
