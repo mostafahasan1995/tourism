@@ -133,21 +133,7 @@ type AgentDto struct {
 	Contact     AgentContact    `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
 	Security    MemberSecurity  `bson:"security" json:"security"`
 	Financial   AgentFinancial  `bson:"financial" json:"financial"`
-	//RatingObjects []AgentRatingObject `bson:"ratingObjects" json:"ratingObjects"` // Added rating objects
-	//Ratings       float64             `bson:"ratings" json:"ratings"`             // Added average rating
 }
-
-// CalculateAverageRating calculates the average rating from RatingObjects
-// func (a *AgentDto) CalculateAverageRating() {
-// 	if len(a.RatingObjects) == 0 {
-// 		return
-// 	}
-// 	var total float64
-// 	for _, rating := range a.RatingObjects {
-// 		total += rating.Value
-// 	}
-// 	a.Ratings = total / float64(len(a.RatingObjects))
-// }
 
 type AgentFinancial struct {
 	Stays           FinancialUnit `bson:"stays" json:"stays"`

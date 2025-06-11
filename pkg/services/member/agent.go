@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -32,7 +33,7 @@ type AgentSvcs interface {
 	Delete(ctx context.Context, agentId string) error
 	//agent join
 	GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error)
-	GetJoinRequests(ctx context.Context, skip, limit int64, query string) (*models.AgentJoinPagination, error)
+	GetJoinRequests(ctx context.Context, skip, limit int64, query any) (*models.AgentJoinPagination, error)
 	Join(ctx context.Context, data *models.AgentJoinDto) (*models.AgentJoin, error)
 	ConvertToAgent(ctx context.Context, agentId string, data *models.AgentJoinDto) (*models.Agent, error)
 	RejectJoin(ctx context.Context, agentId string) error
@@ -376,15 +377,15 @@ func (a *agentsvcs) RejectJoin(ctx context.Context, agentId string) error {
 
 }
 
-func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, query string) (*models.AgentJoinPagination, error) {
-	match := bson.M{}
+func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, query any) (*models.AgentJoinPagination, error) {
+	match := bson.M{"status": bson.M{"$ne": "converted"}}
 
-	filter, err := filters.NewAgentJoinFilter(query)
+	f, err := helpers.ParseFilters[filters.AgentJoinFilter](query)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("invalid query")
 	}
 
-	pipeline := filter.BuildPipeline(match)
+	pipeline := f.BuildPipeline(match)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)

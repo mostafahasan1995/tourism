@@ -1,7 +1,6 @@
 package filters
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 
@@ -9,21 +8,11 @@ import (
 )
 
 type AgentJoinFilter struct {
-	Name *string `json:"name"`
+	Name   *string `json:"name"`
+	Status *string `json:"status"`
 }
 
-func NewAgentJoinFilter(query string) (*AgentJoinFilter, error) {
-	filter := &AgentJoinFilter{}
-	if query != "" {
-		if err := json.Unmarshal([]byte(query), filter); err != nil {
-			return nil, err
-		}
-	}
-
-	return filter, nil
-}
-
-func (f *AgentJoinFilter) BuildPipeline(m bson.M) []bson.M {
+func (f AgentJoinFilter) BuildPipeline(m bson.M) []bson.M {
 	var ands bson.A
 	if f.Name != nil {
 		pattern := fmt.Sprintf(".*%s.*", *f.Name)
@@ -39,6 +28,10 @@ func (f *AgentJoinFilter) BuildPipeline(m bson.M) []bson.M {
 		}
 
 		ands = append(ands, nameFilter)
+	}
+
+	if f.Status != nil {
+		m["status"] = *f.Status
 	}
 
 	if len(ands) > 0 {
