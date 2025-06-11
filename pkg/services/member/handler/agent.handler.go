@@ -37,6 +37,7 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.Post("/", helpers.Make(h.Join))
 		r.With(middleware.Auth("authenticate")).Post("/{id}/convert", helpers.Make(h.ConvertToAgent))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectJoin))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/pending", helpers.Make(h.SetAsPending))
 	})
 }
 
@@ -203,6 +204,18 @@ func (h *AgentHandler) RejectJoin(w http.ResponseWriter, r *http.Request) error 
 	agentId := chi.URLParam(r, "id") // agent join id
 
 	if err := h.agentsvcs.RejectJoin(ctx, agentId); err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
+}
+
+func (h *AgentHandler) SetAsPending(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id") // agent join id
+
+	if err := h.agentsvcs.SetAsPending(ctx, agentId); err != nil {
 		return err
 	}
 

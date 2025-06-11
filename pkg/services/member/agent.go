@@ -7,6 +7,7 @@ import (
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/member/enums"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/member/repo"
@@ -37,6 +38,7 @@ type AgentSvcs interface {
 	Join(ctx context.Context, data *models.AgentJoinDto) (*models.AgentJoin, error)
 	ConvertToAgent(ctx context.Context, agentId string, data *models.AgentJoinDto) (*models.Agent, error)
 	RejectJoin(ctx context.Context, agentId string) error
+	SetAsPending(ctx context.Context, agentId string) error
 }
 
 type agentsvcs struct {
@@ -59,6 +61,7 @@ func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 	}, nil
 }
 
+// agent
 func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.Agent, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
@@ -295,7 +298,7 @@ func (a *agentsvcs) Join(ctx context.Context, data *models.AgentJoinDto) (*model
 	agent := &models.AgentJoin{
 		Id:           primitive.NewObjectID(),
 		AgentJoinDto: *data,
-		Status:       "pending",
+		Status:       enums.AgentJoinStatusPending,
 	}
 
 	if err := a.agentjoinrepo.Add(ctx, agent); err != nil {
@@ -336,9 +339,9 @@ func (a *agentsvcs) ConvertToAgent(ctx context.Context, agentId string, data *mo
 			return nil, err
 		}
 
-		filter := bson.M{"_id": _id}
+		filter := bson.M{"_id": _id, "status": enums.AgentJoinStatusPending}
 		update := bson.M{"$set": bson.M{
-			"status": "converted",
+			"status": enums.AgentJoinStatusConverted,
 		}}
 
 		_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
@@ -363,14 +366,34 @@ func (a *agentsvcs) RejectJoin(ctx context.Context, agentId string) error {
 		return err
 	}
 
-	filter := bson.M{"_id": _id}
+	filter := bson.M{"_id": _id, "status": enums.AgentJoinStatusPending}
 	update := bson.M{"$set": bson.M{
-		"status": "rejected",
+		"status": enums.AgentJoinStatusRejected,
 	}}
 
 	_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
 	if errUp != nil {
-		return errUp
+		return errors.New("error update status, only pending joins can be rejected")
+	}
+
+	return nil
+
+}
+
+func (a *agentsvcs) SetAsPending(ctx context.Context, agentId string) error {
+	_id, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": _id, "status": enums.AgentJoinStatusRejected}
+	update := bson.M{"$set": bson.M{
+		"status": enums.AgentJoinStatusPending,
+	}}
+
+	_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
+	if errUp != nil {
+		return errors.New("error update status, only rejected joins can set to pending")
 	}
 
 	return nil
