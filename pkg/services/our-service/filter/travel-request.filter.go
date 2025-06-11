@@ -12,6 +12,7 @@ type TravelReqFilters struct {
 	CustomerName *string             `json:"customerName"`
 	Status       *string             `json:"status"`
 	CustomerId   *primitive.ObjectID `json:"customerId"`
+	ProgramId    *primitive.ObjectID `json:"programId"`
 }
 
 // func NewTravelReqFilters(query string) (*TravelReqFilters, error) {
@@ -50,6 +51,10 @@ func (f TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
 
 	if f.CustomerId != nil {
 		m["customerId"] = *f.CustomerId
+	}
+
+	if f.ProgramId != nil {
+		m["program"] = *f.ProgramId
 	}
 
 	if len(ands) > 0 {

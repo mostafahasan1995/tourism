@@ -4,7 +4,7 @@
 
 
 var f = encodeURIComponent(JSON.stringify({
-    "status": "approved"
+    "programId": "000000000000000000000000"
 }))
 
 

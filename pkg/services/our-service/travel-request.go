@@ -25,6 +25,7 @@ import (
 type TravelRequestSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query any) (*models.TravelRequestPagination, error)
 	GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.CustomerTravelRequestPagination, error)
+	GetAll(ctx context.Context, query any) ([]models.TravelRequestRes, error)
 	GetOne(ctx context.Context, id string) (*models.TravelRequest, error)
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
@@ -115,6 +116,38 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query an
 		Requests:   result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (t *travelrequestsvcs) GetAll(ctx context.Context, query any) ([]models.TravelRequestRes, error) {
+	match := bson.M{}
+
+	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := f.BuildPipeline(match)
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$lookup": bson.M{
+		"from":         "tourismPrograms",
+		"localField":   "program",
+		"foreignField": "_id",
+		"as":           "programData",
+	}})
+	pipeline = append(pipeline, bson.M{"$unwind": bson.M{
+		"path":                       "$programData",
+		"preserveNullAndEmptyArrays": true,
+	}})
+
+	var result []models.TravelRequestRes
+	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }
 
 func (t *travelrequestsvcs) GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.CustomerTravelRequestPagination, error) {
