@@ -50,5 +50,14 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	// FAQ handler
 	handler.NewFaqHandler(i, r)
 
+	// Register repositories
+	do.Provide(i, repo.NewSpiritualGiftRepo)
+
+	// Register services
+	do.Provide(i, home.NewSpiritualGiftSvcs)
+
+	// Register handlers
+	handler.NewSpiritualGiftHandler(i, r)
+
 	return i
 }
