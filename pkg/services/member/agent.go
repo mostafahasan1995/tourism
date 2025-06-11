@@ -320,10 +320,7 @@ func (a *agentsvcs) ConvertToAgent(ctx context.Context, agentId string, data *mo
 			Bio:         data.Bio,
 			Countries:   data.Countries,
 			Contact: models.AgentContact{
-				Phone: models.AgentPhone{
-					Pre:     "",
-					Content: data.Phone.Content,
-				},
+				Phone: data.Phone,
 				Email: data.Email,
 				Web:   "",
 			},

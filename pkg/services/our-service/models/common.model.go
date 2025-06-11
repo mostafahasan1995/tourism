@@ -98,11 +98,11 @@ type Delegation struct {
 }
 
 type BusinessMan struct {
-	Purpose             string `bson:"purpose" json:"purpose"` //meeting - investment - conference - other
-	ClientIsCoordinator bool   `bson:"clientIsCoordinator" json:"clientIsCoordinator"`
-	CoordinatorName     string `bson:"coordinatorName" json:"coordinatorName"`
-	CoordinatorPhone    string `bson:"coordinatorPhone" json:"coordinatorPhone"`
-	CoordinatorEmail    string `bson:"coordinatorEmail" json:"coordinatorEmail"`
+	Purpose             string            `bson:"purpose" json:"purpose"` //meeting - investment - conference - other
+	ClientIsCoordinator bool              `bson:"clientIsCoordinator" json:"clientIsCoordinator"`
+	CoordinatorName     string            `bson:"coordinatorName" json:"coordinatorName"`
+	CoordinatorPhone    types.PhoneNumber `bson:"coordinatorPhone" json:"coordinatorPhone"`
+	CoordinatorEmail    string            `bson:"coordinatorEmail" json:"coordinatorEmail"`
 }
 
 type VipCar struct {
@@ -126,29 +126,6 @@ type FlightTicketRequest struct {
 	Destinations []FlightTicket `bson:"destinations" json:"destinations"`
 }
 
-// type FlightTicktDest struct {
-// 	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
-// 	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
-// 	TripType        string             `bson:"tripType" json:"tripType"`
-// 	TravelClass     string             `bson:"travelClass" json:"travelClass"`
-
-// 	DepartureDate time.Time `bson:"departureDate" json:"departureDate"`
-// 	ReturnDate    time.Time `bson:"returnDate" json:"returnDate"`
-
-// 	NumberOfAdults   int `bson:"numberOfAdults" json:"numberOfAdults"`
-// 	NumberOfChildren int `bson:"numberOfChildren" json:"numberOfChildren"`
-// 	NumberOfInfants  int `bson:"numberOfInfants" json:"numberOfInfants"`
-
-// 	BestDepartureTime   string `bson:"bestDepartureTime" json:"bestDepartureTime"`     //morning - afternoon - evening
-// 	StopoverPreferences string `bson:"stopoverPreferences" json:"stopoverPreferences"` //shortest - cheapest - fastest
-// 	PreferredAirlines   string `bson:"preferredAirlines" json:"preferredAirlines"`
-
-// 	ExtraLuggage           bool   `bson:"extraLuggage" json:"extraLuggage"`
-// 	SpecialMeals           bool   `bson:"specialMeals" json:"specialMeals"`
-// 	PreferredContactMethod string `bson:"preferredContactMethod" json:"preferredContactMethod"`
-// 	SpecialRequirements    string `bson:"specialRequirements" json:"specialRequirements"`
-// }
-
 // partner request
 type PartnerRequest struct {
 	CompanyName     string        `bson:"companyName" json:"companyName"`
@@ -160,10 +137,10 @@ type PartnerRequest struct {
 }
 
 type ContactDetail struct {
-	FullName    string `bson:"fullName" json:"fullName"`
-	Position    string `bson:"position" json:"position"`
-	PhoneNumber string `bson:"phoneNumber" json:"phoneNumber"`
-	Email       string `bson:"email" json:"email"`
+	FullName    string            `bson:"fullName" json:"fullName"`
+	Position    string            `bson:"position" json:"position"`
+	PhoneNumber types.PhoneNumber `bson:"phoneNumber" json:"phoneNumber"`
+	Email       string            `bson:"email" json:"email"`
 }
 
 //

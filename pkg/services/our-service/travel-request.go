@@ -317,7 +317,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			Customer: models.InvoiceContact{
 				Name:    customer.Name,
 				Address: "",
-				Phone:   customer.ClientContact.Mobile.Content,
+				Phone:   customer.ClientContact.Mobile,
 				Email:   customer.Security.Email,
 				Website: customer.ClientContact.Website,
 			},

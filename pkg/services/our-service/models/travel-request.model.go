@@ -14,11 +14,11 @@ import (
 type TravelRequestDto struct {
 	//basic information
 
-	ClientName   string `bson:"clientName" json:"clientName" validate:"required"`
-	ClientPhone  string `bson:"clientPhone" json:"clientPhone" `
-	ClientEmail  string `bson:"clientEmail" json:"clientEmail" validate:"required"`
-	Nationality  string `bson:"nationality" json:"nationality" `
-	TripDuration int    `bson:"tripDuration" json:"tripDuration" validate:"required"`
+	ClientName   string            `bson:"clientName" json:"clientName" validate:"required"`
+	ClientPhone  types.PhoneNumber `bson:"clientPhone" json:"clientPhone" `
+	ClientEmail  string            `bson:"clientEmail" json:"clientEmail" validate:"required"`
+	Nationality  string            `bson:"nationality" json:"nationality" `
+	TripDuration int               `bson:"tripDuration" json:"tripDuration" validate:"required"`
 	//
 	ServiceType enums.ServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=delegation custom-plan business-man vip-car flight-request partner-request hotel-booking relaxation adventure family romantic cultural business shopping wellness"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
 	//request

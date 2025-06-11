@@ -31,11 +31,11 @@ type InvoiceAdjustment struct {
 }
 
 type InvoiceContact struct {
-	Name    string `bson:"name" json:"name"`
-	Address string `bson:"address" json:"address"`
-	Phone   string `bson:"phone" json:"phone"`
-	Email   string `bson:"email" json:"email"`
-	Website string `bson:"website" json:"website"`
+	Name    string            `bson:"name" json:"name"`
+	Address string            `bson:"address" json:"address"`
+	Phone   types.PhoneNumber `bson:"phone" json:"phone"`
+	Email   string            `bson:"email" json:"email"`
+	Website string            `bson:"website" json:"website"`
 }
 
 type InvoiceService struct {

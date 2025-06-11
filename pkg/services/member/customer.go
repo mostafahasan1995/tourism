@@ -330,11 +330,8 @@ func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.Cust
 				Name:        data.ClientName,
 				Nationality: data.Nationality,
 				ClientContact: models.MemberContact{
-					Mobile: models.AgentPhone{
-						Pre:     "",
-						Content: data.ClientPhone,
-					},
-					Email: data.ClientEmail,
+					Mobile: data.ClientPhone,
+					Email:  data.ClientEmail,
 				},
 				Security: models.MemberSecurity{
 					Email:       data.ClientEmail,
