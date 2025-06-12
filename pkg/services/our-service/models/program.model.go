@@ -44,7 +44,7 @@ type ProgramDto struct {
 	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
 	AgentId     primitive.ObjectID `bson:"agentId" json:"agentId"`
 	Status      string             `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
-	Package     primitive.ObjectID `bson:"package" json:"package" validate:"required"`
+	Package     primitive.ObjectID `bson:"package" json:"package" `
 	ProgramType string             `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	//
 	Source      string          `bson:"source" json:"source"`
