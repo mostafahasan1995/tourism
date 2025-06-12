@@ -16,7 +16,7 @@ type ReviewReply struct {
 
 type ReviewDto struct {
 	Type               string                 `bson:"type" json:"type" validate:"required"`
-	Ref                primitive.ObjectID     `bson:"ref" json:"ref" validate:"required"`
+	Ref                primitive.ObjectID     `bson:"ref" json:"ref"`
 	UserId             string                 `bson:"userId" json:"userId"`
 	FirstName          string                 `bson:"firstName" json:"firstName"`
 	LastName           string                 `bson:"lastName" json:"lastName"`
