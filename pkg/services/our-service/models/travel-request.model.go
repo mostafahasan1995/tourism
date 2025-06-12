@@ -44,16 +44,17 @@ func (t *TravelRequestDto) Validate(v *validator.Validate) error {
 
 type TravelRequest struct {
 	Id               primitive.ObjectID    `bson:"_id,omitempty" json:"_id,omitempty"`
-	ReqId            string                `bson:"reqId,omitempty" json:"reqId,omitempty"`
-	Package          primitive.ObjectID    `bson:"package,omitempty" json:"package,omitempty"`
-	Program          primitive.ObjectID    `bson:"program,omitempty" json:"program,omitempty"`
-	InvoiceId        primitive.ObjectID    `bson:"invoiceId,omitempty" json:"invoiceId,omitempty"`
-	Date             time.Time             `bson:"date,omitempty" json:"date,omitempty"`
-	CustomerId       primitive.ObjectID    `bson:"customerId,omitempty" json:"customerId,omitempty"` //same as user id
-	Status           enums.TravelReqStatus `bson:"status,omitempty" json:"status,omitempty"`
+	ReqId            string                `bson:"reqId" json:"reqId"`
+	Package          primitive.ObjectID    `bson:"package" json:"package"`
+	Program          primitive.ObjectID    `bson:"program" json:"program"`
+	InvoiceId        primitive.ObjectID    `bson:"invoiceId" json:"invoiceId"`
+	Date             time.Time             `bson:"date" json:"date"`
+	CustomerId       primitive.ObjectID    `bson:"customerId" json:"customerId"` //same as user id
+	DepartureAgent   primitive.ObjectID    `bson:"departureAgent" json:"departureAgent"`
+	Status           enums.TravelReqStatus `bson:"status" json:"status"`
 	TravelRequestDto `bson:",inline"`
 	RejectReason     string             `bson:"rejectReason" json:"rejectReason"`
-	RevisionNum      int                `bson:"revisionNum,omitempty" json:"revisionNum,omitempty"`
+	RevisionNum      int                `bson:"revisionNum" json:"revisionNum"`
 	Trash            bool               `bson:"trash" json:"trash"`
 	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy        primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
@@ -130,4 +131,15 @@ type CustomerTravelRequest struct {
 type CustomerTravelRequestPagination struct {
 	Requests   []CustomerTravelRequest `json:"requests"`
 	Pagination types.Pagination        `bson:"pagination" json:"pagination"`
+}
+
+// agnet transactions
+
+type AgentTransaction struct {
+	TravelRequestId primitive.ObjectID `bson:"travelRequestId" json:"travelRequestId"`
+	InvoiceId       primitive.ObjectID `bson:"invoiceId" json:"invoiceId"`
+	Date            time.Time          `bson:"date" json:"date"`
+	OrderId         string             `bson:"orderId" json:"orderId"`
+	CustomerName    string             `bson:"customerName" json:"customerName"`
+	Commission      float64            `bson:"commission" json:"commission"`
 }

@@ -31,7 +31,7 @@ type InvoiceSvcs interface {
 	DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error)
 	PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error)
 	//
-	AddInvoiceForTravelRequest(ctx context.Context, invoiceTravelRequestData *models.InvoiceTravelReqData, data *models.InvoiceDto) (*models.Invoice, error)
+	AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error)
 }
 
 type invoiceSvcs struct {
@@ -349,15 +349,15 @@ func (i *invoiceSvcs) PayOrder(ctx context.Context, invoiceId string, data *mode
 }
 
 // add invoice for travel request
-func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, invoiceTravelRequestData *models.InvoiceTravelReqData, data *models.InvoiceDto) (*models.Invoice, error) {
+func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error) {
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice := &models.Invoice{
-			Id:               primitive.NewObjectID(),
-			InvoiceDto:       *data,
-			TravelReqId:      invoiceTravelRequestData.TravelReqId,
-			DepartureAgent:   invoiceTravelRequestData.DepartureAgent,
-			DestinationAgent: invoiceTravelRequestData.DestinationAgent,
-			Payments:         []models.Payment{},
+			Id:          primitive.NewObjectID(),
+			InvoiceDto:  *data,
+			TravelReqId: travelReqId,
+			//DepartureAgent:   invoiceTravelRequestData.DepartureAgent,
+			// DestinationAgent: invoiceTravelRequestData.DestinationAgent,
+			Payments: []models.Payment{},
 		}
 
 		if err := invoice.SetTotals(); err != nil {
