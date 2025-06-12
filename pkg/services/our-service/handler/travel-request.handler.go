@@ -114,7 +114,7 @@ func (h *TravelRequestHandler) GetAgentTransactions(w http.ResponseWriter, r *ht
 	agentId := chi.URLParam(r, "agentId")
 	query := r.URL.Query().Get("query")
 
-	result, err := h.travelreqsvcs.GetTAgentTransactions(ctx, agentId, skip, limit, query)
+	result, err := h.travelreqsvcs.GetAgentTransactions(ctx, agentId, skip, limit, query)
 	if err != nil {
 		return err
 	}

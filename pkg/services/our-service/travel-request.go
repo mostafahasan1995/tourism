@@ -37,7 +37,7 @@ type TravelRequestSvcs interface {
 	Approve(ctx context.Context, id string) (*models.TravelRequest, error)
 	Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error)
 	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
-	GetTAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error)
+	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error)
 }
 
 type travelrequestsvcs struct {
@@ -497,7 +497,7 @@ func (t *travelrequestsvcs) SetAsCompleted(ctx context.Context, id string) (*mod
 
 }
 
-func (t *travelrequestsvcs) GetTAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error) {
+func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
 		return nil, err
