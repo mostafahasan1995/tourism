@@ -24,6 +24,7 @@ type ReviewsSvcs interface {
 	GetAll(ctx context.Context) ([]models.Review, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
+	AddFromDashboard(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	Update(ctx context.Context, id string, data *models.ReviewDto) (*models.Review, error)
 	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Review, error)
 	Delete(ctx context.Context, id string) error
@@ -271,6 +272,63 @@ func (s *reviewsSvcs) Add(ctx context.Context, data *models.ReviewDto) (*models.
 		} else {
 			data.UserImg = nil
 		}
+	}
+
+	if data.Status == "" {
+		data.Status = "pending"
+	}
+
+	if data.Date.IsZero() {
+		data.Date = time.Now()
+	}
+
+	if data.Replies == nil {
+		data.Replies = []models.ReviewReply{}
+	}
+	if data.Images == nil {
+		data.Images = []types.FileField{}
+	}
+
+	review := &models.Review{
+		ReviewDto: *data,
+		Id:        primitive.NewObjectID(),
+		Trash:     false,
+		CreatedAt: time.Now(),
+		CreatedBy: createdBy,
+		UpdatedAt: time.Now(),
+		UpdatedBy: createdBy,
+	}
+
+	if err := s.repo.Add(ctx, review); err != nil {
+		return nil, err
+	}
+
+	return review, nil
+}
+
+func (s *reviewsSvcs) AddFromDashboard(ctx context.Context, data *models.ReviewDto) (*models.Review, error) {
+	var createdBy primitive.ObjectID
+
+	user, _ := ctx.Value(util.ReqUser).(*types.User)
+	if user == nil {
+		return nil, helpers.BadRequest("authentication required for dashboard reviews")
+	}
+
+	// If userId is provided in the body, use it, otherwise use the authenticated user's ID
+	if data.UserId == "" {
+		data.UserId = user.Id.Hex()
+	}
+
+	// Get user ID as ObjectID
+	userObjectId, err := primitive.ObjectIDFromHex(data.UserId)
+	if err != nil {
+		return nil, helpers.BadRequest("invalid userId format")
+	}
+	createdBy = userObjectId
+
+	// Validate countries for destination type
+	if data.Type == "destination" && (data.Countries == nil || len(data.Countries) == 0) {
+		return nil, helpers.BadRequest("countries are required for destination reviews")
 	}
 
 	if data.Status == "" {
