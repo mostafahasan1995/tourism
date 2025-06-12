@@ -93,9 +93,9 @@ func Start() error {
 
 	picklist.Init(injector, r)
 	home.Init(injector, r)
+	member.Init(injector, r)
 	ourService.Init(injector, r)
 	interactions.Init(injector, r)
-	member.Init(injector, r)
 	marketing.Init(injector, r)
 	//deprecated
 	//travelreq.Init(injector, r)

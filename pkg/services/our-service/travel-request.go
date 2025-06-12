@@ -7,6 +7,7 @@ import (
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/member"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -42,6 +43,7 @@ type travelrequestsvcs struct {
 	repo        repo.TravelRequestRepo
 	invoicesvcs InvoiceSvcs
 	sortingsvcs dbsvcs.SortingSvcs
+	agentsvcs   member.AgentSvcs
 	withtxn     *db.WithTxn
 }
 
@@ -50,6 +52,7 @@ func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 		repo:        do.MustInvoke[repo.TravelRequestRepo](i),
 		invoicesvcs: do.MustInvoke[InvoiceSvcs](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
+		agentsvcs:   do.MustInvoke[member.AgentSvcs](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -337,8 +340,26 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			return nil, errors.New("only owner of this travel request can approve it")
 		}
 
+		travelReq := request.TravelRequest
+		departureDestinationId, err := travelReq.GetDepartureDestinationId()
+		if err != nil {
+			return nil, err
+		}
+
+		agent, err := t.agentsvcs.GetAgentByDestination(ctx, departureDestinationId.Hex())
+		if err != nil {
+			return nil, errors.New("error get departure destination agent, check if agent has destination and is active")
+		}
+
 		program := request.Program
 		customer := request.Customer
+
+		if customer.Id == primitive.NilObjectID {
+			return nil, errors.New("customer not found")
+		}
+		if program.Id == primitive.NilObjectID {
+			return nil, errors.New("program not found")
+		}
 
 		if program.ProgramType != "custom" {
 			return nil, errors.New("error program type")
@@ -346,7 +367,6 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 
 		invoiceDto := &models.InvoiceDto{
 			DateOfIssue: time.Now(),
-			//TravelReqId: request.Id,
 			Customer: models.InvoiceContact{
 				Name:    customer.Name,
 				Address: "",
@@ -371,7 +391,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		invoiceDto.Services = svcss
 		invoiceTravelRequestData := &models.InvoiceTravelReqData{
 			TravelReqId:      request.Id,
-			DepartureAgent:   primitive.NilObjectID, // todo : set later
+			DepartureAgent:   agent.Id,
 			DestinationAgent: request.TripCoordinator,
 		}
 

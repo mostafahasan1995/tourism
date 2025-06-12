@@ -1,9 +1,12 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/member/enums"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -38,7 +41,7 @@ type Agent struct {
 	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"` // same as user id
 	AgentId   string             `bson:"agentId,omitempty" json:"agentId,omitempty"`
 	AgentDto  `bson:",inline"`
-	Status    string             `bson:"status" json:"status"` // active, inactive
+	Status    enums.AgentStatus  `bson:"status" json:"status"` // active, inactive
 	Trash     bool               `bson:"trash" json:"trash"`
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
@@ -49,4 +52,12 @@ type Agent struct {
 type AgentWithPagination struct {
 	Agents     []Agent          `bson:"agents" json:"agents"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+type UpdateStatusDto struct {
+	Status string `json:"status" validate:"required,oneof=active inactive"`
+}
+
+func (u *UpdateStatusDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, u)
 }

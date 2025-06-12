@@ -7,6 +7,8 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"errors"
+
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -57,6 +59,35 @@ type TravelRequest struct {
 	CreatedBy        primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	UpdatedAt        time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 	UpdatedBy        primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+}
+
+func (t *TravelRequest) GetDepartureDestinationId() (*primitive.ObjectID, error) {
+	switch t.ServiceType {
+	case enums.ServiceTypeDelegation, enums.ServiceTypeCustomPlan, enums.ServiceTypeBusinessMan:
+		if len(t.Destination) == 0 {
+			return nil, errors.New("no destinations found")
+		}
+		return &t.Destination[0].DestinationFrom, nil
+
+	case enums.ServiceTypeVipCar:
+		if t.VipCar == nil {
+			return nil, errors.New("vip car is nil")
+		}
+		if len(t.VipCar.Destinations) == 0 {
+			return nil, errors.New("no vip car destinations found")
+		}
+		return &t.VipCar.Destinations[0].DestinationFrom, nil
+	case enums.ServiceTypeFlightRequest:
+		if t.FlightTicketRequest == nil {
+			return nil, errors.New("flight ticket request is nil")
+		}
+		if len(t.FlightTicketRequest.Destinations) == 0 {
+			return nil, errors.New("no flight ticket request destinations found")
+		}
+		return &t.FlightTicketRequest.Destinations[0].DestinationFrom, nil
+	}
+
+	return nil, errors.New("unsupported service type")
 }
 
 type TravelRequestRes struct {

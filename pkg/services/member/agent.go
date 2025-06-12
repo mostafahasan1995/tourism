@@ -13,6 +13,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/member/repo"
 	"larsa-tourism-microservices/pkg/services/messaging"
 	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
+	"larsa-tourism-microservices/pkg/services/picklist"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -31,6 +32,7 @@ type AgentSvcs interface {
 	GetAll(ctx context.Context, query string) ([]models.Agent, error)
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
 	Update(ctx context.Context, agentId string, data *models.AgentDto) (*models.Agent, error)
+	UpdateStatus(ctx context.Context, agentId string, status string) (*models.Agent, error)
 	Delete(ctx context.Context, agentId string) error
 	//agent join
 	GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error)
@@ -39,25 +41,29 @@ type AgentSvcs interface {
 	ConvertToAgent(ctx context.Context, agentId string, data *models.AgentJoinDto) (*models.Agent, error)
 	RejectJoin(ctx context.Context, agentId string) error
 	SetAsPending(ctx context.Context, agentId string) error
+	//destination agent
+	GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error)
 }
 
 type agentsvcs struct {
-	repo           repo.AgentRepo
-	agentjoinrepo  repo.AgentJoinRepo
-	sortingsvcs    dbsvcs.SortingSvcs
-	memberAuthSvcs MemberAuthSvcs
-	messagesvcs    messaging.MessageSvcs
-	withtxn        *db.WithTxn
+	repo            repo.AgentRepo
+	agentjoinrepo   repo.AgentJoinRepo
+	sortingsvcs     dbsvcs.SortingSvcs
+	memberAuthSvcs  MemberAuthSvcs
+	messagesvcs     messaging.MessageSvcs
+	destinationsvcs picklist.DestinationSvcs
+	withtxn         *db.WithTxn
 }
 
 func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 	return &agentsvcs{
-		repo:           do.MustInvoke[repo.AgentRepo](i),
-		agentjoinrepo:  do.MustInvoke[repo.AgentJoinRepo](i),
-		sortingsvcs:    do.MustInvoke[dbsvcs.SortingSvcs](i),
-		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
-		messagesvcs:    do.MustInvoke[messaging.MessageSvcs](i),
-		withtxn:        do.MustInvoke[*db.WithTxn](i),
+		repo:            do.MustInvoke[repo.AgentRepo](i),
+		agentjoinrepo:   do.MustInvoke[repo.AgentJoinRepo](i),
+		sortingsvcs:     do.MustInvoke[dbsvcs.SortingSvcs](i),
+		memberAuthSvcs:  do.MustInvoke[MemberAuthSvcs](i),
+		messagesvcs:     do.MustInvoke[messaging.MessageSvcs](i),
+		destinationsvcs: do.MustInvoke[picklist.DestinationSvcs](i),
+		withtxn:         do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -154,7 +160,7 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			AgentDto:  *data,
 			CreatedAt: time.Now(),
 			CreatedBy: cfg.User.Id,
-			Status:    "inactive", //active, inactive
+			Status:    enums.AgentStatusInactive,
 		}
 
 		var password string
@@ -257,6 +263,32 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 	}
 
 	return result.(*models.Agent), nil
+}
+
+func (a *agentsvcs) UpdateStatus(ctx context.Context, agentId string, status string) (*models.Agent, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": _id, "trash": false}
+	update := bson.M{"$set": bson.M{
+		"status":    status,
+		"updatedAt": time.Now(),
+		"updatedBy": cfg.User.Id,
+	}}
+
+	updatedAgent, err := a.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedAgent, nil
 }
 
 func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
@@ -441,4 +473,30 @@ func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, quer
 		Agents:     result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error) {
+	destination, err := a.destinationsvcs.GetOne(ctx, destinationId)
+	if err != nil {
+		return nil, err
+	}
+
+	country := destination.Name
+
+	pipeline := []bson.M{
+		{"$match": bson.M{
+			"countries": bson.M{"$in": []string{country}},
+			"status":    enums.AgentStatusActive,
+		}},
+	}
+
+	var result []models.Agent
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil || len(result) == 0 {
+		return nil, errors.New("no agent found")
+	}
+
+	return &result[0], nil
 }
