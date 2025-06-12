@@ -11,6 +11,7 @@ import (
 	home "larsa-tourism-microservices/pkg/services/home/di"
 	messaging "larsa-tourism-microservices/pkg/services/messaging/di"
 	ourService "larsa-tourism-microservices/pkg/services/our-service/di"
+	statistics "larsa-tourism-microservices/pkg/services/statistics/di"
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
@@ -63,9 +64,7 @@ func Start() error {
 	r.Use(middleware.Compress(5))
 
 	r.Use(cors.Handler(cors.Options{
-		// AllowedOrigins:   []string{"https://foo.com"}, // Use this to allow specific origin hosts
-		AllowedOrigins: []string{"https://*", "http://*"},
-		// AllowOriginFunc:  func(r *http.Request, origin string) bool { return true },
+		AllowedOrigins:   []string{"*"},
 		AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token", "x-client", "x-access-token", "x-service", "x-expire", "x-service-token", "x-user-id", "Content-Disposition"},
 		ExposedHeaders:   []string{"Link", "Content-Disposition"},
@@ -97,6 +96,7 @@ func Start() error {
 	interactions.Init(injector, r)
 	member.Init(injector, r)
 	marketing.Init(injector, r)
+	statistics.Init(injector, r)
 	//deprecated
 	//travelreq.Init(injector, r)
 
