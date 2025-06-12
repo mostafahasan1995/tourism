@@ -22,15 +22,16 @@ type TravelRequestDto struct {
 	//
 	ServiceType enums.ServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=delegation custom-plan business-man vip-car flight-request partner-request hotel-booking relaxation adventure family romantic cultural business shopping wellness"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
 	//request
-	Delegation          *Delegation          `bson:"delegation,omitempty" json:"delegation,omitempty" validate:"required_if=ServiceType delegation"`
-	BusinessMan         *BusinessMan         `bson:"businessMan,omitempty" json:"businessMan,omitempty" validate:"required_if=ServiceType business-man"`
-	CustomPlan          *CustomPlan          `bson:"customPlan,omitempty" json:"customPlan,omitempty" validate:"required_if=ServiceType custom-plan"`
+	Delegation  *Delegation  `bson:"delegation,omitempty" json:"delegation,omitempty" validate:"required_if=ServiceType delegation"`
+	BusinessMan *BusinessMan `bson:"businessMan,omitempty" json:"businessMan,omitempty" validate:"required_if=ServiceType business-man"`
+	CustomPlan  *CustomPlan  `bson:"customPlan,omitempty" json:"customPlan,omitempty" validate:"required_if=ServiceType custom-plan"`
+	//
 	VipCar              *VipCar              `bson:"vipCar,omitempty" json:"vipCar,omitempty" validate:"required_if=ServiceType vip-car"`
 	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty" validate:"required_if=ServiceType flight-request"`
 	PartnerRequest      *PartnerRequest      `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty" validate:"required_if=ServiceType partner-request"`
 	//delegation - business-man - custom-plan info
 	Destination     []Destination      `bson:"destination,omitempty" json:"destination,omitempty" `
-	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"`
+	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"` // destination agent id
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
@@ -90,7 +91,6 @@ type RejectMyReq struct {
 }
 
 // customer requests
-
 type CustomerTravelRequest struct {
 	TravelRequestRes `bson:",inline"`
 	Price            float64 `bson:"price" json:"price"`

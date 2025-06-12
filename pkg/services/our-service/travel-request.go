@@ -346,7 +346,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 
 		invoiceDto := &models.InvoiceDto{
 			DateOfIssue: time.Now(),
-			TravelReqId: request.Id,
+			//TravelReqId: request.Id,
 			Customer: models.InvoiceContact{
 				Name:    customer.Name,
 				Address: "",
@@ -369,8 +369,13 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		}
 
 		invoiceDto.Services = svcss
+		invoiceTravelRequestData := &models.InvoiceTravelReqData{
+			TravelReqId:      request.Id,
+			DepartureAgent:   primitive.NilObjectID, // todo : set later
+			DestinationAgent: request.TripCoordinator,
+		}
 
-		invoice, err := t.invoicesvcs.Add(ctx, invoiceDto)
+		invoice, err := t.invoicesvcs.AddInvoiceForTravelRequest(ctx, invoiceTravelRequestData, invoiceDto)
 		if err != nil {
 			return nil, errors.New("error add invoice")
 		}

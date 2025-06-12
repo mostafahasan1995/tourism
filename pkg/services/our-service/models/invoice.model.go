@@ -12,13 +12,12 @@ import (
 )
 
 type InvoiceDto struct {
-	DateOfIssue time.Time           `bson:"dateOfIssue" json:"dateOfIssue"`
-	TravelReqId primitive.ObjectID  `bson:"travelReqId" json:"travelReqId"`
-	Customer    InvoiceContact      `bson:"customer" json:"customer"`
-	Company     InvoiceContact      `bson:"company" json:"company"`
-	ProgramName string              `bson:"programName" json:"programName"`
-	TravelStart time.Time           `bson:"travelStart" json:"travelStart"`
-	TravelEnd   time.Time           `bson:"travelEnd" json:"travelEnd"`
+	DateOfIssue time.Time           `bson:"dateOfIssue" json:"dateOfIssue" validate:"required"`
+	Customer    InvoiceContact      `bson:"customer" json:"customer" validate:"required,dive"`
+	Company     InvoiceContact      `bson:"company" json:"company" validate:"required,dive"`
+	ProgramName string              `bson:"programName" json:"programName" validate:"required"`
+	TravelStart time.Time           `bson:"travelStart" json:"travelStart" validate:"required"`
+	TravelEnd   time.Time           `bson:"travelEnd" json:"travelEnd" validate:"required"`
 	Services    []InvoiceService    `bson:"services" json:"services"`
 	Adjustments []InvoiceAdjustment `bson:"adjustments" json:"adjustments"`
 	Note        string              `bson:"note" json:"note"`
@@ -31,10 +30,10 @@ type InvoiceAdjustment struct {
 }
 
 type InvoiceContact struct {
-	Name    string            `bson:"name" json:"name"`
-	Address string            `bson:"address" json:"address"`
-	Phone   types.PhoneNumber `bson:"phone" json:"phone"`
-	Email   string            `bson:"email" json:"email"`
+	Name    string            `bson:"name" json:"name" validate:"required"`
+	Address string            `bson:"address" json:"address" validate:"required"`
+	Phone   types.PhoneNumber `bson:"phone" json:"phone" validate:"required"`
+	Email   string            `bson:"email" json:"email" validate:"required"`
 	Website string            `bson:"website" json:"website"`
 }
 
@@ -45,45 +44,27 @@ type InvoiceService struct {
 	Total float64 `bson:"total" json:"total"`
 }
 
-type Payment struct {
-	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	PaymentId  string             `bson:"paymentId" json:"paymentId"`
-	PaymentDto `bson:",inline"`
-	CreatedAt  time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	CreatedBy  primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	UpdatedAt  time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
-	UpdatedBy  primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
-}
-
-type PaymentDto struct {
-	Date    time.Time           `bson:"date" json:"date" validate:"required"`
-	Method  string              `bson:"method" json:"method" validate:"required"`
-	Amount  float64             `bson:"amount" json:"amount" validate:"required"`
-	Unit    string              `bson:"unit" json:"unit"`
-	Status  enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=paid unpaid"` //paid - unpaid
-	Note    string              `bson:"note" json:"note"`
-	Receipt []types.FileField   `bson:"receipt" json:"receipt"`
-}
-
-func (p *PaymentDto) Validate(v *validator.Validate) error {
-	return helpers.GenericValidation(v, p)
+func (i *InvoiceDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, i)
 }
 
 type Invoice struct {
-	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	InvoiceId  string             `bson:"invoiceId" json:"invoiceId"`
-	InvoiceDto `bson:",inline"`
-
-	SubTotal     float64            `bson:"subTotal" json:"subTotal"`
-	Total        float64            `bson:"total" json:"total"`
-	PaidAmount   float64            `bson:"paidAmount" json:"paidAmount"`
-	UnpaidAmount float64            `bson:"unpaidAmount" json:"unpaidAmount"`
-	Payments     []Payment          `bson:"payments" json:"payments"`
-	Trash        bool               `bson:"trash" json:"trash"`
-	CreatedAt    time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	CreatedBy    primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	UpdatedAt    time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
-	UpdatedBy    primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+	Id               primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	InvoiceId        string             `bson:"invoiceId" json:"invoiceId"`
+	InvoiceDto       `bson:",inline"`
+	TravelReqId      primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
+	DepartureAgent   primitive.ObjectID `bson:"departureAgent" json:"departureAgent"`
+	DestinationAgent primitive.ObjectID `bson:"destinationAgent" json:"destinationAgent"` //destination agent id
+	SubTotal         float64            `bson:"subTotal" json:"subTotal"`
+	Total            float64            `bson:"total" json:"total"`
+	PaidAmount       float64            `bson:"paidAmount" json:"paidAmount"`
+	UnpaidAmount     float64            `bson:"unpaidAmount" json:"unpaidAmount"`
+	Payments         []Payment          `bson:"payments" json:"payments"`
+	Trash            bool               `bson:"trash" json:"trash"`
+	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy        primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt        time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy        primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
 func (i *Invoice) SetTotals() error {
@@ -125,8 +106,41 @@ type InvoicePagination struct {
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
 
+// payments
+type Payment struct {
+	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	PaymentId  string             `bson:"paymentId" json:"paymentId"`
+	PaymentDto `bson:",inline"`
+	CreatedAt  time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy  primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt  time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy  primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+}
+
+type PaymentDto struct {
+	Date    time.Time           `bson:"date" json:"date" validate:"required"`
+	Method  string              `bson:"method" json:"method" validate:"required"`
+	Amount  float64             `bson:"amount" json:"amount" validate:"required"`
+	Unit    string              `bson:"unit" json:"unit"`
+	Status  enums.PaymentStatus `bson:"status" json:"status" validate:"required,oneof=paid unpaid"` //paid - unpaid
+	Note    string              `bson:"note" json:"note"`
+	Receipt []types.FileField   `bson:"receipt" json:"receipt"`
+}
+
+func (p *PaymentDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, p)
+}
+
 type PayOrder struct {
 	Amount  float64           `bson:"amount" json:"amount"`
 	Method  string            `bson:"method" json:"method"`
 	Receipt []types.FileField `bson:"receipt" json:"receipt"`
+}
+
+//travel request agent
+
+type InvoiceTravelReqData struct {
+	TravelReqId      primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
+	DepartureAgent   primitive.ObjectID `bson:"departureAgent" json:"departureAgent"`
+	DestinationAgent primitive.ObjectID `bson:"destinationAgent" json:"destinationAgent"`
 }
