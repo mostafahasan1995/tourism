@@ -30,6 +30,7 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Get("/customer/{customerId}", helpers.Make(h.GetCustomerRequests))
+		r.With(middleware.Auth("authenticate")).Get("/agent/{agentId}", helpers.Make(h.GetAgentTransactions))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Get("/my-requests/{status}", helpers.Make(h.MyRequests))
@@ -95,6 +96,25 @@ func (h *TravelRequestHandler) GetCustomerRequests(w http.ResponseWriter, r *htt
 	query := r.URL.Query().Get("query")
 
 	result, err := h.travelreqsvcs.GetCustomerRequests(ctx, customerId, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) GetAgentTransactions(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	agentId := chi.URLParam(r, "agentId")
+	query := r.URL.Query().Get("query")
+
+	result, err := h.travelreqsvcs.GetAgentTransactions(ctx, agentId, skip, limit, query)
 	if err != nil {
 		return err
 	}

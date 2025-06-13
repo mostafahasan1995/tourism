@@ -15,6 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+// deprecated
 type OurCountrySvcs interface {
 	GetOne(ctx context.Context, id string) (*models.OurCountry, error)
 	GetAll(ctx context.Context, query any) (*models.OurCountryPagination, error)

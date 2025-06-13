@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/services/member/enums"
 	"larsa-tourism-microservices/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -21,7 +22,7 @@ type AgentJoinDto struct {
 type AgentJoin struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	AgentJoinDto `bson:",inline"`
-	Status       string `bson:"status,omitempty" json:"status,omitempty"` //pending - converted - rejected
+	Status       enums.AgentJoinStatus `bson:"status,omitempty" json:"status,omitempty"` //pending - converted - rejected
 }
 
 type AgentJoinPagination struct {
