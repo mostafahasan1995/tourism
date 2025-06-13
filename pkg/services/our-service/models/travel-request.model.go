@@ -100,7 +100,7 @@ type TravelRequestRes struct {
 
 type TravelRequestPagination struct {
 	Requests   []TravelRequestRes `json:"requests"`
-	Pagination common.Pagination  `bson:"pagination" json:"pagination"`
+	Pagination types.Pagination   `bson:"pagination" json:"pagination"`
 }
 
 // change status
@@ -130,7 +130,7 @@ type CustomerTravelRequest struct {
 
 type CustomerTravelRequestPagination struct {
 	Requests   []CustomerTravelRequest `json:"requests"`
-	Pagination common.Pagination       `bson:"pagination" json:"pagination"`
+	Pagination types.Pagination        `bson:"pagination" json:"pagination"`
 }
 
 // agnet transactions
