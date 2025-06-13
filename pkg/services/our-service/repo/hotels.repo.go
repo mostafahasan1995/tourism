@@ -2,6 +2,7 @@ package repo
 
 import (
 	"context"
+
 	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -20,8 +21,8 @@ import (
 type HotelsRepo interface {
 	dbrepo.MainRepo[models.Hotels]
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
-	GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) error
+	GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int64) (models.HotelsPagination, error)
+	Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) (*models.Hotels, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -59,11 +60,9 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 	}
 	data.CalculateAverageRating()
 	return &data, nil
-
 }
 
-func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int) (models.HotelsPagination, error) {
-
+func (l *hotelsrepo) GetAll(ctx context.Context, hotelFilter filter.HotelsFilter, page, perPage int64) (models.HotelsPagination, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return models.HotelsPagination{}, err
@@ -71,15 +70,16 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, pag
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	filterBody := filter.ToBsonFilter()
+	// Use the ToBsonFilter method to build the MongoDB filter
+	filterBody := hotelFilter.ToBsonFilter()
 
 	// Count total documents matching the filter
 	totalCount, err := coll.CountDocuments(ctx, filterBody)
 	if err != nil {
+
 		return models.HotelsPagination{}, err
 	}
 
-	// Validate pagination values
 	if page <= 0 {
 		page = 1
 	}
@@ -89,22 +89,22 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, pag
 	if perPage > 100 {
 		perPage = 100
 	}
-	skip := int64((page - 1) * perPage)
-	limit := int64(perPage)
+	skip := (page - 1) * perPage
 
-	// Query options with pagination and sorting
 	findOptions := options.Find().
 		SetSkip(skip).
-		SetLimit(limit).
+		SetLimit(perPage).
 		SetSort(bson.M{"createdAt": -1}) // Sort by creation date, newest first
 
 	cur, err := coll.Find(ctx, filterBody, findOptions)
 	if err != nil {
+
 		return models.HotelsPagination{}, err
 	}
 
 	var hotels []models.Hotels
 	if err := cur.All(ctx, &hotels); err != nil {
+
 		return models.HotelsPagination{}, err
 	}
 
@@ -116,14 +116,14 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, pag
 	// Prepare pagination result
 	totalPages := int64(0)
 	if perPage > 0 {
-		totalPages = (totalCount + int64(perPage) - 1) / int64(perPage)
+		totalPages = (totalCount + perPage - 1) / perPage
 	}
 
 	result := models.HotelsPagination{
 		Hotels: hotels,
 		Pagination: common.Pagination{
 			TotalPages: float64(totalPages),
-			PerPage:    int64(perPage),
+			PerPage:    perPage,
 			TotalCount: totalCount,
 		},
 	}
@@ -131,17 +131,17 @@ func (l *hotelsrepo) GetAll(ctx context.Context, filter filter.HotelsFilter, pag
 	return result, nil
 }
 
-func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) error {
+func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) (*models.Hotels, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
 	preHotels, err := l.GetOne(ctx, id.Hex())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	hotels := &models.Hotels{
@@ -198,14 +198,14 @@ func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mo
 		update,
 		opts,
 	).Decode(&updatedHotels); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	updatedHotels.CalculateAverageRating()
+	return &updatedHotels, nil
 }
 
 func (l *hotelsrepo) Delete(ctx context.Context, id string) error {
-
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
@@ -222,7 +222,7 @@ func (l *hotelsrepo) Delete(ctx context.Context, id string) error {
 	update := bson.M{"$set": bson.M{
 		"trash":     true,
 		"updatedAt": time.Now(),
-		"updatedBy": primitive.NilObjectID,
+		"updatedBy": cfg.User.Id,
 	}}
 
 	upsert := false

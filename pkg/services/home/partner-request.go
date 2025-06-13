@@ -2,6 +2,7 @@ package home
 
 import (
 	"context"
+	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
@@ -18,7 +19,7 @@ import (
 type PartnerRequestSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.PartnerRequest, error)
 	GetAll(ctx context.Context) ([]models.PartnerRequest, error)
-	Get(ctx context.Context, skip int64, limit int64, queryString string) (*mongo.Cursor, int64, error)
+	Get(ctx context.Context, skip int64, limit int64, query any) (*mongo.Cursor, int64, error)
 	Add(ctx context.Context, data *models.PartnerRequestDto) (*models.PartnerRequest, error)
 	Update(ctx context.Context, id string, data *models.PartnerRequestDto) (*models.PartnerRequest, error)
 	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.PartnerRequest, error)
@@ -64,16 +65,16 @@ func (s *partnerRequestSvcs) GetAll(ctx context.Context) ([]models.PartnerReques
 	return result, nil
 }
 
-func (s *partnerRequestSvcs) Get(ctx context.Context, skip int64, limit int64, queryString string) (*mongo.Cursor, int64, error) {
-	// Create filter from query string
-	filter, err := filter.NewPartnerRequestFilter(queryString)
+func (s *partnerRequestSvcs) Get(ctx context.Context, skip int64, limit int64, query any) (*mongo.Cursor, int64, error) {
+	// Create filter from query
+	filters, err := helpers.ParseFilters[filter.PartnerRequestFilter](query)
 	if err != nil {
-		return nil, 0, err
+		return nil, 0, errors.New("invalid query")
 	}
 
 	// Get base filter and build pipeline
 	baseFilter := bson.M{}
-	pipeline := filter.BuildPipeline(baseFilter)
+	pipeline := filters.BuildPipeline(baseFilter)
 
 	// Create a copy of the pipeline for counting
 	countPipeline := make([]bson.M, len(pipeline))

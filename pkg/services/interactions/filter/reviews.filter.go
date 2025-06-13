@@ -29,7 +29,7 @@ func NewReviewsFilter(query string) (*ReviewsFilter, error) {
 	return f, nil
 }
 
-func (f *ReviewsFilter) BuildPipeline(m bson.M) []bson.M {
+func (f ReviewsFilter) BuildPipeline(m bson.M) []bson.M {
 	var ands bson.A
 
 	ands = append(ands, bson.M{"trash": bson.M{"$ne": true}})

@@ -20,7 +20,7 @@ import (
 
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
-	Get(ctx context.Context, skip, limit int64, query string) (*models.ReviewPagination, error)
+	Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
 	GetAll(ctx context.Context) ([]models.Review, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
@@ -72,10 +72,10 @@ func (s *reviewsSvcs) GetOne(ctx context.Context, id string) (*models.Review, er
 	return s.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.ReviewPagination, error) {
+func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error) {
 	match := bson.M{}
 
-	filters, err := filter.NewReviewsFilter(query)
+	filters, err := helpers.ParseFilters[filter.ReviewsFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}

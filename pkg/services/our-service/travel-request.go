@@ -11,11 +11,11 @@ import (
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
-	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
 
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -106,7 +106,7 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query an
 	}
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
-	pagination := types.Pagination{
+	pagination := common.Pagination{
 		TotalPages: totalPages,
 		PerPage:    limit,
 		TotalCount: count,

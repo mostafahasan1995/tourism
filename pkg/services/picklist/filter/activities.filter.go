@@ -22,7 +22,14 @@ func NewActivitiesFilter(query string) (*ActivitiesFilter, error) {
 	return f, nil
 }
 
-func (f *ActivitiesFilter) BuildPipeline(m bson.M) []bson.M {
+func (f ActivitiesFilter) BuildPipeline(m bson.M) []bson.M {
+	if m == nil {
+		m = bson.M{}
+	}
+
+	// Default filter for non-trashed items
+	m["trash"] = bson.M{"$ne": true}
+
 	if f.SearchWord != "" {
 		m["name"] = bson.M{
 			"$regex":   f.SearchWord,

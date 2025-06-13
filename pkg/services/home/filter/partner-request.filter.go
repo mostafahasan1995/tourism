@@ -33,7 +33,7 @@ func NewPartnerRequestFilter(query string) (*PartnerRequestFilter, error) {
 }
 
 // BuildPipeline creates a MongoDB aggregation pipeline based on the filter
-func (f *PartnerRequestFilter) BuildPipeline(m bson.M) []bson.M {
+func (f PartnerRequestFilter) BuildPipeline(m bson.M) []bson.M {
 	if m == nil {
 		m = bson.M{}
 	}

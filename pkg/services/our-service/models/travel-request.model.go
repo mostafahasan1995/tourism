@@ -7,6 +7,7 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -67,7 +68,7 @@ type TravelRequestRes struct {
 
 type TravelRequestPagination struct {
 	Requests   []TravelRequestRes `json:"requests"`
-	Pagination types.Pagination   `bson:"pagination" json:"pagination"`
+	Pagination common.Pagination  `bson:"pagination" json:"pagination"`
 }
 
 // change status
@@ -98,5 +99,5 @@ type CustomerTravelRequest struct {
 
 type CustomerTravelRequestPagination struct {
 	Requests   []CustomerTravelRequest `json:"requests"`
-	Pagination types.Pagination        `bson:"pagination" json:"pagination"`
+	Pagination common.Pagination       `bson:"pagination" json:"pagination"`
 }

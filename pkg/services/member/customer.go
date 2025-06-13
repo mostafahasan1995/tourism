@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/gateway"
+	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -33,7 +34,7 @@ var ErrForbidden = errors.New("forbidden")
 type CustomerSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Customer, error)
 	GetOne(ctx context.Context, customerId string) (*models.Customer, error)
-	Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error)
+	Get(ctx context.Context, skip, limit int64, query any) (*models.CustomerWithPagination, error)
 	GetAll(ctx context.Context) ([]models.Customer, error)
 	Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
 	Update(ctx context.Context, customerId string, data *models.CustomerDto) (*models.Customer, error)
@@ -75,10 +76,10 @@ func (c *customerSvcs) GetByFilter(ctx context.Context, filter bson.M) (*models.
 	return c.repo.GetByFilter(ctx, filter)
 }
 
-func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error) {
-	match := bson.M{"trash": false}
+func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.CustomerWithPagination, error) {
+	match := bson.M{}
 
-	filters, err := filters.NewCustomerFilter(query)
+	filters, err := helpers.ParseFilters[filters.CustomerFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}
