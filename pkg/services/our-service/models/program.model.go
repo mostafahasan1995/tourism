@@ -54,6 +54,7 @@ type ProgramDto struct {
 	StartDate   time.Time       `bson:"startDate" json:"startDate" validate:"required"`
 	EndDate     time.Time       `bson:"endDate" json:"endDate" validate:"required"`
 	GroupSize   enums.GroupSize `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large"` //see group size values above
+	CoverImage  types.FileField `bson:"coverImage" json:"coverImage"`
 	//
 	GeneralType *GeneralProgram `bson:"generalType,omitempty" json:"generalType,omitempty" validate:"required_if=ProgramType general"`
 	CustomType  *CustomProgram  `bson:"customType,omitempty" json:"customType,omitempty" validate:"required_if=ProgramType custom"`
