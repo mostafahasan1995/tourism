@@ -24,7 +24,8 @@ type InvoiceDto struct {
 }
 
 type InvoiceAdjustment struct {
-	Type    string  `bson:"type" json:"type"` //discount - surcharge
+	Type    string  `bson:"type" json:"type"` //addition - substruction
+	Title   string  `bson:"title" json:"title"`
 	Amount  float64 `bson:"amount" json:"amount"`
 	Percent float64 `bson:"percent" json:"percent"`
 }
@@ -76,14 +77,31 @@ func (i *Invoice) SetTotals() error {
 
 	i.Services = services
 
-	//todo: add adjustments
+	total := subTotal
+
+	for _, adjustment := range i.Adjustments {
+
+		if adjustment.Type == "addition" {
+			if adjustment.Percent > 0 {
+				total += subTotal * adjustment.Percent / 100
+			} else if adjustment.Amount > 0 {
+				total += adjustment.Amount
+			}
+		} else if adjustment.Type == "substruction" {
+			if adjustment.Percent > 0 {
+				total -= subTotal * adjustment.Percent / 100
+			} else if adjustment.Amount > 0 {
+				total -= adjustment.Amount
+			}
+		}
+	}
 
 	i.SubTotal = subTotal
-	i.Total = subTotal
+	i.Total = total
 
 	var paidAmount float64
 	for _, payment := range i.Payments {
-		if payment.Status == "paid" {
+		if payment.Status == enums.PaymentStatusPaid {
 			paidAmount += payment.Amount
 		}
 	}

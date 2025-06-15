@@ -1,0 +1,61 @@
+{
+  "dateOfIssue": "2024-03-20T10:00:00Z",
+  "customer": {
+    "name": "John Doe",
+    "address": "123 Main Street, City, Country",
+    "phone": {
+      "pre": "+1",
+      "content": "234567890"
+    },
+    "email": "john.doe@example.com",
+    "website": "www.johndoe.com"
+  },
+  "company": {
+    "name": "Tourism Company Ltd",
+    "address": "456 Business Avenue, City, Country",
+    "phone": {
+      "pre": "+44",
+      "content": "9876543210"
+    },
+    "email": "contact@tourismcompany.com",
+    "website": "www.tourismcompany.com"
+  },
+  "programName": "Summer Vacation Package 2024",
+  "travelStart": "2024-07-01T00:00:00Z",
+  "travelEnd": "2024-07-15T00:00:00Z",
+  "services": [
+    {
+      "item": "Hotel Accommodation",
+      "price": 150.00,
+      "qty": 14,
+      "total": 2100.00
+    },
+    {
+      "item": "Airport Transfer",
+      "price": 50.00,
+      "qty": 2,
+      "total": 100.00
+    },
+    {
+      "item": "Guided City Tour",
+      "price": 75.00,
+      "qty": 1,
+      "total": 75.00
+    }
+  ],
+  "adjustments": [
+    {
+      "type": "addition",
+      "title": "VAT",
+      "amount": 0.00,
+      "percent": 10.00
+    },
+    {
+      "type": "substruction",
+      "title": "Early Booking Discount",
+      "amount": 200.00,
+      "percent": 0.00
+    }
+  ],
+  "note": "Special dietary requirements have been noted for the customer."
+} 

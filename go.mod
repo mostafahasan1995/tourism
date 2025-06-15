@@ -2,10 +2,14 @@ module larsa-tourism-microservices
 
 go 1.22.0
 
-require git.larsa.io/mahdawi/microservices-commons.git v0.2.3
+require (
+	git.larsa.io/mahdawi/microservices-commons.git v0.2.3
+	github.com/stretchr/testify v1.8.4
+)
 
 require (
 	github.com/cespare/xxhash/v2 v2.1.1 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/gabriel-vasile/mimetype v1.4.8 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
@@ -19,6 +23,7 @@ require (
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/nats-io/stan.go v0.10.4 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.1 // indirect
 	github.com/xdg-go/stringprep v1.0.3 // indirect
@@ -29,6 +34,7 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
