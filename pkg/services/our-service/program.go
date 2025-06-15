@@ -21,6 +21,81 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var updatedByUserLookup = []bson.M{
+	{"$lookup": bson.M{
+		"from":         "users",
+		"localField":   "updatedBy",
+		"foreignField": "_id",
+		"as":           "updatedByUser",
+	}},
+	{"$unwind": bson.M{
+		"path":                       "$updatedByUser",
+		"preserveNullAndEmptyArrays": true,
+	}},
+	{
+		"$set": bson.M{
+			"updatedByName": bson.M{
+				"$concat": []interface{}{
+					"$updatedByUser.firstName",
+					" ",
+					"$updatedByUser.lastName",
+				},
+			},
+		},
+	},
+	{
+		"$project": bson.M{
+			"updatedByUser": 0,
+		},
+	},
+}
+
+var packageLookup = []bson.M{
+	{"$lookup": bson.M{
+		"from":         "tourismPackages",
+		"localField":   "package",
+		"foreignField": "_id",
+		"as":           "packageObj",
+	}},
+	{"$unwind": bson.M{
+		"path":                       "$packageObj",
+		"preserveNullAndEmptyArrays": true,
+	}},
+	{
+		"$set": bson.M{
+			"packageName": "$packageObj.name",
+		},
+	},
+	{
+		"$project": bson.M{
+			"packageObj": 0,
+		},
+	},
+}
+
+var customerLookup = []bson.M{
+	{"$lookup": bson.M{
+		"from":         "tourismCustomers",
+		"localField":   "customerId",
+		"foreignField": "_id",
+		"as":           "customerObj",
+	}},
+	{"$unwind": bson.M{
+		"path":                       "$customerObj",
+		"preserveNullAndEmptyArrays": true,
+	}},
+	{
+		"$set": bson.M{
+			"customerName": "$customerObj.name",
+		},
+	},
+	{
+		"$project": bson.M{
+			"customerObj": 0,
+		},
+	},
+}
+
 type ProgramSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Program, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
@@ -79,7 +154,11 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Program
+	pipeline = append(pipeline, customerLookup...)
+	pipeline = append(pipeline, packageLookup...)
+	pipeline = append(pipeline, updatedByUserLookup...)
+
+	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -155,6 +234,8 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 			ProgramDto: *data,
 			CreatedAt:  time.Now(),
 			CreatedBy:  cfg.User.Id,
+			UpdatedAt:  time.Now(),
+			UpdatedBy:  cfg.User.Id,
 		}
 
 		if program.TravelReqId != primitive.NilObjectID {
