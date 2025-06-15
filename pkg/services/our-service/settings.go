@@ -1,8 +1,6 @@
 package ourservice
 
 import (
-	"context"
-	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
 
 	"github.com/samber/do"
@@ -21,20 +19,14 @@ func NewSettingsSvcs(i *do.Injector) (SettingsSvcs, error) {
 	}, nil
 }
 
-func (s *settingssvcs) Init(ctx context.Context) (*models.Settings, error) {
+// func (s *settingssvcs) GetByName(ctx context.Context, name string) (any, error) {
+// 	result , err := s.repo.GetByFilter(ctx, bson.M{"name": name})
+// 	if err != nil {
+// 		return nil,err
+// 	}
+// 	return result.Value, nil
+// }
 
-	// settings := &models.Settings{
-	// 	Name:        "settings",
-	// 	ProfitRatio: 0,
-	// }
+// func (s *settingssvcs) Update(ctx context.Context, name string) (*models.Settings, error) {
 
-	return nil, nil
-	// settings := &models.Settings{
-	// 	Name:        "settings",
-	// 	ProfitRatio: 0,
-	// }
-
-	// if err := s.repo.Add(ctx, settings); err != nil {
-	// 	return nil, err
-	// }
-}
+// }

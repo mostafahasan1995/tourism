@@ -16,7 +16,7 @@ type GeneralProgram struct {
 }
 
 type GeneralProgramDestination struct {
-	To     primitive.ObjectID `bson:"to" json:"to"`
+	From   primitive.ObjectID `bson:"from" json:"from"`
 	Images []types.FileField  `bson:"images" json:"images"`
 }
 
