@@ -18,7 +18,7 @@ import (
 
 type DestinationSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Destination, error)
-	GetAll(ctx context.Context, query string) ([]models.Destination, error)
+	GetAll(ctx context.Context, query any) ([]models.Destination, error)
 	Add(ctx context.Context, data *models.DestinationDto) (*models.Destination, error)
 	Update(ctx context.Context, id string, data *models.DestinationDto) (*models.Destination, error)
 	Delete(ctx context.Context, id string) error
@@ -43,10 +43,10 @@ func (d *destinationSvcs) GetOne(ctx context.Context, id string) (*models.Destin
 	return d.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (d *destinationSvcs) GetAll(ctx context.Context, query string) ([]models.Destination, error) {
-	match := bson.M{"trash": false}
+func (d *destinationSvcs) GetAll(ctx context.Context, query any) ([]models.Destination, error) {
+	match := bson.M{}
 
-	filters, err := filter.NewDestinationFilter(query)
+	filters, err := helpers.ParseFilters[filter.DestinationFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}

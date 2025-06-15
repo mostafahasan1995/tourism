@@ -22,7 +22,80 @@ type ExhibitorProfileFilter struct {
 	PropertyType string             `bson:"propertyType" json:"propertyType"`
 }
 
-func (f *ExhibitorProfileFilter) ToBsonFilter() bson.M {
+func (f ExhibitorProfileFilter) BuildPipeline(m bson.M) []bson.M {
+	if m == nil {
+		m = bson.M{}
+	}
+
+	// Default filter for non-trashed items
+	m["trash"] = bson.M{"$ne": true}
+
+	var ands bson.A
+
+	// Add hotel ID filter if provided
+	if !f.HotelId.IsZero() {
+		ands = append(ands, bson.M{"hotelId": f.HotelId})
+	}
+
+	// Add hotel name search if provided
+	if f.HotelName != "" {
+		ands = append(ands, bson.M{
+			"heroSection.hotelName": bson.M{"$regex": f.HotelName, "$options": "i"},
+		})
+	}
+
+	// Add active status filter if provided
+	if f.IsActive != nil {
+		ands = append(ands, bson.M{"isActive": *f.IsActive})
+	}
+
+	// Add published status filter if provided
+	if f.IsPublished != nil {
+		ands = append(ands, bson.M{"isPublished": *f.IsPublished})
+	}
+
+	// Add exact rating filter if provided
+	if f.Rating != nil {
+		ands = append(ands, bson.M{"heroSection.rating": *f.Rating})
+	}
+
+	// Add rating range filter if provided
+	if f.MinRating != nil && f.MaxRating != nil {
+		ands = append(ands, bson.M{
+			"heroSection.rating": bson.M{
+				"$gte": *f.MinRating,
+				"$lte": *f.MaxRating,
+			},
+		})
+	} else if f.MinRating != nil {
+		ands = append(ands, bson.M{
+			"heroSection.rating": bson.M{"$gte": *f.MinRating},
+		})
+	} else if f.MaxRating != nil {
+		ands = append(ands, bson.M{
+			"heroSection.rating": bson.M{"$lte": *f.MaxRating},
+		})
+	}
+
+	// Add property type filter if provided
+	if f.PropertyType != "" {
+		ands = append(ands, bson.M{
+			"heroSection.propertyType": bson.M{"$regex": f.PropertyType, "$options": "i"},
+		})
+	}
+
+	if len(ands) > 0 {
+		m["$and"] = ands
+	}
+
+	pipeline := []bson.M{
+		{"$match": m},
+	}
+
+	return pipeline
+}
+
+func (f ExhibitorProfileFilter) ToBsonFilter() bson.M {
 	filterConditions := []bson.M{
 		{"trash": bson.M{"$ne": true}},
 	}
@@ -92,6 +165,56 @@ type ExhibitorRequestFilter struct {
 	RequestDateTo   *time.Time `json:"requestDateTo,omitempty"`
 	Page            int        `json:"page"`
 	Size            int        `json:"size"`
+}
+
+func (f ExhibitorRequestFilter) BuildPipeline(m bson.M) []bson.M {
+	if m == nil {
+		m = bson.M{}
+	}
+
+	// Default filter for non-trashed items
+	m["trash"] = bson.M{"$ne": true}
+
+	var ands bson.A
+
+	if f.HotelName != nil && *f.HotelName != "" {
+		ands = append(ands, bson.M{"heroSection.hotelName": bson.M{"$regex": *f.HotelName, "$options": "i"}})
+	}
+
+	if f.Location != nil && *f.Location != "" {
+		ands = append(ands, bson.M{"contactInfo.location": bson.M{"$regex": *f.Location, "$options": "i"}})
+	}
+
+	if f.Email != nil && *f.Email != "" {
+		ands = append(ands, bson.M{"contactInfo.email": bson.M{"$regex": *f.Email, "$options": "i"}})
+	}
+
+	if f.Status != nil && *f.Status != "" {
+		ands = append(ands, bson.M{"status": *f.Status})
+	}
+
+	dateFilter := bson.M{}
+	if f.RequestDateFrom != nil {
+		dateFilter["$gte"] = f.RequestDateFrom
+	}
+
+	if f.RequestDateTo != nil {
+		dateFilter["$lte"] = f.RequestDateTo
+	}
+
+	if len(dateFilter) > 0 {
+		ands = append(ands, bson.M{"createdAt": dateFilter})
+	}
+
+	if len(ands) > 0 {
+		m["$and"] = ands
+	}
+
+	pipeline := []bson.M{
+		{"$match": m},
+	}
+
+	return pipeline
 }
 
 // ParseQueryParams parses URL query parameters into filter values

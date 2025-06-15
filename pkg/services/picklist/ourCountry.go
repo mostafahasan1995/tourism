@@ -2,6 +2,7 @@ package picklist
 
 import (
 	"context"
+	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
@@ -10,81 +11,121 @@ import (
 	"time"
 
 	"github.com/samber/do"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // deprecated
 type OurCountrySvcs interface {
 	GetOne(ctx context.Context, id string) (*models.OurCountry, error)
-	GetAll(ctx context.Context, filter filter.OurCountryFilter) (models.OurCountryPagination, error)
-	Add(ctx context.Context, data *models.OurCountryDto) error
-	Update(ctx context.Context, id string, data *models.OurCountryDto) error
+	GetAll(ctx context.Context, query any) (*models.OurCountryPagination, error)
+	Add(ctx context.Context, data *models.OurCountryDto) (*models.OurCountry, error)
+	Update(ctx context.Context, id string, data *models.OurCountryDto) (*models.OurCountry, error)
 	Delete(ctx context.Context, id string) error
 }
 
-type ourCountrysvcs struct {
+type ourCountrySvcs struct {
 	repo repo.OurCountryRepo
 }
 
 func NewOurCountrySvcs(i *do.Injector) (OurCountrySvcs, error) {
-	return &ourCountrysvcs{
+	return &ourCountrySvcs{
 		repo: do.MustInvoke[repo.OurCountryRepo](i),
 	}, nil
 }
 
-func (l *ourCountrysvcs) GetOne(ctx context.Context, id string) (*models.OurCountry, error) {
-	return l.repo.GetOne(ctx, id)
-
-}
-
-func (l *ourCountrysvcs) GetAll(ctx context.Context, filter filter.OurCountryFilter) (models.OurCountryPagination, error) {
-
-	data, err := l.repo.GetAll(ctx, filter)
-
+func (o *ourCountrySvcs) GetOne(ctx context.Context, id string) (*models.OurCountry, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return models.OurCountryPagination{}, err
+		return nil, helpers.InvalidObjectId()
 	}
 
-	return data, nil
+	return o.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (l *ourCountrysvcs) Add(ctx context.Context, data *models.OurCountryDto) error {
+func (o *ourCountrySvcs) GetAll(ctx context.Context, query any) (*models.OurCountryPagination, error) {
+	filters, err := helpers.ParseFilters[filter.OurCountryFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	return o.repo.GetAllPaginated(ctx, *filters)
+}
+
+func (o *ourCountrySvcs) Add(ctx context.Context, data *models.OurCountryDto) (*models.OurCountry, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ourCountry := &models.OurCountry{
+		OurCountryDto: *data,
+		Id:            primitive.NewObjectID(),
+		Trash:         false,
+		CreatedAt:     time.Now(),
+		CreatedBy:     cfg.User.Id,
+		UpdatedAt:     time.Now(),
+		UpdatedBy:     cfg.User.Id,
+	}
+
+	if err := o.repo.Add(ctx, ourCountry); err != nil {
+		return nil, err
+	}
+
+	return ourCountry, nil
+}
+
+func (o *ourCountrySvcs) Update(ctx context.Context, id string, data *models.OurCountryDto) (*models.OurCountry, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, helpers.InvalidObjectId()
+	}
+
+	ourCountry := &models.OurCountry{
+		Id:            _id,
+		OurCountryDto: *data,
+		UpdatedAt:     time.Now(),
+		UpdatedBy:     cfg.User.Id,
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": ourCountry}
+
+	updatedCountry, err := o.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedCountry, nil
+}
+
+func (o *ourCountrySvcs) Delete(ctx context.Context, id string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
 	}
-	ourCountry := &models.OurCountry{
-		OurCountryDto: models.OurCountryDto{
-			Name:        data.Name,
-			Image:       data.Image,
-			Icon:        data.Icon,
-			Galeres:     data.Galeres,
-			Description: data.Description,
-		},
-		Id:        primitive.NewObjectID(),
-		Trash:     false,
-		CreatedAt: time.Now(),
-		CreatedBy: cfg.User.Id,
-		UpdatedAt: time.Now(),
-		UpdatedBy: cfg.User.Id,
-	}
-	if err := l.repo.Add(ctx, ourCountry); err != nil {
-		return err
-	}
 
-	return nil
-
-}
-
-func (a *ourCountrysvcs) Update(ctx context.Context, id string, data *models.OurCountryDto) error {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return helpers.InvalidObjectId()
 	}
-	return a.repo.Update(ctx, _id, data)
-}
 
-func (a *ourCountrysvcs) Delete(ctx context.Context, id string) error {
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{
+		"trash":     true,
+		"updatedAt": time.Now(),
+		"updatedBy": cfg.User.Id,
+	}}
 
-	return a.repo.Delete(ctx, id)
+	_, err = o.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

@@ -2,6 +2,9 @@ package interactions
 
 import (
 	"context"
+	"errors"
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/interactions/filter"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/types"
@@ -18,7 +21,7 @@ import (
 type TravelExperSvcs interface {
 	GetTravelerStory(ctx context.Context, storyId string) (*models.TravelerStoryRes, error)
 	GetAllTravelerStories(ctx context.Context) ([]models.TravelerStoryRes, error)
-	GetTravelerStories(ctx context.Context, skip, limit int64) (*models.TravelerStoryWithPagination, error)
+	GetTravelerStories(ctx context.Context, skip, limit int64, query any) (*models.TravelerStoryWithPagination, error)
 	AddTravelerStory(ctx context.Context, data *models.TravelerStoryDto) (*models.TravelerStory, error)
 	SetTravelerStoryStatus(ctx context.Context, storyId string, data *models.TravelerStoryStatusDto) (*models.TravelerStory, error)
 	SendFeedback(ctx context.Context, storyId string, data *models.TravelerStoryFeedback) (*models.TravelerStory, error)
@@ -27,7 +30,7 @@ type TravelExperSvcs interface {
 	RestoreTravlerStory(ctx context.Context, storyId string) error
 	// client
 	GetClientStory(ctx context.Context, storyId string) (*models.ClientStory, error)
-	GetClientStories(ctx context.Context, skip, limit int64) (*models.ClientStoryWithPagination, error)
+	GetClientStories(ctx context.Context, skip, limit int64, query any) (*models.ClientStoryWithPagination, error)
 	AddClientStory(ctx context.Context, data *models.ClientStoryDto) (*models.ClientStory, error)
 	UpdateClientStory(ctx context.Context, storyId string, data *models.ClientStoryDto) (*models.ClientStory, error)
 	DeleteClientStory(ctx context.Context, storyId string) error
@@ -128,36 +131,44 @@ func (t *travelexpersvcs) GetAllTravelerStories(ctx context.Context) ([]models.T
 	return result, nil
 }
 
-func (t *travelexpersvcs) GetTravelerStories(ctx context.Context, skip, limit int64) (*models.TravelerStoryWithPagination, error) {
-	match := bson.M{"trash": false}
+func (t *travelexpersvcs) GetTravelerStories(ctx context.Context, skip, limit int64, query any) (*models.TravelerStoryWithPagination, error) {
+	match := bson.M{}
 
-	count, err := t.travelerStoryRepo.Count(ctx, match)
+	filters, err := helpers.ParseFilters[filter.TravelerStoryFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.travelerStoryRepo.Count(ctx, countPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	pipeline := []bson.M{
-		{"$match": match},
-		{"$sort": bson.M{"_id": -1}},
-		{
-			"$lookup": bson.M{
-				"from":         "tourismDestinations",
-				"localField":   "destinations",
-				"foreignField": "_id",
-				"as":           "destinationsData",
-			},
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{
+		"$lookup": bson.M{
+			"from":         "tourismDestinations",
+			"localField":   "destinations",
+			"foreignField": "_id",
+			"as":           "destinationsData",
 		},
-		{
-			"$lookup": bson.M{
-				"from":         "tourismActivities",
-				"localField":   "activities",
-				"foreignField": "_id",
-				"as":           "activitiesData",
-			},
+	})
+	pipeline = append(pipeline, bson.M{
+		"$lookup": bson.M{
+			"from":         "tourismActivities",
+			"localField":   "activities",
+			"foreignField": "_id",
+			"as":           "activitiesData",
 		},
-		{"$skip": skip},
-		{"$limit": limit},
-	}
+	})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
 	var result []models.TravelerStoryRes
 	errAg := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
@@ -343,20 +354,28 @@ func (t *travelexpersvcs) GetClientStory(ctx context.Context, storyId string) (*
 	return t.clientStoryRepo.GetByFilter(ctx, filter)
 }
 
-func (t *travelexpersvcs) GetClientStories(ctx context.Context, skip, limit int64) (*models.ClientStoryWithPagination, error) {
-	match := bson.M{"trash": false}
+func (t *travelexpersvcs) GetClientStories(ctx context.Context, skip, limit int64, query any) (*models.ClientStoryWithPagination, error) {
+	match := bson.M{}
 
-	count, err := t.clientStoryRepo.Count(ctx, match)
+	filters, err := helpers.ParseFilters[filter.ClientStoryFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.clientStoryRepo.Count(ctx, countPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	pipeline := []bson.M{
-		{"$match": match},
-		{"$sort": bson.M{"_id": -1}},
-		{"$skip": skip},
-		{"$limit": limit},
-	}
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
 	var result []models.ClientStory
 	errAg := t.clientStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {

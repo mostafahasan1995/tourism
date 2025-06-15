@@ -18,7 +18,7 @@ import (
 
 type ActivitiesSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Activities, error)
-	GetAll(ctx context.Context, query string) ([]models.Activities, error)
+	GetAll(ctx context.Context, query any) ([]models.Activities, error)
 	Add(ctx context.Context, data *models.ActivitiesDto) (*models.Activities, error)
 	Update(ctx context.Context, id string, data *models.ActivitiesDto) (*models.Activities, error)
 	Delete(ctx context.Context, id string) error
@@ -43,10 +43,10 @@ func (a *activitiesSvcs) GetOne(ctx context.Context, id string) (*models.Activit
 	return a.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (a *activitiesSvcs) GetAll(ctx context.Context, query string) ([]models.Activities, error) {
-	match := bson.M{"trash": false}
+func (a *activitiesSvcs) GetAll(ctx context.Context, query any) ([]models.Activities, error) {
+	match := bson.M{}
 
-	filters, err := filter.NewActivitiesFilter(query)
+	filters, err := helpers.ParseFilters[filter.ActivitiesFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}

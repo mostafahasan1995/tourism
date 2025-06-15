@@ -6,7 +6,6 @@ import (
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/util"
-
 	"time"
 
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
@@ -20,14 +19,14 @@ import (
 type OurCountryRepo interface {
 	dbrepo.MainRepo[models.OurCountry]
 	GetOne(ctx context.Context, id string) (*models.OurCountry, error)
-	GetAll(ctx context.Context, filter filter.OurCountryFilter) (models.OurCountryPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) error
+	GetAll(ctx context.Context, match bson.M, skip, limit int64) ([]models.OurCountry, int64, error)
+	GetAllPaginated(ctx context.Context, f filter.OurCountryFilter) (*models.OurCountryPagination, error)
+	Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) (*models.OurCountry, error)
 	Delete(ctx context.Context, id string) error
 }
 
 type ourCountryrepo struct {
 	dbrepo.MainRepoImpl[models.OurCountry]
-
 	db       *mongo.Client
 	collName string
 }
@@ -59,60 +58,87 @@ func (l *ourCountryrepo) GetOne(ctx context.Context, id string) (*models.OurCoun
 		return nil, err
 	}
 	return &data, nil
-
 }
 
-func (l *ourCountryrepo) GetAll(ctx context.Context, filter filter.OurCountryFilter) (models.OurCountryPagination, error) {
-
+func (l *ourCountryrepo) GetAll(ctx context.Context, match bson.M, skip, limit int64) ([]models.OurCountry, int64, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return models.OurCountryPagination{}, err
+		return nil, 0, err
+	}
+	coll := l.db.Database(cfg.Db).Collection(l.collName)
+
+	totalCount, err := coll.CountDocuments(ctx, match)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
+	cur, err := coll.Find(ctx, match, findOptions)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer cur.Close(ctx)
+
+	var countries []models.OurCountry
+	if err := cur.All(ctx, &countries); err != nil {
+		return nil, 0, err
+	}
+
+	return countries, totalCount, nil
+}
+
+func (l *ourCountryrepo) GetAllPaginated(ctx context.Context, f filter.OurCountryFilter) (*models.OurCountryPagination, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
 	}
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	filterBody := filter.ToBsonFilter()
+	// Build filter using pipeline pattern for consistency
+	pipeline := f.BuildPipeline(bson.M{})
+	match := pipeline[0]["$match"].(bson.M)
 
 	// Count total documents matching the filter
-	totalCount, err := coll.CountDocuments(ctx, filterBody)
+	totalCount, err := coll.CountDocuments(ctx, match)
 	if err != nil {
-		return models.OurCountryPagination{}, err
+		return nil, err
 	}
 
 	// Pagination defaults and limits
-	page := filter.Page
+	page := f.Page
 	if page <= 0 {
 		page = 1
 	}
-	size := filter.Size
+	size := f.Size
 	if size <= 0 {
-		size = int(totalCount) // return all if invalid
+		size = 10 // Default page size
 	}
 	skip := int64((page - 1) * size)
 	limit := int64(size)
 
 	// Query options with pagination
-	findOptions := options.Find().SetSkip(skip).SetLimit(limit)
+	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
 
-	cur, err := coll.Find(ctx, filterBody, findOptions)
+	cur, err := coll.Find(ctx, match, findOptions)
 	if err != nil {
-		return models.OurCountryPagination{}, err
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var countries []models.OurCountry
+	if err := cur.All(ctx, &countries); err != nil {
+		return nil, err
 	}
 
-	var programs []models.OurCountry
-	if err := cur.All(ctx, &programs); err != nil {
-		return models.OurCountryPagination{}, err
-	}
-
-	// Prepare pagination result
+	// Calculate total pages
 	totalPages := float64(0)
 	if size > 0 {
 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
 	}
 
-
-	result := models.OurCountryPagination {
-		OurCountry:programs,
+	result := &models.OurCountryPagination{
+		OurCountry: countries,
 		Pagination: common.Pagination{
 			TotalPages: totalPages,
 			PerPage:    int64(size),
@@ -120,21 +146,18 @@ func (l *ourCountryrepo) GetAll(ctx context.Context, filter filter.OurCountryFil
 		},
 	}
 
-
 	return result, nil
 }
 
-func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) error {
+func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) (*models.OurCountry, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
 	preOurCountry, err := l.GetOne(ctx, id.Hex())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	ourCountry := &models.OurCountry{
@@ -163,6 +186,7 @@ func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data
 		Upsert:         &upsert,
 	}
 
+	coll := l.db.Database(cfg.Db).Collection(l.collName)
 	var updatedOurCountry models.OurCountry
 	if err := coll.FindOneAndUpdate(
 		ctx,
@@ -170,13 +194,13 @@ func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data
 		update,
 		opts,
 	).Decode(&updatedOurCountry); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &updatedOurCountry, nil
 }
-func (l *ourCountryrepo) Delete(ctx context.Context, id string) error {
 
+func (l *ourCountryrepo) Delete(ctx context.Context, id string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
@@ -193,7 +217,7 @@ func (l *ourCountryrepo) Delete(ctx context.Context, id string) error {
 	update := bson.M{"$set": bson.M{
 		"trash":     true,
 		"updatedAt": time.Now(),
-		"updatedBy": primitive.NilObjectID,
+		"updatedBy": cfg.User.Id,
 	}}
 
 	upsert := false
