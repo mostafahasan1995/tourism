@@ -7,6 +7,9 @@ import (
 )
 
 type SettingsSvcs interface {
+	// Init(ctx context.Context) error
+	// GetSettingByName(ctx context.Context, name string) (*models.Settings, error)
+	// Update(ctx context.Context, name string, value any) (*models.Settings, error)
 }
 
 type settingssvcs struct {
@@ -19,14 +22,36 @@ func NewSettingsSvcs(i *do.Injector) (SettingsSvcs, error) {
 	}, nil
 }
 
-// func (s *settingssvcs) GetByName(ctx context.Context, name string) (any, error) {
-// 	result , err := s.repo.GetByFilter(ctx, bson.M{"name": name})
-// 	if err != nil {
-// 		return nil,err
+// func (s *settingssvcs) Init(ctx context.Context) error {
+// 	allSettings := []any{
+// 		models.Settings{
+// 			Name:  "profitRatio",
+// 			Value: 0,
+// 		},
+// 		// add more settings here
 // 	}
-// 	return result.Value, nil
+
+// 	if err := s.repo.AddMany(ctx, allSettings); err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+
 // }
 
-// func (s *settingssvcs) Update(ctx context.Context, name string) (*models.Settings, error) {
+// func (s *settingssvcs) GetSettingByName(ctx context.Context, name string) (*models.Settings, error) {
+// 	return s.repo.GetByFilter(ctx, bson.M{"name": name})
+// }
 
+// func (s *settingssvcs) Update(ctx context.Context, name string, value any) (*models.Settings, error) {
+
+// 	filter := bson.M{"name": name}
+// 	update := bson.M{"$set": bson.M{"value": value}}
+
+// 	updatedSetting, err := s.repo.Patch(ctx, filter, update)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return updatedSetting, nil
 // }
