@@ -1,9 +1,9 @@
 package enums
 
-type InvoiceStatus string
+type PaymentStatus string
 
 const (
-	InvoiceStatusPending InvoiceStatus = "pending"
-	InvoiceStatusPaid    InvoiceStatus = "paid"
-	InvoiceStatusUnpaid  InvoiceStatus = "unpaid"
+	PaymentStatusPending PaymentStatus = "pending"
+	PaymentStatusPaid    PaymentStatus = "paid"
+	PaymentStatusUnpaid  PaymentStatus = "unpaid"
 )

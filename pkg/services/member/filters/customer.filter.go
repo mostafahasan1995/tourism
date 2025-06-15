@@ -23,7 +23,14 @@ func NewCustomerFilter(query string) (*CustomerFilter, error) {
 	return filter, nil
 }
 
-func (f *CustomerFilter) BuildPipeline(m bson.M) []bson.M {
+func (f CustomerFilter) BuildPipeline(m bson.M) []bson.M {
+	if m == nil {
+		m = bson.M{}
+	}
+
+	// Default filter for non-trashed items
+	m["trash"] = bson.M{"$ne": true}
+
 	var ands bson.A
 	if f.CustomerName != nil {
 		pattern := fmt.Sprintf(".*%s.*", *f.CustomerName)

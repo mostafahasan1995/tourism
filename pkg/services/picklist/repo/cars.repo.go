@@ -20,8 +20,8 @@ import (
 type CarsRepo interface {
 	dbrepo.MainRepo[models.Cars]
 	GetOne(ctx context.Context, id string) (*models.Cars, error)
-	GetAll(ctx context.Context, filter filter.CarsFilter) (models.CarsPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.CarsDto) error
+	GetAll(ctx context.Context, filter filter.CarsFilter) (*models.CarsPagination, error)
+	Update(ctx context.Context, id primitive.ObjectID, data *models.CarsDto) (*models.Cars, error)
 	Delete(ctx context.Context, id string) error
 }
 
@@ -59,60 +59,60 @@ func (l *carsrepo) GetOne(ctx context.Context, id string) (*models.Cars, error) 
 		return nil, err
 	}
 	return &data, nil
-
 }
 
-func (l *carsrepo) GetAll(ctx context.Context, filter filter.CarsFilter) (models.CarsPagination, error) {
-
+func (l *carsrepo) GetAll(ctx context.Context, f filter.CarsFilter) (*models.CarsPagination, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return models.CarsPagination{}, err
+		return nil, err
 	}
 
 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	filterBody := filter.ToBsonFilter()
+	// Build filter using pipeline pattern for consistency
+	pipeline := f.BuildPipeline(bson.M{})
+	match := pipeline[0]["$match"].(bson.M)
 
 	// Count total documents matching the filter
-	totalCount, err := coll.CountDocuments(ctx, filterBody)
+	totalCount, err := coll.CountDocuments(ctx, match)
 	if err != nil {
-		return models.CarsPagination{}, err
+		return nil, err
 	}
 
 	// Pagination defaults and limits
-	page := filter.Page
+	page := f.Page
 	if page <= 0 {
 		page = 1
 	}
-	size := filter.Size
+	size := f.Size
 	if size <= 0 {
-		size = int(totalCount) // return all if invalid
+		size = 10 // Default page size
 	}
 	skip := int64((page - 1) * size)
 	limit := int64(size)
 
 	// Query options with pagination
-	findOptions := options.Find().SetSkip(skip).SetLimit(limit)
+	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
 
-	cur, err := coll.Find(ctx, filterBody, findOptions)
+	cur, err := coll.Find(ctx, match, findOptions)
 	if err != nil {
-		return models.CarsPagination{}, err
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var cars []models.Cars
+	if err := cur.All(ctx, &cars); err != nil {
+		return nil, err
 	}
 
-	var programs []models.Cars
-	if err := cur.All(ctx, &programs); err != nil {
-		return models.CarsPagination{}, err
-	}
-
-	// Prepare pagination result
+	// Calculate total pages
 	totalPages := float64(0)
 	if size > 0 {
 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
 	}
 
-
-	result := models.CarsPagination {
-		Cars:programs,
+	result := &models.CarsPagination{
+		Cars: cars,
 		Pagination: common.Pagination{
 			TotalPages: totalPages,
 			PerPage:    int64(size),
@@ -120,28 +120,24 @@ func (l *carsrepo) GetAll(ctx context.Context, filter filter.CarsFilter) (models
 		},
 	}
 
-
 	return result, nil
 }
 
-func (l *carsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.CarsDto) error {
+func (l *carsrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.CarsDto) (*models.Cars, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
-
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
 	preCars, err := l.GetOne(ctx, id.Hex())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	cars := &models.Cars{
 		CarsDto: models.CarsDto{
-			CarType:                          data.CarType,
-			Image:                          data.Image,
-
+			CarType: data.CarType,
+			Image:   data.Image,
 		},
 		Id:        id,
 		Trash:     false,
@@ -161,6 +157,7 @@ func (l *carsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mode
 		Upsert:         &upsert,
 	}
 
+	coll := l.db.Database(cfg.Db).Collection(l.collName)
 	var updatedCars models.Cars
 	if err := coll.FindOneAndUpdate(
 		ctx,
@@ -168,13 +165,13 @@ func (l *carsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mode
 		update,
 		opts,
 	).Decode(&updatedCars); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &updatedCars, nil
 }
-func (l *carsrepo) Delete(ctx context.Context, id string) error {
 
+func (l *carsrepo) Delete(ctx context.Context, id string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return err
@@ -191,7 +188,7 @@ func (l *carsrepo) Delete(ctx context.Context, id string) error {
 	update := bson.M{"$set": bson.M{
 		"trash":     true,
 		"updatedAt": time.Now(),
-		"updatedBy": primitive.NilObjectID,
+		"updatedBy": cfg.User.Id,
 	}}
 
 	upsert := false
@@ -200,6 +197,7 @@ func (l *carsrepo) Delete(ctx context.Context, id string) error {
 		ReturnDocument: &after,
 		Upsert:         &upsert,
 	}
+
 	result := coll.FindOneAndUpdate(
 		ctx,
 		filter,

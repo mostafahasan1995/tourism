@@ -1,8 +1,6 @@
 package filter
 
-import (
-	"go.mongodb.org/mongo-driver/bson"
-)
+import "go.mongodb.org/mongo-driver/bson"
 
 type TourismProgramFilter struct {
 	Destinations []string `bson:"destinations" json:"destinations"`
@@ -46,14 +44,7 @@ func (f *TourismProgramFilter) ToBsonFilter() bson.M {
 		filterConditions = append(filterConditions, bson.M{"duration": bson.M{"$in": f.Durations}})
 	}
 
-	if f.PriceRange.From > 0 || f.PriceRange.To > 0 {
-		priceFilter := bson.M{}
-		if f.PriceRange.From > 0 {
-			priceFilter["$gte"] = f.PriceRange.From
-		}
-		if f.PriceRange.To > 0 {
-			priceFilter["$lte"] = f.PriceRange.To
-		}
+	if priceFilter := f.PriceRange.BuildPriceFilter(); priceFilter != nil {
 		filterConditions = append(filterConditions, bson.M{"price": priceFilter})
 	}
 

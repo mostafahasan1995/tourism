@@ -44,7 +44,7 @@ type ProgramDto struct {
 	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
 	AgentId     primitive.ObjectID `bson:"agentId" json:"agentId"`
 	Status      string             `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
-	Package     primitive.ObjectID `bson:"package" json:"package" validate:"required"`
+	Package     primitive.ObjectID `bson:"package" json:"package" `
 	ProgramType string             `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	//
 	Source      string          `bson:"source" json:"source"`
@@ -54,9 +54,17 @@ type ProgramDto struct {
 	StartDate   time.Time       `bson:"startDate" json:"startDate" validate:"required"`
 	EndDate     time.Time       `bson:"endDate" json:"endDate" validate:"required"`
 	GroupSize   enums.GroupSize `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large"` //see group size values above
+	CoverImage  types.FileField `bson:"coverImage" json:"coverImage"`
 	//
 	GeneralType *GeneralProgram `bson:"generalType,omitempty" json:"generalType,omitempty" validate:"required_if=ProgramType general"`
 	CustomType  *CustomProgram  `bson:"customType,omitempty" json:"customType,omitempty" validate:"required_if=ProgramType custom"`
+}
+
+type ProgramRes struct {
+	Program       `bson:",inline"`
+	UpdatedByName string `bson:"updatedByName" json:"updatedByName"`
+	CustomerName  string `bson:"customerName" json:"customerName"`
+	PackageName   string `bson:"packageName" json:"packageName"`
 }
 
 func (p *ProgramDto) Validate(v *validator.Validate) error {
@@ -64,6 +72,6 @@ func (p *ProgramDto) Validate(v *validator.Validate) error {
 }
 
 type ProgramPagination struct {
-	Programs   []Program        `bson:"programs" json:"programs"`
+	Programs   []ProgramRes     `bson:"programs" json:"programs"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }

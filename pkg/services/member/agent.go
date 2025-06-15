@@ -2,15 +2,18 @@ package member
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
-	"larsa-tourism-microservices/pkg/gateway"
+	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/member/enums"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/member/repo"
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
+	"larsa-tourism-microservices/pkg/services/picklist"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -29,35 +32,42 @@ type AgentSvcs interface {
 	GetAll(ctx context.Context, query string) ([]models.Agent, error)
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
 	Update(ctx context.Context, agentId string, data *models.AgentDto) (*models.Agent, error)
+	UpdateStatus(ctx context.Context, agentId string, status string) (*models.Agent, error)
 	Delete(ctx context.Context, agentId string) error
 	//agent join
 	GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error)
-	GetJoinRequests(ctx context.Context, skip, limit int64, query string) (*models.AgentJoinPagination, error)
+	GetJoinRequests(ctx context.Context, skip, limit int64, query any) (*models.AgentJoinPagination, error)
 	Join(ctx context.Context, data *models.AgentJoinDto) (*models.AgentJoin, error)
 	ConvertToAgent(ctx context.Context, agentId string, data *models.AgentJoinDto) (*models.Agent, error)
 	RejectJoin(ctx context.Context, agentId string) error
+	SetAsPending(ctx context.Context, agentId string) error
+	//destination agent
+	GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error)
 }
 
 type agentsvcs struct {
-	repo          repo.AgentRepo
-	agentjoinrepo repo.AgentJoinRepo
-	sortingsvcs   dbsvcs.SortingSvcs
-	usersgw       *gateway.UsersGw
-	gateway       gateway.Gateway
-	withtxn       *db.WithTxn
+	repo            repo.AgentRepo
+	agentjoinrepo   repo.AgentJoinRepo
+	sortingsvcs     dbsvcs.SortingSvcs
+	memberAuthSvcs  MemberAuthSvcs
+	messagesvcs     messaging.MessageSvcs
+	destinationsvcs picklist.DestinationSvcs
+	withtxn         *db.WithTxn
 }
 
 func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 	return &agentsvcs{
-		repo:          do.MustInvoke[repo.AgentRepo](i),
-		agentjoinrepo: do.MustInvoke[repo.AgentJoinRepo](i),
-		sortingsvcs:   do.MustInvoke[dbsvcs.SortingSvcs](i),
-		usersgw:       do.MustInvoke[*gateway.UsersGw](i),
-		gateway:       do.MustInvoke[gateway.Gateway](i),
-		withtxn:       do.MustInvoke[*db.WithTxn](i),
+		repo:            do.MustInvoke[repo.AgentRepo](i),
+		agentjoinrepo:   do.MustInvoke[repo.AgentJoinRepo](i),
+		sortingsvcs:     do.MustInvoke[dbsvcs.SortingSvcs](i),
+		memberAuthSvcs:  do.MustInvoke[MemberAuthSvcs](i),
+		messagesvcs:     do.MustInvoke[messaging.MessageSvcs](i),
+		destinationsvcs: do.MustInvoke[picklist.DestinationSvcs](i),
+		withtxn:         do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
+// agent
 func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.Agent, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
@@ -141,15 +151,22 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 	if err != nil {
 		return nil, err
 	}
+
+	var userId primitive.ObjectID
+	var msg *messagingmodels.Message
+
 	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		agent := &models.Agent{
 			AgentDto:  *data,
 			CreatedAt: time.Now(),
 			CreatedBy: cfg.User.Id,
-			Status:    "inactive", //active, inactive
+			Status:    enums.AgentStatusInactive,
 		}
 
-		userId, err := a.AddUpdateAgentCredentials(ctx, agent)
+		var password string
+		var err error
+
+		userId, password, err = a.memberAuthSvcs.AddCredentials(ctx, agent)
 		if err != nil {
 			return nil, err
 		}
@@ -162,8 +179,14 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 		}
 
 		agent.AgentId = fmt.Sprintf("AG-%d", seq)
+		agent.Security.NewPassword = ""
 
 		if err := a.repo.Add(ctx, agent); err != nil {
+			return nil, err
+		}
+
+		msg, err = a.memberAuthSvcs.GetInvitationEmail(ctx, password, agent)
+		if err != nil {
 			return nil, err
 		}
 
@@ -171,7 +194,17 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 	})
 
 	if err != nil {
+		if userId != primitive.NilObjectID {
+			if err := a.memberAuthSvcs.DeleteCredentials(ctx, userId.Hex()); err != nil {
+				fmt.Println("error deleting user", err)
+			}
+			fmt.Println("user deleted")
+		}
 		return nil, err
+	}
+
+	if err := a.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
 	}
 
 	return result.(*models.Agent), nil
@@ -188,6 +221,8 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 		return nil, err
 	}
 
+	var msg *messagingmodels.Message
+
 	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		agent := &models.Agent{
 			Id:        _id,
@@ -196,16 +231,23 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 			UpdatedBy: cfg.User.Id,
 		}
 
-		_, err := a.AddUpdateAgentCredentials(ctx, agent)
-		if err != nil {
-			return nil, err
-		}
+		pass := data.Security.NewPassword
+		agent.Security.NewPassword = ""
 
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": agent}
 
 		updatedAgent, err := a.repo.Patch(ctx, filter, update)
 		if err != nil {
+			return nil, err
+		}
+
+		msg, err = a.memberAuthSvcs.GetAccountUpdatedEmail(ctx, pass, updatedAgent)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := a.memberAuthSvcs.UpdateCredentials(ctx, pass, agent); err != nil {
 			return nil, err
 		}
 
@@ -216,7 +258,37 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 		return nil, err
 	}
 
+	if err := a.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
+	}
+
 	return result.(*models.Agent), nil
+}
+
+func (a *agentsvcs) UpdateStatus(ctx context.Context, agentId string, status string) (*models.Agent, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": _id, "trash": false}
+	update := bson.M{"$set": bson.M{
+		"status":    status,
+		"updatedAt": time.Now(),
+		"updatedBy": cfg.User.Id,
+	}}
+
+	updatedAgent, err := a.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedAgent, nil
 }
 
 func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
@@ -245,67 +317,6 @@ func (a *agentsvcs) Delete(ctx context.Context, agentId string) error {
 	return nil
 }
 
-func (a *agentsvcs) AddUpdateAgentCredentials(ctx context.Context, data *models.Agent) (userId primitive.ObjectID, err error) {
-	zeroId := primitive.NilObjectID
-
-	var path, method string
-	if data.Id == primitive.NilObjectID {
-		path = "users/"
-		method = "POST"
-	} else {
-		path = "users/" + data.Id.Hex()
-		method = "PATCH"
-	}
-
-	password := data.Security.NewPassword
-	if method == "POST" && password == "" {
-		password = util.GeneratePassword(8, 2, 2, 2)
-	}
-
-	user := map[string]any{
-		"firstName": data.Name,
-		"lastName":  "-",
-		"email":     data.Security.Email,
-	}
-
-	if password != "" {
-		user["password"] = password
-	}
-
-	resp, err := a.gateway.Request(ctx, "users", path, method, "", user)
-
-	if err != nil {
-		return zeroId, errors.New("error adding user")
-	} else if resp.StatusCode != 200 {
-		switch resp.StatusCode {
-		case 409:
-			return zeroId, ErrDupliateEmail
-		case 401:
-			return zeroId, ErrUnauthorized
-		case 403:
-			return zeroId, ErrForbidden
-		default:
-			return zeroId, errors.New("error adding user")
-		}
-
-	}
-
-	type TempUser struct {
-		Id primitive.ObjectID `json:"_id"`
-	}
-
-	type AddedUser struct {
-		User TempUser `json:"user"`
-	}
-
-	var _data AddedUser
-	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
-		return zeroId, errDec
-	}
-
-	return _data.User.Id, nil
-}
-
 // agent join
 func (a *agentsvcs) GetOneAgentJoin(ctx context.Context, agentJoinId string) (*models.AgentJoin, error) {
 	_id, err := primitive.ObjectIDFromHex(agentJoinId)
@@ -319,7 +330,7 @@ func (a *agentsvcs) Join(ctx context.Context, data *models.AgentJoinDto) (*model
 	agent := &models.AgentJoin{
 		Id:           primitive.NewObjectID(),
 		AgentJoinDto: *data,
-		Status:       "pending",
+		Status:       enums.AgentJoinStatusPending,
 	}
 
 	if err := a.agentjoinrepo.Add(ctx, agent); err != nil {
@@ -345,10 +356,7 @@ func (a *agentsvcs) ConvertToAgent(ctx context.Context, agentId string, data *mo
 			Bio:         data.Bio,
 			Countries:   data.Countries,
 			Contact: models.AgentContact{
-				Phone: models.AgentPhone{
-					Pre:     "",
-					Content: data.Phone.Content,
-				},
+				Phone: data.Phone,
 				Email: data.Email,
 				Web:   "",
 			},
@@ -363,9 +371,9 @@ func (a *agentsvcs) ConvertToAgent(ctx context.Context, agentId string, data *mo
 			return nil, err
 		}
 
-		filter := bson.M{"_id": _id}
+		filter := bson.M{"_id": _id, "status": enums.AgentJoinStatusPending}
 		update := bson.M{"$set": bson.M{
-			"status": "converted",
+			"status": enums.AgentJoinStatusConverted,
 		}}
 
 		_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
@@ -390,29 +398,49 @@ func (a *agentsvcs) RejectJoin(ctx context.Context, agentId string) error {
 		return err
 	}
 
-	filter := bson.M{"_id": _id}
+	filter := bson.M{"_id": _id, "status": enums.AgentJoinStatusPending}
 	update := bson.M{"$set": bson.M{
-		"status": "rejected",
+		"status": enums.AgentJoinStatusRejected,
 	}}
 
 	_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
 	if errUp != nil {
-		return errUp
+		return errors.New("error update status, only pending joins can be rejected")
 	}
 
 	return nil
 
 }
 
-func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, query string) (*models.AgentJoinPagination, error) {
-	match := bson.M{}
-
-	filter, err := filters.NewAgentJoinFilter(query)
+func (a *agentsvcs) SetAsPending(ctx context.Context, agentId string) error {
+	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	pipeline := filter.BuildPipeline(match)
+	filter := bson.M{"_id": _id, "status": enums.AgentJoinStatusRejected}
+	update := bson.M{"$set": bson.M{
+		"status": enums.AgentJoinStatusPending,
+	}}
+
+	_, errUp := a.agentjoinrepo.Patch(ctx, filter, update)
+	if errUp != nil {
+		return errors.New("error update status, only rejected joins can set to pending")
+	}
+
+	return nil
+
+}
+
+func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, query any) (*models.AgentJoinPagination, error) {
+	match := bson.M{"status": bson.M{"$ne": "converted"}}
+
+	f, err := helpers.ParseFilters[filters.AgentJoinFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := f.BuildPipeline(match)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
@@ -445,4 +473,30 @@ func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, quer
 		Agents:     result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error) {
+	destination, err := a.destinationsvcs.GetOne(ctx, destinationId)
+	if err != nil {
+		return nil, err
+	}
+
+	country := destination.Name
+
+	pipeline := []bson.M{
+		{"$match": bson.M{
+			"countries": bson.M{"$in": []string{country}},
+			"status":    enums.AgentStatusActive,
+		}},
+	}
+
+	var result []models.Agent
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil || len(result) == 0 {
+		return nil, errors.New("no agent found")
+	}
+
+	return &result[0], nil
 }

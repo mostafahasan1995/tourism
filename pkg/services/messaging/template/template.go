@@ -19,8 +19,25 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 					<p>Here are your login details:</p>
 					<p>Email: {{.Email}}</p>
 					<p>Temp password: {{.Password}}</p>
-					<p>Please log in using the link below and update your password for security reasons: <a href="{{.RegisterLink}}">Click here to login</a></p>
+					<p>Please log in using the link below and update your password for security reasons: <a href="{{.Link}}">Click here to login</a></p>
 					<p>Looking forward to collaborating with you!</p>
+
+					<p><strong>Best Regards,</strong></p>
+					<p><strong>{{.CompanyName}}</strong></p>
+				</div>
+				`,
+	},
+	enums.ACCOUNTUPDATED: &AccountUpdatedTpl{
+		Subject: `Your Account Has Been Updated`,
+		Message: `<div dir="ltr">
+					<p>Hi {{.MemberName}},</p>
+					<p>This email is to confirm that your account on {{.PlatformName}} has been successfully updated.</p>
+					<p>Your account details have been modified as requested. If you did not request these changes, please contact our support team immediately.</p>
+					<p>Here are your login details:</p>
+					<p>Email: {{.Email}}</p>
+					<p>Password: {{.Password}}</p>
+					<p>You can access your account at: <a href="{{.Link}}">Login to your account</a></p>
+					<p>If you have any questions or need assistance, please don't hesitate to contact us.</p>
 
 					<p><strong>Best Regards,</strong></p>
 					<p><strong>{{.CompanyName}}</strong></p>

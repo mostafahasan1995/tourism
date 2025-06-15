@@ -7,10 +7,13 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/gateway"
+	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/member/repo"
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -31,7 +34,8 @@ var ErrForbidden = errors.New("forbidden")
 type CustomerSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Customer, error)
 	GetOne(ctx context.Context, customerId string) (*models.Customer, error)
-	Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error)
+	Get(ctx context.Context, skip, limit int64, query any) (*models.CustomerWithPagination, error)
+	GetAll(ctx context.Context) ([]models.Customer, error)
 	Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error)
 	Update(ctx context.Context, customerId string, data *models.CustomerDto) (*models.Customer, error)
 	Delete(ctx context.Context, customerId string) error
@@ -40,20 +44,22 @@ type CustomerSvcs interface {
 }
 
 type customerSvcs struct {
-	repo        repo.CustomerRepo
-	sortingsvcs dbsvcs.SortingSvcs
-	usersgw     *gateway.UsersGw
-	gateway     gateway.Gateway
-	withtxn     *db.WithTxn
+	repo           repo.CustomerRepo
+	sortingsvcs    dbsvcs.SortingSvcs
+	gateway        gateway.Gateway
+	memberAuthSvcs MemberAuthSvcs
+	messagesvcs    messaging.MessageSvcs
+	withtxn        *db.WithTxn
 }
 
 func NewCustomerSvcs(i *do.Injector) (CustomerSvcs, error) {
 	return &customerSvcs{
-		repo:        do.MustInvoke[repo.CustomerRepo](i),
-		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		usersgw:     do.MustInvoke[*gateway.UsersGw](i),
-		gateway:     do.MustInvoke[gateway.Gateway](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		repo:           do.MustInvoke[repo.CustomerRepo](i),
+		sortingsvcs:    do.MustInvoke[dbsvcs.SortingSvcs](i),
+		gateway:        do.MustInvoke[gateway.Gateway](i),
+		memberAuthSvcs: do.MustInvoke[MemberAuthSvcs](i),
+		messagesvcs:    do.MustInvoke[messaging.MessageSvcs](i),
+		withtxn:        do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -70,10 +76,10 @@ func (c *customerSvcs) GetByFilter(ctx context.Context, filter bson.M) (*models.
 	return c.repo.GetByFilter(ctx, filter)
 }
 
-func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.CustomerWithPagination, error) {
-	match := bson.M{"trash": false}
+func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.CustomerWithPagination, error) {
+	match := bson.M{}
 
-	filters, err := filters.NewCustomerFilter(query)
+	filters, err := helpers.ParseFilters[filters.CustomerFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}
@@ -113,11 +119,33 @@ func (c *customerSvcs) Get(ctx context.Context, skip, limit int64, query string)
 	}, nil
 }
 
+func (c *customerSvcs) GetAll(ctx context.Context) ([]models.Customer, error) {
+	match := bson.M{"trash": false}
+	pipeline := []bson.M{
+		{"$match": match},
+		{"$sort": bson.M{"_id": -1}},
+	}
+
+	var result []models.Customer
+	err := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*models.Customer, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
 	}
+
+	var userId primitive.ObjectID
+	var msg *messagingmodels.Message
+
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		customer := &models.Customer{
 			CustomerDto: *data,
@@ -125,12 +153,16 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			CreatedBy:   cfg.User.Id,
 		}
 
-		userId, err := c.AddUpdateCustomerCredentials(ctx, customer)
+		var password string
+		var err error
+
+		userId, password, err = c.memberAuthSvcs.AddCredentials(ctx, customer)
 		if err != nil {
 			return nil, err
 		}
 
 		customer.Id = userId
+		customer.Security.NewPassword = ""
 
 		seq, err := c.sortingsvcs.GetAndUpdateSourceSeq(ctx, "customer")
 		if err != nil {
@@ -143,11 +175,26 @@ func (c *customerSvcs) Add(ctx context.Context, data *models.CustomerDto) (*mode
 			return nil, err
 		}
 
+		msg, err = c.memberAuthSvcs.GetInvitationEmail(ctx, password, customer)
+		if err != nil {
+			return nil, err
+		}
+
 		return customer, nil
 	})
 
 	if err != nil {
+		if userId != primitive.NilObjectID {
+			if err := c.memberAuthSvcs.DeleteCredentials(ctx, userId.Hex()); err != nil {
+				fmt.Println("error deleting user", err)
+			}
+			fmt.Println("user deleted")
+		}
 		return nil, err
+	}
+
+	if err := c.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
 	}
 
 	return result.(*models.Customer), nil
@@ -164,6 +211,8 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 		return nil, err
 	}
 
+	var msg *messagingmodels.Message
+
 	result, err := c.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		customer := &models.Customer{
 			Id:          _id,
@@ -172,10 +221,8 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			UpdatedBy:   cfg.User.Id,
 		}
 
-		_, err := c.AddUpdateCustomerCredentials(ctx, customer)
-		if err != nil {
-			return nil, err
-		}
+		pass := data.Security.NewPassword
+		customer.Security.NewPassword = ""
 
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": customer}
@@ -185,12 +232,25 @@ func (c *customerSvcs) Update(ctx context.Context, customerId string, data *mode
 			return nil, err
 		}
 
+		msg, err = c.memberAuthSvcs.GetAccountUpdatedEmail(ctx, pass, updatedCustomer)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := c.memberAuthSvcs.UpdateCredentials(ctx, pass, customer); err != nil {
+			return nil, err
+		}
+
 		return updatedCustomer, nil
 
 	})
 
 	if err != nil {
 		return nil, err
+	}
+
+	if err := c.messagesvcs.SendEmail(ctx, msg); err != nil {
+		fmt.Println(err)
 	}
 
 	return result.(*models.Customer), nil
@@ -221,67 +281,6 @@ func (c *customerSvcs) Delete(ctx context.Context, customerId string) error {
 	}
 
 	return nil
-}
-
-func (c *customerSvcs) AddUpdateCustomerCredentials(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {
-	zeroId := primitive.NilObjectID
-
-	var path, method string
-	if data.Id == primitive.NilObjectID {
-		path = "users/"
-		method = "POST"
-	} else {
-		path = "users/" + data.Id.Hex()
-		method = "PATCH"
-	}
-
-	password := data.Security.NewPassword
-	if method == "POST" && password == "" {
-		password = util.GeneratePassword(8, 2, 2, 2)
-	}
-
-	user := map[string]any{
-		"firstName": data.Name,
-		"lastName":  "-",
-		"email":     data.Security.Email,
-	}
-
-	if password != "" {
-		user["password"] = password
-	}
-
-	resp, err := c.gateway.Request(ctx, "users", path, method, "", user)
-
-	if err != nil {
-		return zeroId, errors.New("error adding user")
-	} else if resp.StatusCode != 200 {
-		switch resp.StatusCode {
-		case 409:
-			return zeroId, ErrDupliateEmail
-		case 401:
-			return zeroId, ErrUnauthorized
-		case 403:
-			return zeroId, ErrForbidden
-		default:
-			return zeroId, errors.New("error adding user")
-		}
-
-	}
-
-	type TempUser struct {
-		Id primitive.ObjectID `json:"_id"`
-	}
-
-	type AddedUser struct {
-		User TempUser `json:"user"`
-	}
-
-	var _data AddedUser
-	if errDec := json.NewDecoder(resp.Body).Decode(&_data); errDec != nil {
-		return zeroId, errDec
-	}
-
-	return _data.User.Id, nil
 }
 
 func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Customer) (userId primitive.ObjectID, err error) {

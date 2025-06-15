@@ -9,7 +9,8 @@ import (
 )
 
 type AgentFilter struct {
-	Name *string `json:"name"`
+	Name   *string `json:"name"`
+	Status *string `json:"status"`
 }
 
 func NewAgentFilter(query string) (*AgentFilter, error) {
@@ -39,6 +40,10 @@ func (f *AgentFilter) BuildPipeline(m bson.M) []bson.M {
 		}
 
 		ands = append(ands, nameFilter)
+	}
+
+	if f.Status != nil {
+		m["status"] = *f.Status
 	}
 
 	if len(ands) > 0 {

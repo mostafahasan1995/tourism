@@ -33,3 +33,8 @@ type ServiceToken struct {
 type UserList struct {
 	Users []common.User `bson:"users" json:"users"`
 }
+
+type PhoneNumber struct {
+	Pre     string `bson:"pre" json:"pre"`
+	Content string `bson:"content" json:"content"`
+}

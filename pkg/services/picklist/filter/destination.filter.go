@@ -22,11 +22,28 @@ func NewDestinationFilter(query string) (*DestinationFilter, error) {
 	return f, nil
 }
 
-func (f *DestinationFilter) BuildPipeline(m bson.M) []bson.M {
+func (f DestinationFilter) BuildPipeline(m bson.M) []bson.M {
+	if m == nil {
+		m = bson.M{}
+	}
+
+	// Default filter for non-trashed items
+	m["trash"] = bson.M{"$ne": true}
+
 	if f.SearchWord != "" {
-		m["name"] = bson.M{
-			"$regex":   f.SearchWord,
-			"$options": "i",
+		m["$or"] = []bson.M{
+			{
+				"name": bson.M{
+					"$regex":   f.SearchWord,
+					"$options": "i",
+				},
+			},
+			{
+				"country": bson.M{
+					"$regex":   f.SearchWord,
+					"$options": "i",
+				},
+			},
 		}
 	}
 

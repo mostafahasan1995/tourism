@@ -25,10 +25,13 @@ type InvoiceSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Invoice, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.InvoicePagination, error)
 	Add(ctx context.Context, data *models.InvoiceDto) (*models.Invoice, error)
+	Update(ctx context.Context, id string, data *models.InvoiceDto) (*models.Invoice, error)
 	AddPayment(ctx context.Context, invoiceId string, data *models.PaymentDto) (*models.Invoice, error)
 	UpdatePayment(ctx context.Context, invoiceId, paymentId string, data *models.PaymentDto) (*models.Invoice, error)
 	DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error)
 	PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error)
+	//
+	AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error)
 }
 
 type invoiceSvcs struct {
@@ -43,40 +46,6 @@ func NewInvoiceSvcs(i *do.Injector) (InvoiceSvcs, error) {
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
-}
-
-func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models.Invoice, error) {
-	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
-		invoice := &models.Invoice{
-			Id:         primitive.NewObjectID(),
-			InvoiceDto: *data,
-			Payments:   []models.Payment{},
-		}
-
-		if err := invoice.SetTotals(); err != nil {
-			return nil, err
-		}
-
-		seq, err := i.sortingsvcs.GetAndUpdateSourceSeq(ctx, "invoice")
-		if err != nil {
-			return nil, err
-		}
-
-		invoice.InvoiceId = fmt.Sprintf("INV-%d-%d", time.Now().Year(), seq)
-
-		if err := i.repo.Add(ctx, invoice); err != nil {
-			return nil, err
-		}
-
-		return invoice, nil
-	})
-
-	if err != nil {
-		return nil, err
-	}
-
-	return result.(*models.Invoice), nil
-
 }
 
 func (i *invoiceSvcs) GetOne(ctx context.Context, id string) (*models.Invoice, error) {
@@ -129,6 +98,78 @@ func (i *invoiceSvcs) Get(ctx context.Context, skip, limit int64, query string) 
 		Invoices:   result,
 		Pagination: pagination,
 	}, nil
+}
+
+func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models.Invoice, error) {
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice := &models.Invoice{
+			Id:         primitive.NewObjectID(),
+			InvoiceDto: *data,
+			Payments:   []models.Payment{},
+		}
+
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
+		}
+
+		seq, err := i.sortingsvcs.GetAndUpdateSourceSeq(ctx, "invoice")
+		if err != nil {
+			return nil, err
+		}
+
+		invoice.InvoiceId = fmt.Sprintf("INV-%d-%d", time.Now().Year(), seq)
+
+		if err := i.repo.Add(ctx, invoice); err != nil {
+			return nil, err
+		}
+
+		return invoice, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
+
+}
+
+func (i *invoiceSvcs) Update(ctx context.Context, id string, data *models.InvoiceDto) (*models.Invoice, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+		if err != nil {
+			return nil, errors.New("invoice not found")
+		}
+
+		invoice.InvoiceDto = *data
+
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
+		}
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{"$set": invoice}
+
+		updatedInvoice, err := i.repo.Patch(ctx, filter, update)
+		if err != nil {
+			return nil, err
+		}
+
+		return updatedInvoice, nil
+
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
+
 }
 
 // when add payment by admin
@@ -299,10 +340,47 @@ func (i *invoiceSvcs) PayOrder(ctx context.Context, invoiceId string, data *mode
 		Date:    time.Now(),
 		Method:  data.Method,
 		Amount:  data.Amount,
-		Status:  enums.InvoiceStatusUnpaid,
+		Status:  enums.PaymentStatusUnpaid,
 		Receipt: data.Receipt,
 	}
 
 	return i.AddPayment(ctx, invoiceId, &newPaymentDto)
 
+}
+
+// add invoice for travel request
+func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error) {
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice := &models.Invoice{
+			Id:          primitive.NewObjectID(),
+			InvoiceDto:  *data,
+			TravelReqId: travelReqId,
+			//DepartureAgent:   invoiceTravelRequestData.DepartureAgent,
+			// DestinationAgent: invoiceTravelRequestData.DestinationAgent,
+			Payments: []models.Payment{},
+		}
+
+		if err := invoice.SetTotals(); err != nil {
+			return nil, err
+		}
+
+		seq, err := i.sortingsvcs.GetAndUpdateSourceSeq(ctx, "invoice")
+		if err != nil {
+			return nil, err
+		}
+
+		invoice.InvoiceId = fmt.Sprintf("INV-%d-%d", time.Now().Year(), seq)
+
+		if err := i.repo.Add(ctx, invoice); err != nil {
+			return nil, err
+		}
+
+		return invoice, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
 }

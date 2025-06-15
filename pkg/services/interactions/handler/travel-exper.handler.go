@@ -61,7 +61,9 @@ func (h *TravelExperHandler) GetTravelerStories(w http.ResponseWriter, r *http.R
 		return errGetPaginate
 	}
 
-	result, err := h.travelexpersvcs.GetTravelerStories(ctx, skip, limit)
+	query := r.URL.Query().Get("query")
+
+	result, err := h.travelexpersvcs.GetTravelerStories(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}
@@ -183,7 +185,9 @@ func (h *TravelExperHandler) GetClientStories(w http.ResponseWriter, r *http.Req
 		return errGetPaginate
 	}
 
-	result, err := h.travelexpersvcs.GetClientStories(ctx, skip, limit)
+	query := r.URL.Query().Get("query")
+
+	result, err := h.travelexpersvcs.GetClientStories(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}

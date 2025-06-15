@@ -10,16 +10,19 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-playground/validator/v10"
 	"github.com/samber/do"
 )
 
 type AgentHandler struct {
-	agentsvcs member.AgentSvcs
+	agentsvcs          member.AgentSvcs
+	validationInstance *validator.Validate
 }
 
 func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 	h := &AgentHandler{
-		agentsvcs: do.MustInvoke[member.AgentSvcs](i),
+		agentsvcs:          do.MustInvoke[member.AgentSvcs](i),
+		validationInstance: do.MustInvoke[*validator.Validate](i),
 	}
 
 	r.Route("/agents", func(r chi.Router) {
@@ -28,6 +31,7 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
 
@@ -37,6 +41,7 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.Post("/", helpers.Make(h.Join))
 		r.With(middleware.Auth("authenticate")).Post("/{id}/convert", helpers.Make(h.ConvertToAgent))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectJoin))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/pending", helpers.Make(h.SetAsPending))
 	})
 }
 
@@ -111,6 +116,28 @@ func (h *AgentHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.agentsvcs.Update(ctx, agentId, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id")
+
+	var data models.UpdateStatusDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.UpdateStatus(ctx, agentId, data.Status)
 	if err != nil {
 		return err
 	}
@@ -203,6 +230,18 @@ func (h *AgentHandler) RejectJoin(w http.ResponseWriter, r *http.Request) error 
 	agentId := chi.URLParam(r, "id") // agent join id
 
 	if err := h.agentsvcs.RejectJoin(ctx, agentId); err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
+}
+
+func (h *AgentHandler) SetAsPending(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id") // agent join id
+
+	if err := h.agentsvcs.SetAsPending(ctx, agentId); err != nil {
 		return err
 	}
 

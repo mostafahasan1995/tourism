@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/picklist"
@@ -25,17 +24,12 @@ func NewOurCountryHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/ourCountry", func(r chi.Router) {
-
 		r.Get("/{id}", helpers.Make(h.GetOne))
-
 		r.Get("/", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
-
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
-
 	})
-
 }
 
 func (l *OurCountryHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -47,7 +41,6 @@ func (l *OurCountryHandler) GetOne(w http.ResponseWriter, r *http.Request) error
 	result, err := l.ourCountrysvcs.GetOne(ctx, id)
 	if err != nil {
 		return err
-
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
@@ -55,15 +48,14 @@ func (l *OurCountryHandler) GetOne(w http.ResponseWriter, r *http.Request) error
 func (l *OurCountryHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	filterParam := r.URL.Query().Get("query")
-	var filter filter.OurCountryFilter
+	var f filter.OurCountryFilter
 	if filterParam != "" {
-		err := json.Unmarshal([]byte(filterParam), &filter)
+		err := json.Unmarshal([]byte(filterParam), &f)
 		if err != nil {
-			fmt.Println("Error:", err)
-			return err
+			return helpers.InvalidJSON()
 		}
 	}
-	result, err := l.ourCountrysvcs.GetAll(ctx, filter)
+	result, err := l.ourCountrysvcs.GetAll(ctx, f)
 	if err != nil {
 		return err
 	}
@@ -78,25 +70,21 @@ func (l *OurCountryHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return helpers.InvalidJSON()
 	}
 
-	//and validations go here
-
-	err := l.ourCountrysvcs.Add(ctx, &data)
+	country, err := l.ourCountrysvcs.Add(ctx, &data)
 	if err != nil {
 		return err
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+	return helpers.WriteJson(w, http.StatusCreated, country)
 }
+
 func (l *OurCountryHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	id := chi.URLParam(r, "id")
-	var err = l.ourCountrysvcs.Delete(ctx, id)
-
+	err := l.ourCountrysvcs.Delete(ctx, id)
 	if err != nil {
 		return err
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+	return helpers.WriteJson(w, http.StatusOK, map[string]string{"message": "Country deleted successfully"})
 }
 
 func (l *OurCountryHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -107,12 +95,10 @@ func (l *OurCountryHandler) Update(w http.ResponseWriter, r *http.Request) error
 		return helpers.InvalidJSON()
 	}
 
-	//and validations go here
 	id := chi.URLParam(r, "id")
-	err := l.ourCountrysvcs.Update(ctx, id, &data)
+	updatedCountry, err := l.ourCountrysvcs.Update(ctx, id, &data)
 	if err != nil {
 		return err
 	}
-	w.WriteHeader(http.StatusOK)
-	return nil
+	return helpers.WriteJson(w, http.StatusOK, updatedCountry)
 }

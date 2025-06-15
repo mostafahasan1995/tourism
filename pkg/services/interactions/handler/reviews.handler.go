@@ -36,8 +36,11 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/user/{userId}", helpers.Make(h.GetByUserId))
 		r.Route("/{entityType}/{refId}", func(r chi.Router) {
 			r.Get("/", helpers.Make(h.GetEntityReviews))
+			//wesite review
 			r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.AddEntityReview))
 		})
+		//dashboard
+		r.With(middleware.Auth("authenticate")).Post("/dashboard", helpers.Make(h.AddDashboardReview))
 		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
@@ -147,11 +150,17 @@ func (h *ReviewsHandler) AddEntityReview(w http.ResponseWriter, r *http.Request)
 	}
 
 	data.Type = entityType
-	refObjectId, err := primitive.ObjectIDFromHex(refId)
-	if err != nil {
-		return helpers.BadRequest("Invalid reference ID")
+
+	// Handle general type with no refId
+	if entityType == "general" {
+		data.Ref = primitive.NilObjectID
+	} else {
+		refObjectId, err := primitive.ObjectIDFromHex(refId)
+		if err != nil {
+			return helpers.BadRequest("Invalid reference ID")
+		}
+		data.Ref = refObjectId
 	}
-	data.Ref = refObjectId
 
 	if err := data.Validate(h.validationInstance); err != nil {
 		return err
@@ -334,4 +343,42 @@ func (h *ReviewsHandler) GetByUserId(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.ReviewDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	// Validate review type
+	if data.Type != "agent" && data.Type != "hotel" && data.Type != "destination" && data.Type != "general" {
+		return helpers.BadRequest("Invalid review type. Must be one of: agent, hotel, destination, general")
+	}
+
+	// Handle general type with no refId
+	if data.Type == "general" {
+		data.Ref = primitive.NilObjectID
+	} else if data.Ref.IsZero() {
+		// Validate refId for non-general types
+		return helpers.BadRequest("refId is required for non-general review types")
+	}
+
+	// Validate countries for destination type
+	if data.Type == "destination" && (data.Countries == nil || len(data.Countries) == 0) {
+		return helpers.BadRequest("countries are required for destination reviews")
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.reviewsSvcs.AddFromDashboard(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusCreated, result)
 }
