@@ -97,8 +97,6 @@ func Start() error {
 	interactions.Init(injector, r)
 	marketing.Init(injector, r)
 	statistics.Init(injector, r)
-	//deprecated
-	//travelreq.Init(injector, r)
 
 	fmt.Println("start server")
 

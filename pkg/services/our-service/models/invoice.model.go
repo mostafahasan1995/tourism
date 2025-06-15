@@ -49,22 +49,20 @@ func (i *InvoiceDto) Validate(v *validator.Validate) error {
 }
 
 type Invoice struct {
-	Id               primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	InvoiceId        string             `bson:"invoiceId" json:"invoiceId"`
-	InvoiceDto       `bson:",inline"`
-	TravelReqId      primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
-	DepartureAgent   primitive.ObjectID `bson:"departureAgent" json:"departureAgent"`
-	DestinationAgent primitive.ObjectID `bson:"destinationAgent" json:"destinationAgent"` //destination agent id
-	SubTotal         float64            `bson:"subTotal" json:"subTotal"`
-	Total            float64            `bson:"total" json:"total"`
-	PaidAmount       float64            `bson:"paidAmount" json:"paidAmount"`
-	UnpaidAmount     float64            `bson:"unpaidAmount" json:"unpaidAmount"`
-	Payments         []Payment          `bson:"payments" json:"payments"`
-	Trash            bool               `bson:"trash" json:"trash"`
-	CreatedAt        time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	CreatedBy        primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	UpdatedAt        time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
-	UpdatedBy        primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	InvoiceId    string             `bson:"invoiceId" json:"invoiceId"`
+	InvoiceDto   `bson:",inline"`
+	TravelReqId  primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
+	SubTotal     float64            `bson:"subTotal" json:"subTotal"`
+	Total        float64            `bson:"total" json:"total"`
+	PaidAmount   float64            `bson:"paidAmount" json:"paidAmount"`
+	UnpaidAmount float64            `bson:"unpaidAmount" json:"unpaidAmount"`
+	Payments     []Payment          `bson:"payments" json:"payments"`
+	Trash        bool               `bson:"trash" json:"trash"`
+	CreatedAt    time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy    primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt    time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy    primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
 func (i *Invoice) SetTotals() error {
@@ -139,8 +137,8 @@ type PayOrder struct {
 
 //travel request agent
 
-type InvoiceTravelReqData struct {
-	TravelReqId      primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
-	DepartureAgent   primitive.ObjectID `bson:"departureAgent" json:"departureAgent"`
-	DestinationAgent primitive.ObjectID `bson:"destinationAgent" json:"destinationAgent"`
-}
+// type InvoiceTravelReqData struct {
+// 	TravelReqId      primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
+// 	DepartureAgent   primitive.ObjectID `bson:"departureAgent" json:"departureAgent"`
+// 	DestinationAgent primitive.ObjectID `bson:"destinationAgent" json:"destinationAgent"`
+// }

@@ -59,11 +59,18 @@ type ProgramDto struct {
 	CustomType  *CustomProgram  `bson:"customType,omitempty" json:"customType,omitempty" validate:"required_if=ProgramType custom"`
 }
 
+type ProgramRes struct {
+	Program       `bson:",inline"`
+	UpdatedByName string `bson:"updatedByName" json:"updatedByName"`
+	CustomerName  string `bson:"customerName" json:"customerName"`
+	PackageName   string `bson:"packageName" json:"packageName"`
+}
+
 func (p *ProgramDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, p)
 }
 
 type ProgramPagination struct {
-	Programs   []Program        `bson:"programs" json:"programs"`
+	Programs   []ProgramRes     `bson:"programs" json:"programs"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }

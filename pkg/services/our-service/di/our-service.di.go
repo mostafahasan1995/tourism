@@ -11,7 +11,6 @@ import (
 
 func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
-	//do.Provide(i, ourService.NewTourismProgramSvcs)
 	do.Provide(i, ourService.NewHotelsSvcs)
 	do.Provide(i, ourService.NewPackageSvcs)
 	do.Provide(i, ourService.NewTravelRequestSvcs)
@@ -27,7 +26,6 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewInvoiceRepo)
 
 	//handlers
-	//handler.NewTourismProgramHandler(i, r)
 	handler.NewHotelsHandler(i, r)
 	handler.NewPackageHandler(i, r)
 	handler.NewTravelRequestHandler(i, r)
