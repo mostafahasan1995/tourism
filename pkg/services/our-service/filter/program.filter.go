@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"encoding/json"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"time"
 
@@ -13,7 +12,7 @@ type ProgramFilter struct {
 	// Basic filters
 	CustomerName *string             `json:"customerName"`
 	Title        *string             `json:"title"`
-	ServiceType  *enums.ServiceType  `json:"serviceType"`
+	ServiceType  []enums.ServiceType `json:"serviceType"`
 	TravelReqId  *primitive.ObjectID `json:"travelReqId"`
 	CustomerId   *primitive.ObjectID `json:"customerId"`
 	AgentId      *primitive.ObjectID `json:"agentId"`
@@ -31,7 +30,7 @@ type ProgramFilter struct {
 	UpdatedBy    *primitive.ObjectID `json:"updatedBy"`
 
 	// Website-specific filters
-	Destinations   []primitive.ObjectID `json:"destinations"`   // Filter by destination IDs
+	Destinations   []DestinationFilter  `json:"destinations"`   // Filter by destination pairs
 	Activities     []primitive.ObjectID `json:"activities"`     // Filter by activity IDs
 	MinPrice       *float64             `json:"minPrice"`       // Minimum price filter
 	MaxPrice       *float64             `json:"maxPrice"`       // Maximum price filter
@@ -39,31 +38,23 @@ type ProgramFilter struct {
 	Transportation []string             `json:"transportation"` // Filter by transportation types
 	Meals          []string             `json:"meals"`          // Filter by meal types
 	Interests      []string             `json:"interests"`      // Filter by interests (hiking, diving, sightseeing, safari, adventure, relaxation, outdoors, food)
-	Duration       *int                 `json:"duration"`       // Filter by trip duration in days
+	Duration       []int                `json:"duration"`       // Filter by trip duration in days
 	Recommended    *bool                `json:"recommended"`    // Filter for recommended programs
 	ShowInWebsite  *bool                `json:"showInWebsite"`  // Filter for programs that should be shown on website
 }
 
-func NewProgramFilter(query string) (*ProgramFilter, error) {
-	f := &ProgramFilter{}
-
-	if query != "" {
-		if err := json.Unmarshal([]byte(query), f); err != nil {
-			return nil, err
-		}
-	}
-
-	return f, nil
-}
-
-func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
+func (f ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 	// Add basic filters to the match stage
 	if f.Title != nil {
 		m["title"] = bson.M{"$regex": *f.Title, "$options": "i"}
 	}
 
-	if f.ServiceType != nil {
-		m["serviceType"] = string(*f.ServiceType)
+	if len(f.ServiceType) > 0 {
+		serviceTypes := make([]string, len(f.ServiceType))
+		for i, st := range f.ServiceType {
+			serviceTypes[i] = string(st)
+		}
+		m["serviceType"] = bson.M{"$in": serviceTypes}
 	}
 
 	if f.TravelReqId != nil {
@@ -128,7 +119,35 @@ func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 
 	// Website-specific filters for general programs
 	if len(f.Destinations) > 0 {
-		m["generalType.destinations.from"] = bson.M{"$in": f.Destinations}
+		orConditions := make([]bson.M, 0)
+		for _, dest := range f.Destinations {
+			if dest.DestinationFrom != nil && dest.DestinationTo != nil {
+				// Match programs that have both from and to destinations
+				orConditions = append(orConditions, bson.M{
+					"$and": []bson.M{
+						{"generalType.destinations": bson.M{
+							"$elemMatch": bson.M{"from": *dest.DestinationFrom},
+						}},
+						{"generalType.destinations": bson.M{
+							"$elemMatch": bson.M{"to": *dest.DestinationTo},
+						}},
+					},
+				})
+			} else if dest.DestinationFrom != nil {
+				// Match programs that have the from destination
+				orConditions = append(orConditions, bson.M{
+					"generalType.destinations.from": *dest.DestinationFrom,
+				})
+			} else if dest.DestinationTo != nil {
+				// Match programs that have the to destination
+				orConditions = append(orConditions, bson.M{
+					"generalType.destinations.to": *dest.DestinationTo,
+				})
+			}
+		}
+		if len(orConditions) > 0 {
+			m["$or"] = orConditions
+		}
 	}
 
 	if len(f.Activities) > 0 {
@@ -165,19 +184,46 @@ func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	// Duration filter (calculate from start and end dates)
-	if f.Duration != nil {
-		m["$expr"] = bson.M{
-			"$eq": []interface{}{
-				bson.M{
-					"$divide": []interface{}{
-						bson.M{
-							"$subtract": []interface{}{"$endDate", "$startDate"},
+	if len(f.Duration) > 0 {
+		// Check if any duration value is negative or unexpected (like -1)
+		hasSpecialValue := false
+		for _, duration := range f.Duration {
+			if duration < 0 {
+				hasSpecialValue = true
+				break
+			}
+		}
+
+		if hasSpecialValue {
+			// Return programs with duration >= 15 days
+			m["$expr"] = bson.M{
+				"$gte": []interface{}{
+					bson.M{
+						"$divide": []interface{}{
+							bson.M{
+								"$subtract": []interface{}{"$endDate", "$startDate"},
+							},
+							1000 * 60 * 60 * 24, // Convert milliseconds to days
 						},
-						1000 * 60 * 60 * 24, // Convert milliseconds to days
 					},
+					15,
 				},
-				*f.Duration,
-			},
+			}
+		} else {
+			// Normal behavior: match specific duration values
+			m["$expr"] = bson.M{
+				"$in": []interface{}{
+					bson.M{
+						"$divide": []interface{}{
+							bson.M{
+								"$subtract": []interface{}{"$endDate", "$startDate"},
+							},
+							1000 * 60 * 60 * 24, // Convert milliseconds to days
+						},
+					},
+					f.Duration,
+				},
+			}
 		}
 	}
 
@@ -238,6 +284,12 @@ func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	return pipeline
+}
+
+// DestinationFilter represents a destination filter with from and to locations
+type DestinationFilter struct {
+	DestinationFrom *primitive.ObjectID `json:"destinationFrom"`
+	DestinationTo   *primitive.ObjectID `json:"destinationTo"`
 }
 
 // Helper function to join strings for regex
