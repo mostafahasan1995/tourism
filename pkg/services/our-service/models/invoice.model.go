@@ -160,3 +160,13 @@ type PayOrder struct {
 // 	DepartureAgent   primitive.ObjectID `bson:"departureAgent" json:"departureAgent"`
 // 	DestinationAgent primitive.ObjectID `bson:"destinationAgent" json:"destinationAgent"`
 // }
+
+type SendInvoiceDto struct {
+	Amount         float64           `bson:"amount" json:"amount"`
+	SendByEmail    bool              `bson:"sendByEmail" json:"sendByEmail"`
+	SendByWhatsapp bool              `bson:"sendByWhatsapp" json:"sendByWhatsapp"`
+	To             string            `bson:"to" json:"to"`
+	Subject        string            `bson:"subject" json:"subject"`
+	Message        string            `bson:"message" json:"message"`
+	Files          []types.FileField `bson:"files" json:"files"`
+}

@@ -38,14 +38,14 @@ type Program struct {
 }
 
 type ProgramDto struct {
-	Title       string             `bson:"title" json:"title" validate:"required"` // program title
-	ServiceType enums.ServiceType  `bson:"serviceType" json:"serviceType"`         // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
-	TravelReqId primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
-	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
-	AgentId     primitive.ObjectID `bson:"agentId" json:"agentId"`
-	Status      string             `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
-	Package     primitive.ObjectID `bson:"package" json:"package" `
-	ProgramType string             `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	Title       string                   `bson:"title" json:"title" validate:"required"`                                                                                      // program title
+	ServiceType enums.ProgramServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	TravelReqId primitive.ObjectID       `bson:"travelReqId" json:"travelReqId"`
+	CustomerId  primitive.ObjectID       `bson:"customerId" json:"customerId"`
+	AgentId     primitive.ObjectID       `bson:"agentId" json:"agentId"`
+	Status      string                   `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
+	Package     primitive.ObjectID       `bson:"package" json:"package" `
+	ProgramType string                   `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	//
 	Source      string          `bson:"source" json:"source"`
 	Company     string          `bson:"company" json:"company"`         // todo: maybe we need id here

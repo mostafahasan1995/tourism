@@ -1,5 +1,6 @@
 package enums
 
+//travl request service type
 type ServiceType string
 
 const (
@@ -13,14 +14,14 @@ const (
 	ServiceTypeHotelBooking   ServiceType = "hotel-booking"
 
 	// Travel Types
-	ServiceTypeRelaxation ServiceType = "relaxation" // رحلة استجمام
-	ServiceTypeAdventure  ServiceType = "adventure"  // مغامرة
-	ServiceTypeFamily     ServiceType = "family"     // رحلة عائلية
-	ServiceTypeRomantic   ServiceType = "romantic"   // رحلة رومانسية – شهر عسل
-	ServiceTypeCultural   ServiceType = "cultural"   // رحلة ثقافية
-	ServiceTypeBusiness   ServiceType = "business"   // رحلة عمل
-	ServiceTypeShopping   ServiceType = "shopping"   // رحلة تسوق
-	ServiceTypeWellness   ServiceType = "wellness"   // رحلة صحية أو استشفائية
+	// ServiceTypeRelaxation ServiceType = "relaxation" // رحلة استجمام
+	// ServiceTypeAdventure  ServiceType = "adventure"  // مغامرة
+	// ServiceTypeFamily     ServiceType = "family"     // رحلة عائلية
+	// ServiceTypeRomantic   ServiceType = "romantic"   // رحلة رومانسية – شهر عسل
+	// ServiceTypeCultural   ServiceType = "cultural"   // رحلة ثقافية
+	// ServiceTypeBusiness   ServiceType = "business"   // رحلة عمل
+	// ServiceTypeShopping   ServiceType = "shopping"   // رحلة تسوق
+	// ServiceTypeWellness   ServiceType = "wellness"   // رحلة صحية أو استشفائية
 )
 
 type GroupSize string
@@ -32,4 +33,14 @@ const (
 	GroupSizeFamily GroupSize = "family" // Family (عائلة)
 	GroupSizeSmall  GroupSize = "small"  // Small Group (مجموعة صغيرة، عادة 4–8 أشخاص)
 	GroupSizeLarge  GroupSize = "large"  // Large Group (مجموعة كبيرة، عادة أكثر من 8 أشخاص)
+)
+
+type ProgramServiceType string
+
+const (
+	ProgramServiceTypeTourismProgram ProgramServiceType = "tourism-program"
+	ProgramServiceTypeCustomProgram  ProgramServiceType = "custom-program"
+	ProgramServiceTypeFlightTicket   ProgramServiceType = "flight-ticket"
+	ProgramServiceTypeVipCar         ProgramServiceType = "vip-car"
+	ProgramServiceTypeHotelBooking   ProgramServiceType = "hotel-booking"
 )

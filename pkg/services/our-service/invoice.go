@@ -384,3 +384,27 @@ func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqI
 
 	return result.(*models.Invoice), nil
 }
+
+func (i *invoiceSvcs) SendInvoice(ctx context.Context, data *models.SendInvoiceDto) error {
+
+	return nil
+	// cfg,err := util.GetReqAppCfg(ctx)
+	// if err != nil {
+	// 	return  err
+	// }
+
+	//  msg := messagingmodels.Message{
+	// 	Type: messagingenums.None,
+	// 	Email: data.To,
+	// 	Subject: data.Subject,
+	// 	Message: data.Message,
+	// 	Attachments: data.Files,
+	// 	SenderId: cfg.User.Id,
+	// 	CreatedBy: cfg.User.Id,
+	// 	CreatedAt: time.Now(),
+	// }
+
+	// others := map[string]interface{}{
+
+	// return  nil
+}
