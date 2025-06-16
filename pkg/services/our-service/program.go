@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -135,12 +136,12 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.Program, e
 func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error) {
 	match := bson.M{"trash": false}
 
-	filters, err := filter.NewProgramFilter(query)
+	f, err := helpers.ParseFilters[filter.ProgramFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}
 
-	pipeline := filters.BuildPipeline(match)
+	pipeline := f.BuildPipeline(match)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
@@ -182,7 +183,7 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Program, error) {
 	match := bson.M{"trash": false}
 
-	filters, err := filter.NewProgramFilter(query)
+	filters, err := helpers.ParseFilters[filter.ProgramFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}

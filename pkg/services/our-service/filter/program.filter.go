@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"encoding/json"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"time"
 
@@ -13,7 +12,7 @@ type ProgramFilter struct {
 	// Basic filters
 	CustomerName *string             `json:"customerName"`
 	Title        *string             `json:"title"`
-	ServiceType  *enums.ServiceType  `json:"serviceType"`
+	ServiceType  []enums.ServiceType `json:"serviceType"`
 	TravelReqId  *primitive.ObjectID `json:"travelReqId"`
 	CustomerId   *primitive.ObjectID `json:"customerId"`
 	AgentId      *primitive.ObjectID `json:"agentId"`
@@ -39,31 +38,23 @@ type ProgramFilter struct {
 	Transportation []string             `json:"transportation"` // Filter by transportation types
 	Meals          []string             `json:"meals"`          // Filter by meal types
 	Interests      []string             `json:"interests"`      // Filter by interests (hiking, diving, sightseeing, safari, adventure, relaxation, outdoors, food)
-	Duration       *int                 `json:"duration"`       // Filter by trip duration in days
+	Duration       []int                `json:"duration"`       // Filter by trip duration in days
 	Recommended    *bool                `json:"recommended"`    // Filter for recommended programs
 	ShowInWebsite  *bool                `json:"showInWebsite"`  // Filter for programs that should be shown on website
 }
 
-func NewProgramFilter(query string) (*ProgramFilter, error) {
-	f := &ProgramFilter{}
-
-	if query != "" {
-		if err := json.Unmarshal([]byte(query), f); err != nil {
-			return nil, err
-		}
-	}
-
-	return f, nil
-}
-
-func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
+func (f ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 	// Add basic filters to the match stage
 	if f.Title != nil {
 		m["title"] = bson.M{"$regex": *f.Title, "$options": "i"}
 	}
 
-	if f.ServiceType != nil {
-		m["serviceType"] = string(*f.ServiceType)
+	if len(f.ServiceType) > 0 {
+		serviceTypes := make([]string, len(f.ServiceType))
+		for i, st := range f.ServiceType {
+			serviceTypes[i] = string(st)
+		}
+		m["serviceType"] = bson.M{"$in": serviceTypes}
 	}
 
 	if f.TravelReqId != nil {
@@ -165,9 +156,9 @@ func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	// Duration filter (calculate from start and end dates)
-	if f.Duration != nil {
+	if len(f.Duration) > 0 {
 		m["$expr"] = bson.M{
-			"$eq": []interface{}{
+			"$in": []interface{}{
 				bson.M{
 					"$divide": []interface{}{
 						bson.M{
@@ -176,7 +167,7 @@ func (f *ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 						1000 * 60 * 60 * 24, // Convert milliseconds to days
 					},
 				},
-				*f.Duration,
+				f.Duration,
 			},
 		}
 	}
