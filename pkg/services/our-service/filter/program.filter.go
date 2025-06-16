@@ -157,18 +157,45 @@ func (f ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 
 	// Duration filter (calculate from start and end dates)
 	if len(f.Duration) > 0 {
-		m["$expr"] = bson.M{
-			"$in": []interface{}{
-				bson.M{
-					"$divide": []interface{}{
-						bson.M{
-							"$subtract": []interface{}{"$endDate", "$startDate"},
+		// Check if any duration value is negative or unexpected (like -1)
+		hasSpecialValue := false
+		for _, duration := range f.Duration {
+			if duration < 0 {
+				hasSpecialValue = true
+				break
+			}
+		}
+
+		if hasSpecialValue {
+			// Return programs with duration >= 15 days
+			m["$expr"] = bson.M{
+				"$gte": []interface{}{
+					bson.M{
+						"$divide": []interface{}{
+							bson.M{
+								"$subtract": []interface{}{"$endDate", "$startDate"},
+							},
+							1000 * 60 * 60 * 24, // Convert milliseconds to days
 						},
-						1000 * 60 * 60 * 24, // Convert milliseconds to days
 					},
+					15,
 				},
-				f.Duration,
-			},
+			}
+		} else {
+			// Normal behavior: match specific duration values
+			m["$expr"] = bson.M{
+				"$in": []interface{}{
+					bson.M{
+						"$divide": []interface{}{
+							bson.M{
+								"$subtract": []interface{}{"$endDate", "$startDate"},
+							},
+							1000 * 60 * 60 * 24, // Convert milliseconds to days
+						},
+					},
+					f.Duration,
+				},
+			}
 		}
 	}
 
