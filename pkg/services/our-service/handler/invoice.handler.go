@@ -34,6 +34,7 @@ func NewInvoiceHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/payments/{paymentId}", helpers.Make(h.UpdatePayment))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}/payments/{paymentId}", helpers.Make(h.DeletePayment))
 		r.With(middleware.Auth("authenticate")).Post("/{id}/pay-order", helpers.Make(h.PayOrder))
+		r.With(middleware.Auth("authenticate")).Post("/send-invoice", helpers.Make(h.SendInvoice))
 	})
 }
 
@@ -101,6 +102,7 @@ func (h *InvoiceHandler) Update(w http.ResponseWriter, r *http.Request) error {
 
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
+
 func (h *InvoiceHandler) AddPayment(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
@@ -176,4 +178,19 @@ func (h *InvoiceHandler) PayOrder(w http.ResponseWriter, r *http.Request) error 
 	}
 
 	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *InvoiceHandler) SendInvoice(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.SendInvoiceDto
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	if err := h.invoicesvcs.SendInvoice(ctx, &data); err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, "ok")
 }

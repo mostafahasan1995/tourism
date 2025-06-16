@@ -1,0 +1,31 @@
+{
+  "amount": 2500.00,
+  "sendByEmail": true,
+  "sendByWhatsapp": true,
+  "to": "john.doe@example.com",
+  "subject": "Invoice #INV-2024-001 - Summer Vacation Package",
+  "message": "Dear John Doe,\n\nPlease find attached the invoice for your Summer Vacation Package. The total amount due is $2,500.00.\n\nPayment details:\nBank: Example Bank\nAccount: 1234567890\nSwift: EXBKUS33\n\nThank you for choosing our services.\n\nBest regards,\nTourism Company Ltd",
+  "files": [
+    {
+      "_id": "65f9a1b2c3d4e5f6a7b8c9d0",
+      "originalName": "invoice_INV-2024-001.pdf",
+      "path": "/invoices/2024/03/invoice_INV-2024-001.pdf",
+      "service": "invoice-service",
+      "expire": "2024-04-20T10:00:00Z",
+      "variants": [
+        "original",
+        "thumbnail"
+      ]
+    },
+    {
+      "_id": "65f9a1b2c3d4e5f6a7b8c9d1",
+      "originalName": "payment_instructions.pdf",
+      "path": "/invoices/2024/03/payment_instructions.pdf",
+      "service": "invoice-service",
+      "expire": "2024-04-20T10:00:00Z",
+      "variants": [
+        "original"
+      ]
+    }
+  ]
+} 

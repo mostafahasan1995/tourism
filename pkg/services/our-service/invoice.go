@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/messaging"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -14,6 +15,9 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
+
+	messagingenums "larsa-tourism-microservices/pkg/services/messaging/enums"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
@@ -32,11 +36,13 @@ type InvoiceSvcs interface {
 	PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error)
 	//
 	AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error)
+	SendInvoice(ctx context.Context, data *models.SendInvoiceDto) error
 }
 
 type invoiceSvcs struct {
 	repo        repo.InvoiceRepo
 	sortingsvcs dbsvcs.SortingSvcs
+	messagesvcs messaging.MessageSvcs
 	withtxn     *db.WithTxn
 }
 
@@ -44,6 +50,7 @@ func NewInvoiceSvcs(i *do.Injector) (InvoiceSvcs, error) {
 	return &invoiceSvcs{
 		repo:        do.MustInvoke[repo.InvoiceRepo](i),
 		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
+		messagesvcs: do.MustInvoke[messaging.MessageSvcs](i),
 		withtxn:     do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -386,25 +393,47 @@ func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqI
 }
 
 func (i *invoiceSvcs) SendInvoice(ctx context.Context, data *models.SendInvoiceDto) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	msg := messagingmodels.Message{
+		Type:        messagingenums.None,
+		Email:       data.To,
+		Subject:     data.Subject,
+		Message:     data.Message,
+		MessageHtml: data.Message,
+		Attachments: data.Files,
+		SenderId:    cfg.User.Id,
+		CreatedBy:   cfg.User.Id,
+		CreatedAt:   time.Now(),
+	}
+
+	type Attachment struct {
+		FileName string `json:"filename"`
+		Href     string `json:"href"`
+	}
+
+	attachments := []Attachment{}
+
+	for _, file := range data.Files {
+		attch := Attachment{
+			FileName: file.OriginalName,
+			Href:     file.Path,
+		}
+
+		attachments = append(attachments, attch)
+
+	}
+
+	msg.Others = map[string]interface{}{
+		"attachments": attachments,
+	}
+
+	if err := i.messagesvcs.SendEmail(ctx, &msg); err != nil {
+		return err
+	}
 
 	return nil
-	// cfg,err := util.GetReqAppCfg(ctx)
-	// if err != nil {
-	// 	return  err
-	// }
-
-	//  msg := messagingmodels.Message{
-	// 	Type: messagingenums.None,
-	// 	Email: data.To,
-	// 	Subject: data.Subject,
-	// 	Message: data.Message,
-	// 	Attachments: data.Files,
-	// 	SenderId: cfg.User.Id,
-	// 	CreatedBy: cfg.User.Id,
-	// 	CreatedAt: time.Now(),
-	// }
-
-	// others := map[string]interface{}{
-
-	// return  nil
 }

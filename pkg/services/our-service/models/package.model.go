@@ -12,6 +12,7 @@ type PackageDto struct {
 	Name                string              `bson:"name" json:"name"`
 	Thumbnail           []types.FileField   `bson:"thumbnail" json:"thumbnail"`
 	Status              enums.PackageStatus `bson:"status" json:"status"`
+	IsSystemPkg         bool                `bson:"isSystemPkg" json:"isSystemPkg"`
 	AllowGeneralProgram bool                `bson:"allowGeneralProgram" json:"allowGeneralProgram"`
 	AllowCustomProgram  bool                `bson:"allowCustomProgram" json:"allowCustomProgram"`
 }
