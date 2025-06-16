@@ -25,12 +25,12 @@ func NewSettingsHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/settings", func(r chi.Router) {
-		r.Get("/", helpers.Make(h.GetOne))
+		r.Get("/", helpers.Make(h.Get))
 		r.Put("/", helpers.Make(h.Update))
 	})
 }
 
-func (h *SettingsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+func (h *SettingsHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	result, err := h.settingssvcs.Get(ctx)
