@@ -22,7 +22,7 @@ type TravelRequestDto struct {
 	Nationality  string            `bson:"nationality" json:"nationality" `
 	TripDuration int               `bson:"tripDuration" json:"tripDuration" validate:"required"`
 	//
-	ServiceType enums.ServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=delegation custom-plan business-man vip-car flight-request partner-request hotel-booking relaxation adventure family romantic cultural business shopping wellness"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	ServiceType enums.ServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=delegation custom-plan business-man vip-car flight-request partner-request hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
 	//request
 	Delegation  *Delegation  `bson:"delegation,omitempty" json:"delegation,omitempty" validate:"required_if=ServiceType delegation"`
 	BusinessMan *BusinessMan `bson:"businessMan,omitempty" json:"businessMan,omitempty" validate:"required_if=ServiceType business-man"`
