@@ -25,11 +25,13 @@ type AgentDto struct {
 }
 
 type AgentFinancial struct {
-	Stays           FinancialUnit `bson:"stays" json:"stays"`
-	TourismPrograms FinancialUnit `bson:"tourismPrograms" json:"tourismPrograms"`
-	VipCars         FinancialUnit `bson:"vipCars" json:"vipCars"`
-	BusinessManTrip FinancialUnit `bson:"businessManTrip" json:"businessManTrip"`
-	Delegation      FinancialUnit `bson:"delegation" json:"delegation"`
+	Stays                  FinancialUnit `bson:"stays" json:"stays"`
+	TourismPrograms        FinancialUnit `bson:"tourismPrograms" json:"tourismPrograms"`
+	VipCars                FinancialUnit `bson:"vipCars" json:"vipCars"`
+	BusinessManTrip        FinancialUnit `bson:"businessManTrip" json:"businessManTrip"`
+	Delegation             FinancialUnit `bson:"delegation" json:"delegation"`
+	ProfitOfTourismProgram bool          `bson:"profitOfTourismProgram" json:"profitOfTourismProgram"`
+	Ratio                  float64       `bson:"ratio" json:"ratio"`
 }
 
 type FinancialUnit struct {

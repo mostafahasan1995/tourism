@@ -42,20 +42,22 @@ type TravelRequestSvcs interface {
 }
 
 type travelrequestsvcs struct {
-	repo        repo.TravelRequestRepo
-	invoicesvcs InvoiceSvcs
-	sortingsvcs dbsvcs.SortingSvcs
-	agentsvcs   member.AgentSvcs
-	withtxn     *db.WithTxn
+	repo         repo.TravelRequestRepo
+	invoicesvcs  InvoiceSvcs
+	sortingsvcs  dbsvcs.SortingSvcs
+	agentsvcs    member.AgentSvcs
+	settingssvcs SettingsSvcs
+	withtxn      *db.WithTxn
 }
 
 func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 	return &travelrequestsvcs{
-		repo:        do.MustInvoke[repo.TravelRequestRepo](i),
-		invoicesvcs: do.MustInvoke[InvoiceSvcs](i),
-		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		agentsvcs:   do.MustInvoke[member.AgentSvcs](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		repo:         do.MustInvoke[repo.TravelRequestRepo](i),
+		invoicesvcs:  do.MustInvoke[InvoiceSvcs](i),
+		sortingsvcs:  do.MustInvoke[dbsvcs.SortingSvcs](i),
+		agentsvcs:    do.MustInvoke[member.AgentSvcs](i),
+		settingssvcs: do.MustInvoke[SettingsSvcs](i),
+		withtxn:      do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
