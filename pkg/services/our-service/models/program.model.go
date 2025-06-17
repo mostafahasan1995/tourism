@@ -64,6 +64,7 @@ type ProgramRes struct {
 	UpdatedByName string `bson:"updatedByName" json:"updatedByName"`
 	CustomerName  string `bson:"customerName" json:"customerName"`
 	PackageName   string `bson:"packageName" json:"packageName"`
+	Duration      int    `bson:"duration" json:"duration"`
 }
 
 func (p *ProgramDto) Validate(v *validator.Validate) error {
