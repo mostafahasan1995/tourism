@@ -159,6 +159,19 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, packageLookup...)
 	pipeline = append(pipeline, updatedByUserLookup...)
 
+	// Add duration calculation
+	pipeline = append(pipeline, bson.M{
+		"$set": bson.M{
+			"duration": bson.M{
+				"$dateDiff": bson.M{
+					"startDate": "$startDate",
+					"endDate":   "$endDate",
+					"unit":      "day",
+				},
+			},
+		},
+	})
+
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
