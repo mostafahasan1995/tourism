@@ -43,9 +43,10 @@ type ProgramDto struct {
 	TravelReqId primitive.ObjectID       `bson:"travelReqId" json:"travelReqId"`
 	CustomerId  primitive.ObjectID       `bson:"customerId" json:"customerId"`
 	AgentId     primitive.ObjectID       `bson:"agentId" json:"agentId"`
-	Status      string                   `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
+	Status      string                   `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
 	Package     primitive.ObjectID       `bson:"package" json:"package" `
 	ProgramType string                   `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	TravelType  enums.TravelType         `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism"`
 	//
 	Source      string          `bson:"source" json:"source"`
 	Company     string          `bson:"company" json:"company"`         // todo: maybe we need id here

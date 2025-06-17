@@ -12,16 +12,6 @@ const (
 	ServiceTypeFlightRequest  ServiceType = "flight-request"
 	ServiceTypePartnerRequest ServiceType = "partner-request"
 	ServiceTypeHotelBooking   ServiceType = "hotel-booking"
-
-	// Travel Types
-	// ServiceTypeRelaxation ServiceType = "relaxation" // رحلة استجمام
-	// ServiceTypeAdventure  ServiceType = "adventure"  // مغامرة
-	// ServiceTypeFamily     ServiceType = "family"     // رحلة عائلية
-	// ServiceTypeRomantic   ServiceType = "romantic"   // رحلة رومانسية – شهر عسل
-	// ServiceTypeCultural   ServiceType = "cultural"   // رحلة ثقافية
-	// ServiceTypeBusiness   ServiceType = "business"   // رحلة عمل
-	// ServiceTypeShopping   ServiceType = "shopping"   // رحلة تسوق
-	// ServiceTypeWellness   ServiceType = "wellness"   // رحلة صحية أو استشفائية
 )
 
 type GroupSize string
@@ -43,4 +33,18 @@ const (
 	ProgramServiceTypeFlightTicket   ProgramServiceType = "flight-ticket"
 	ProgramServiceTypeVipCar         ProgramServiceType = "vip-car"
 	ProgramServiceTypeHotelBooking   ProgramServiceType = "hotel-booking"
+)
+
+type TravelType string
+
+const (
+	// Travel Type Options
+	TravelTypeRelaxationTrip      TravelType = "relaxation-trip"          // Relaxation Trip (رحلة استجمام)
+	TravelTypeAdventureTrip       TravelType = "adventure-trip"           // Adventure (مغامرة)
+	TravelTypeFamilyTrip          TravelType = "family-trip"              // Family Trip (رحلة عائلية)
+	TravelTypeRomanticTrip        TravelType = "romantic-trip"            // Romantic Trip (Honeymoon) (رحلة رومانسية – شهر عسل)
+	TravelTypeCulturalTrip        TravelType = "cultural-trip"            // Cultural Trip (رحلة ثقافية)
+	TravelTypeBusinessTrip        TravelType = "business-trip"            // Business Trip (رحلة عمل)
+	TravelTypeShoppingTrip        TravelType = "shopping-trip"            // Shopping Trip (رحلة تسوق)
+	TravelTypeWellnessMedicalTrip TravelType = "wellness-medical-tourism" // Wellness or Medical Tourism (رحلة صحية أو استشفائية)
 )
