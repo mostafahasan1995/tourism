@@ -621,7 +621,7 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 			profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
 			if profitOfTourismProgram {
 				commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
-				commission = commission * 2
+
 			}
 
 		} else {
