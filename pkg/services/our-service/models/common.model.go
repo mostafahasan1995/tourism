@@ -113,6 +113,7 @@ type VipCarDest struct {
 	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
 	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
 	Transportation  `bson:",inline"`
+	Services        Services `bson:"services" json:"services"`
 }
 
 // custom plan
@@ -123,7 +124,12 @@ type CustomPlan struct {
 
 // flight request
 type FlightTicketRequest struct {
-	Destinations []FlightTicket `bson:"destinations" json:"destinations"`
+	Destinations []FlightTicketDestination `bson:"destinations" json:"destinations"`
+}
+
+type FlightTicketDestination struct {
+	FlightTicket `bson:",inline"`
+	Services     Services `bson:"services" json:"services"`
 }
 
 // partner request

@@ -20,6 +20,7 @@ type ProgramVipCarDestination struct {
 	DestinationFrom       primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
 	DestinationTo         primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
 	ProgramTransportation `bson:",inline"`
+	Services              ProgramServices `bson:"services" json:"services"`
 }
 
 type ProgramFlightTicketRequest struct {
@@ -27,15 +28,15 @@ type ProgramFlightTicketRequest struct {
 }
 
 type ProgramDestination struct {
-	DestinationFrom primitive.ObjectID     `bson:"destinationFrom" json:"destinationFrom"`
-	DestinationTo   primitive.ObjectID     `bson:"destinationTo" json:"destinationTo"`
-	TripDetails     TripDetails            `bson:"tripDetails" json:"tripDetails"`
-	Accommodation   []ProgramAccommodation `bson:"accommodation" json:"accommodation"`
-	FlightTickets   ProgramFlightTicket    `bson:"flightTickets" json:"flightTickets"`
-	Transportation  ProgramTransportation  `bson:"transportation" json:"transportation"`
-	Activities      ProgramActivities      `bson:"activities" json:"activities"`
-	Agenda          Agenda                 `bson:"agenda" json:"agenda"`
-	Services        ProgramServices        `bson:"services" json:"services"`
+	DestinationFrom primitive.ObjectID      `bson:"destinationFrom" json:"destinationFrom"`
+	DestinationTo   primitive.ObjectID      `bson:"destinationTo" json:"destinationTo"`
+	TripDetails     TripDetails             `bson:"tripDetails" json:"tripDetails"`
+	Accommodation   []ProgramAccommodation  `bson:"accommodation" json:"accommodation"`
+	FlightTickets   DestinationFlightTicket `bson:"flightTickets" json:"flightTickets"`
+	Transportation  ProgramTransportation   `bson:"transportation" json:"transportation"`
+	Activities      ProgramActivities       `bson:"activities" json:"activities"`
+	Agenda          Agenda                  `bson:"agenda" json:"agenda"`
+	Services        ProgramServices         `bson:"services" json:"services"`
 }
 
 func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, error) {
@@ -136,6 +137,12 @@ type ProgramAccommodation struct {
 }
 
 type ProgramFlightTicket struct {
+	FlightTicket `bson:",inline"`
+	TotalCost    float64         `bson:"totalCost" json:"totalCost"`
+	Services     ProgramServices `bson:"services" json:"services"`
+}
+
+type DestinationFlightTicket struct {
 	FlightTicket `bson:",inline"`
 	TotalCost    float64 `bson:"totalCost" json:"totalCost"`
 }
