@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
@@ -25,27 +26,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var destinationLookup = []bson.M{
-	{
-		"$lookup": bson.M{
-			"from": "tourismDestinations",
-			"let":  bson.M{"countries": "$countries"},
-			"pipeline": bson.A{
-				bson.M{
-					"$match": bson.M{
-						"$expr": bson.M{
-							"$and": bson.A{
-								bson.M{"$in": bson.A{"$name", "$$countries"}},
-							},
-						},
-					},
-				},
-			},
-			"as": "destinations",
-		},
-	},
-}
-
 type AgentSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error)
 	GetOne(ctx context.Context, agentId string) (*models.Agent, error)
@@ -64,7 +44,7 @@ type AgentSvcs interface {
 	SetAsPending(ctx context.Context, agentId string) error
 	//destination agent
 	GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error)
-	GetAllWithDestinations(ctx context.Context, query string) (any, error)
+	GetDestinationAgents(ctx context.Context, query string) ([]models.Agent, error)
 }
 
 type agentsvcs struct {
@@ -525,26 +505,63 @@ func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId str
 
 //test
 
-func (a *agentsvcs) GetAllWithDestinations(ctx context.Context, query string) (any, error) {
-	match := bson.M{"trash": false}
-
-	filters, err := filters.NewAgentFilter(query)
-	if err != nil {
-		return nil, errors.New("invalid query")
+func (a *agentsvcs) GetDestinationAgents(ctx context.Context, query string) ([]models.Agent, error) {
+	if query == "" {
+		return nil, errors.New("query is required")
 	}
 
-	pipeline := filters.BuildPipeline(match)
+	type aux struct {
+		Ids []primitive.ObjectID `json:"ids"`
+	}
+
+	var data aux
+	if err := json.Unmarshal([]byte(query), &data); err != nil {
+		return nil, err
+	}
+
+	ids := data.Ids
+
+	match := bson.M{"trash": false}
+
+	pipeline := []bson.M{
+		{"$match": match},
+	}
+
+	var destinationLookup = []bson.M{
+		{
+			"$lookup": bson.M{
+				"from": "tourismDestinations",
+				"let":  bson.M{"countries": "$countries"},
+				"pipeline": bson.A{
+					bson.M{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": bson.A{
+									bson.M{"$in": bson.A{"$name", "$$countries"}},
+									bson.M{"$in": bson.A{"$_id", ids}},
+								},
+							},
+						},
+					},
+				},
+				"as": "destinations",
+			},
+		},
+		{
+			"$match": bson.M{
+				"destinations": bson.M{"$ne": bson.A{}},
+			},
+		},
+		{
+			"$project": bson.M{
+				"destinations": 0,
+			},
+		},
+	}
 
 	pipeline = append(pipeline, destinationLookup...)
 
-	type aux struct {
-		models.Agent `bson:",inline"`
-		Destinations []struct {
-			Name string `bson:"name" json:"name"`
-		} `bson:"destinations" json:"destinations"`
-	}
-
-	var result []aux
+	var result []models.Agent
 	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
