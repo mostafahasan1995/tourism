@@ -39,7 +39,7 @@ type TravelRequestSvcs interface {
 	Approve(ctx context.Context, id string) (*models.TravelRequest, error)
 	Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error)
 	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
-	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error)
+	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) (*models.AgentTransactionPagination, error)
 }
 
 type travelrequestsvcs struct {
@@ -500,18 +500,10 @@ func (t *travelrequestsvcs) SetAsCompleted(ctx context.Context, id string) (*mod
 
 }
 
-func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error) {
+func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) (*models.AgentTransactionPagination, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
 		return nil, err
-	}
-
-	type aux struct {
-		models.TravelRequest `bson:",inline"`
-		Invoice              models.Invoice        `bson:"invoice" json:"invoice"`
-		Customer             membermodels.Customer `bson:"customer" json:"customer"`
-		DepartureAgentData   membermodels.Agent    `bson:"departureAgentData" json:"departureAgentData"`
-		TripCoordinatorData  membermodels.Agent    `bson:"tripCoordinatorData" json:"tripCoordinatorData"`
 	}
 
 	match := bson.M{
@@ -525,6 +517,18 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 				"tripCoordinator": _id,
 			},
 		},
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
 	}
 
 	invoiceLookup := []bson.M{
@@ -579,17 +583,22 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		}},
 	}
 
-	pipeline := []bson.M{
-		{"$match": match},
-		{"$sort": bson.M{"_id": -1}},
-		{"$skip": skip},
-		{"$limit": limit},
-	}
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
 
 	pipeline = append(pipeline, invoiceLookup...)
 	pipeline = append(pipeline, customerLookup...)
 	pipeline = append(pipeline, departureAgentLookup...)
 	pipeline = append(pipeline, tripCoordinatorAgentLookup...)
+
+	type aux struct {
+		models.TravelRequest `bson:",inline"`
+		Invoice              models.Invoice        `bson:"invoice" json:"invoice"`
+		Customer             membermodels.Customer `bson:"customer" json:"customer"`
+		DepartureAgentData   membermodels.Agent    `bson:"departureAgentData" json:"departureAgentData"`
+		TripCoordinatorData  membermodels.Agent    `bson:"tripCoordinatorData" json:"tripCoordinatorData"`
+	}
 
 	var result []aux
 	err = t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -651,6 +660,15 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		transactions = append(transactions, transaction)
 	}
 
-	return transactions, nil
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+
+	return &models.AgentTransactionPagination{
+		Transactions: transactions,
+		Pagination: types.Pagination{
+			TotalPages: totalPages,
+			PerPage:    limit,
+			TotalCount: count,
+		},
+	}, nil
 
 }

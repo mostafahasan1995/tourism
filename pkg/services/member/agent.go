@@ -25,6 +25,27 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var destinationLookup = []bson.M{
+	{
+		"$lookup": bson.M{
+			"from": "tourismDestinations",
+			"let":  bson.M{"countries": "$countries"},
+			"pipeline": bson.A{
+				bson.M{
+					"$match": bson.M{
+						"$expr": bson.M{
+							"$and": bson.A{
+								bson.M{"$in": bson.A{"$name", "$$countries"}},
+							},
+						},
+					},
+				},
+			},
+			"as": "destinations",
+		},
+	},
+}
+
 type AgentSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error)
 	GetOne(ctx context.Context, agentId string) (*models.Agent, error)
@@ -43,6 +64,7 @@ type AgentSvcs interface {
 	SetAsPending(ctx context.Context, agentId string) error
 	//destination agent
 	GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error)
+	GetAllWithDestinations(ctx context.Context, query string) (any, error)
 }
 
 type agentsvcs struct {
@@ -499,4 +521,36 @@ func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId str
 	}
 
 	return &result[0], nil
+}
+
+//test
+
+func (a *agentsvcs) GetAllWithDestinations(ctx context.Context, query string) (any, error) {
+	match := bson.M{"trash": false}
+
+	filters, err := filters.NewAgentFilter(query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := filters.BuildPipeline(match)
+
+	pipeline = append(pipeline, destinationLookup...)
+
+	type aux struct {
+		models.Agent `bson:",inline"`
+		Destinations []struct {
+			Name string `bson:"name" json:"name"`
+		} `bson:"destinations" json:"destinations"`
+	}
+
+	var result []aux
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }

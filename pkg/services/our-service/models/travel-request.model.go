@@ -143,3 +143,8 @@ type AgentTransaction struct {
 	CustomerName    string             `bson:"customerName" json:"customerName"`
 	Commission      float64            `bson:"commission" json:"commission"`
 }
+
+type AgentTransactionPagination struct {
+	Transactions []AgentTransaction `bson:"transactions" json:"transactions"`
+	Pagination   types.Pagination   `bson:"pagination" json:"pagination"`
+}

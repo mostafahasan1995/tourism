@@ -6,11 +6,13 @@ import (
 	"regexp"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type AgentFilter struct {
-	Name   *string `json:"name"`
-	Status *string `json:"status"`
+	Name           *string              `json:"name"`
+	Status         *string              `json:"status"`
+	DestinationIds []primitive.ObjectID `json:"destinationIds"`
 }
 
 func NewAgentFilter(query string) (*AgentFilter, error) {
@@ -22,6 +24,27 @@ func NewAgentFilter(query string) (*AgentFilter, error) {
 	}
 
 	return filter, nil
+}
+
+var destinationLookup = []bson.M{
+	{
+		"$lookup": bson.M{
+			"from": "tourismDestinations",
+			"let":  bson.M{"countries": "$countries"},
+			"pipeline": bson.A{
+				bson.M{
+					"$match": bson.M{
+						"$expr": bson.M{
+							"$and": bson.A{
+								bson.M{"$in": bson.A{"$name", "$$countries"}},
+							},
+						},
+					},
+				},
+			},
+			"as": "destinations",
+		},
+	},
 }
 
 func (f *AgentFilter) BuildPipeline(m bson.M) []bson.M {
