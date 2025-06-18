@@ -32,7 +32,7 @@ type TravelRequestDto struct {
 	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty" validate:"required_if=ServiceType flight-request"`
 	PartnerRequest      *PartnerRequest      `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty" validate:"required_if=ServiceType partner-request"`
 	//delegation - business-man - custom-plan info
-	Destination     []Destination      `bson:"destinations,omitempty" json:"destinations,omitempty" `
+	Destinations    []Destination      `bson:"destinations,omitempty" json:"destinations,omitempty" `
 	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"` // destination agent id
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
@@ -65,10 +65,10 @@ type TravelRequest struct {
 func (t *TravelRequest) GetDepartureDestinationId() (*primitive.ObjectID, error) {
 	switch t.ServiceType {
 	case enums.ServiceTypeDelegation, enums.ServiceTypeCustomPlan, enums.ServiceTypeBusinessMan:
-		if len(t.Destination) == 0 {
+		if len(t.Destinations) == 0 {
 			return nil, errors.New("no destinations found")
 		}
-		return &t.Destination[0].DestinationFrom, nil
+		return &t.Destinations[0].DestinationFrom, nil
 
 	case enums.ServiceTypeVipCar:
 		if t.VipCar == nil {
