@@ -1,0 +1,97 @@
+{
+    "contactMethod": [
+        null,
+        null
+    ],
+    "serviceType": "delegation",
+    "tripCoordinator": "6852841abcdbd3e6aa3b46a7",
+    "specialReq": "none",
+    "delegation": {
+        "delegationType": "Private Sector",
+        "organizationName": "",
+        "tripCoordinatorName": ""
+    },
+    "clientName": "Feras mansha",
+    "clientPhone": {
+        "pre": "963",
+        "content": "992089916"
+    },
+    "clientEmail": "feras-customer1@gamil.com",
+    "tripDuration": 5,
+    "nationality": "Syrian Arab Republic",
+    "destinations": [
+        {
+            "destinationFrom": "6852875c3c804bc813b6a039",
+            "destinationTo": "685286b13c804bc813b6a038",
+            "tripDetails": {
+                "startDate": "2025-06-19",
+                "endDate": "2025-06-29",
+                "days": 2
+            },
+            "accommodation": [
+                {
+                    "city": "amman",
+                    "preferences": "standard",
+                    "specialRequests": [],
+                    "numOfRooms": "1",
+                    "bedType": "single",
+                    "numOfBeds": "1",
+                    "numOfBathrooms": 1,
+                    "privateMeetingRoom": true
+                }
+            ],
+            "flightTickets": {
+                "arrangeByUs": false,
+                "destinationFrom": "6852875c3c804bc813b6a039",
+                "destinationTo": "685286b13c804bc813b6a038",
+                "tripType": "round-trip",
+                "travelClass": "first",
+                "startDate": "2025-06-19",
+                "endDate": "2025-06-21",
+                "flexibleTravelDates": "day 1 -/+",
+                "departureDate": "",
+                "returnDate": "",
+                "preferredDepartureTime": "early-morning",
+                "layoverPreferences": "short",
+                "preferredAirlines": "",
+                "extraBaggage": false,
+                "specialMeals": false,
+                "travelWithPet": false,
+                "adults": 1,
+                "children": 1,
+                "infant": 1,
+                "preferredContactMethod": "",
+                "specialRequirements": ""
+            },
+            "transportation": {
+                "transType": "Limousine Service",
+                "capacity": "",
+                "driverLanguagesSpoken": [],
+                "luxuryFeatures": [],
+                "startDate": "2025-06-19",
+                "endDate": "2025-06-21",
+                "startTime": "11:16",
+                "endTime": "14:16",
+                "carTypeId": ""
+            },
+            "activities": [
+                "Exploring Tech Centers",
+                "Investment Zone Visits"
+            ],
+            "agenda": {
+                "needAgenda": false,
+                "items": [],
+                "files": []
+            },
+            "services": {
+                "tourGuide": true,
+                "translator": true,
+                "airportPickup": false,
+                "tourAfterMeeting": false,
+                "photography": false,
+                "airportMeetAndGreet": false,
+                "simCardAndInternet": false
+            }
+        }
+    ]
+}
