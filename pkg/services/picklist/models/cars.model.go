@@ -10,8 +10,8 @@ import (
 )
 
 type CarsDto struct {
-	CarType string          `bson:"carType" json:"carType"`
-	Image   types.FileField `bson:"image" json:"image"`
+	CarType string            `bson:"carType" json:"carType"`
+	Images  []types.FileField `bson:"images" json:"images"`
 }
 
 type Cars struct {
