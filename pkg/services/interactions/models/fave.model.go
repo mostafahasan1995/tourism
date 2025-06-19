@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/types"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -13,10 +14,11 @@ const (
 	FaveTypeHotel      FaveType = "hotel"
 	FaveTypeDiary      FaveType = "diary"
 	FaveTypeExhibition FaveType = "exhibition"
+	FaveTypeAgent      FaveType = "agent"
 )
 
 type FaveDto struct {
-	Type  FaveType           `bson:"type" json:"type" validate:"required,oneof=program hotel diary exhibition"` //program - hotel - diary - exhibition
+	Type  FaveType           `bson:"type" json:"type" validate:"required,oneof=program hotel diary exhibition agent"` //program - hotel - diary - exhibition
 	RefId primitive.ObjectID `bson:"refId" json:"refId" validate:"required"`
 	IsFav bool               `bson:"isFav" json:"isFav"`
 }
@@ -31,4 +33,9 @@ type Fave struct {
 type FaveItem struct {
 	Fave `bson:",inline"`
 	Item any `bson:"item" json:"item"`
+}
+
+type FavePagination struct {
+	Faves      []Fave           `bson:"faves" json:"faves"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
