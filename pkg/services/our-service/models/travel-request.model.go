@@ -64,7 +64,7 @@ type TravelRequest struct {
 
 func (t *TravelRequest) GetDepartureDestinationId() (*primitive.ObjectID, error) {
 	switch t.ServiceType {
-	case enums.ServiceTypeDelegation, enums.ServiceTypeCustomPlan, enums.ServiceTypeBusinessMan:
+	case enums.ServiceTypeDelegation, enums.ServiceTypeCustomPlan, enums.ServiceTypeBusinessMan, enums.ServiceTypeHotelBooking:
 		if len(t.Destinations) == 0 {
 			return nil, errors.New("no destinations found")
 		}
