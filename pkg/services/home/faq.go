@@ -65,10 +65,13 @@ type faqPageSvcs struct {
 type faqGroupSvcs struct {
 	repo         repo.FaqGroupRepo
 	questionRepo repo.FaqQuestionRepo
+	pageRepo     repo.FaqPageRepo
 }
 
 type faqQuestionSvcs struct {
-	repo repo.FaqQuestionRepo
+	repo      repo.FaqQuestionRepo
+	groupRepo repo.FaqGroupRepo
+	pageRepo  repo.FaqPageRepo
 }
 
 // Constructors
@@ -84,12 +87,15 @@ func NewFaqGroupSvcs(i *do.Injector) (FaqGroupSvcs, error) {
 	return &faqGroupSvcs{
 		repo:         do.MustInvoke[repo.FaqGroupRepo](i),
 		questionRepo: do.MustInvoke[repo.FaqQuestionRepo](i),
+		pageRepo:     do.MustInvoke[repo.FaqPageRepo](i),
 	}, nil
 }
 
 func NewFaqQuestionSvcs(i *do.Injector) (FaqQuestionSvcs, error) {
 	return &faqQuestionSvcs{
-		repo: do.MustInvoke[repo.FaqQuestionRepo](i),
+		repo:      do.MustInvoke[repo.FaqQuestionRepo](i),
+		groupRepo: do.MustInvoke[repo.FaqGroupRepo](i),
+		pageRepo:  do.MustInvoke[repo.FaqPageRepo](i),
 	}, nil
 }
 
@@ -108,6 +114,100 @@ func getUserId(ctx context.Context) primitive.ObjectID {
 		return primitive.NilObjectID
 	}
 	return cfg.User.Id
+}
+
+// Helper function to update parent FAQ page's updatedAt when child entities are modified
+func (s *faqPageSvcs) updateParentPageTimestamp(ctx context.Context, pageId primitive.ObjectID) error {
+	userId := getUserId(ctx)
+	filter := bson.M{"_id": pageId}
+	update := bson.M{
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+			"updatedBy": userId,
+		},
+	}
+	_, err := s.repo.Patch(ctx, filter, update)
+	return err
+}
+
+// Helper function for group service to update parent page
+func (s *faqGroupSvcs) updateParentPageTimestamp(ctx context.Context, pageId primitive.ObjectID) error {
+	userId := getUserId(ctx)
+	filter := bson.M{"_id": pageId}
+	update := bson.M{
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+			"updatedBy": userId,
+		},
+	}
+	_, err := s.pageRepo.Patch(ctx, filter, update)
+	return err
+}
+
+// Helper function for question service to update parent page
+func (s *faqQuestionSvcs) updateParentPageTimestamp(ctx context.Context, pageId primitive.ObjectID) error {
+	userId := getUserId(ctx)
+
+	// Update the page timestamp
+	filter := bson.M{"_id": pageId}
+	update := bson.M{
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+			"updatedBy": userId,
+		},
+	}
+	_, err := s.pageRepo.Patch(ctx, filter, update)
+	return err
+}
+
+// updateParentGroupAndPageTimestamp updates both the parent group and grandparent page timestamps
+func (s *faqQuestionSvcs) updateParentGroupAndPageTimestamp(ctx context.Context, groupId *primitive.ObjectID, pageId primitive.ObjectID) error {
+	userId := getUserId(ctx)
+	now := time.Now()
+	var actualPageId primitive.ObjectID
+
+	// Update the parent group timestamp (only if groupId is not nil)
+	if groupId != nil {
+		groupFilter := bson.M{"_id": *groupId}
+		groupUpdate := bson.M{
+			"$set": bson.M{
+				"updatedAt": now,
+				"updatedBy": userId,
+			},
+		}
+		_, err := s.groupRepo.Patch(ctx, groupFilter, groupUpdate)
+		if err != nil {
+			fmt.Printf("Warning: Failed to update parent group timestamp: %v\n", err)
+		}
+
+		// Get the correct page ID from the group
+		groupFilter = bson.M{"_id": *groupId}
+		group, err := s.groupRepo.GetByFilter(ctx, groupFilter)
+		if err != nil {
+			fmt.Printf("Warning: Failed to get group to find page ID: %v\n", err)
+			return err
+		}
+		actualPageId = group.FaqPageId
+	} else {
+		// If no group, use the provided pageId (though it might be incorrect)
+		actualPageId = pageId
+	}
+
+	// Update the grandparent page timestamp using the correct page ID
+	pageFilter := bson.M{"_id": actualPageId}
+	pageUpdate := bson.M{
+		"$set": bson.M{
+			"updatedAt": now,
+			"updatedBy": userId,
+		},
+	}
+	_, err := s.pageRepo.Patch(ctx, pageFilter, pageUpdate)
+	if err != nil {
+		fmt.Printf("Warning: Failed to update grandparent page timestamp: %v\n", err)
+		return err
+	}
+
+	return nil
 }
 
 // =============================================================================
@@ -720,7 +820,19 @@ func (s *faqGroupSvcs) Add(ctx context.Context, data *models.FaqGroupDto) error 
 		UpdatedBy:   userId,
 	}
 
-	return s.repo.Add(ctx, faqGroup)
+	err := s.repo.Add(ctx, faqGroup)
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamp
+	err = s.updateParentPageTimestamp(ctx, faqGroup.FaqPageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent page timestamp: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *faqGroupSvcs) AddMany(ctx context.Context, data []models.FaqGroupDto) error {
@@ -730,6 +842,7 @@ func (s *faqGroupSvcs) AddMany(ctx context.Context, data []models.FaqGroupDto) e
 
 	userId := getUserId(ctx)
 	var faqGroups []any
+	pageIds := make(map[primitive.ObjectID]bool)
 
 	for _, dto := range data {
 		faqGroup := &models.FaqGroup{
@@ -746,9 +859,25 @@ func (s *faqGroupSvcs) AddMany(ctx context.Context, data []models.FaqGroupDto) e
 			UpdatedBy:   userId,
 		}
 		faqGroups = append(faqGroups, faqGroup)
+		// Track unique page IDs
+		pageIds[dto.FaqPageId] = true
 	}
 
-	return s.repo.AddMany(ctx, faqGroups)
+	err := s.repo.AddMany(ctx, faqGroups)
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamps for all affected pages
+	for pageId := range pageIds {
+		err = s.updateParentPageTimestamp(ctx, pageId)
+		if err != nil {
+			// Log error but don't fail the operation
+			fmt.Printf("Warning: Failed to update parent page timestamp for page %v: %v\n", pageId, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *faqGroupSvcs) Update(ctx context.Context, id string, data *models.FaqGroupDto) error {
@@ -782,13 +911,30 @@ func (s *faqGroupSvcs) Update(ctx context.Context, id string, data *models.FaqGr
 	update := bson.M{"$set": faqGroup}
 
 	_, err = s.repo.Patch(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamp
+	err = s.updateParentPageTimestamp(ctx, faqGroup.FaqPageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent page timestamp: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *faqGroupSvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) error {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return helpers.InvalidObjectId()
+	}
+
+	// Get existing group to access pageId
+	existing, err := s.GetOne(ctx, id)
+	if err != nil {
+		return err
 	}
 
 	userId := getUserId(ctx)
@@ -798,9 +944,18 @@ func (s *faqGroupSvcs) Patch(ctx context.Context, id string, updates map[string]
 		"updatedBy": userId,
 	}
 
+	// Track the page ID for updating parent timestamp
+	pageId := existing.FaqPageId
+
 	for key, value := range updates {
 		switch key {
-		case "faqPageId", "name", "description", "isActive", "sortOrder":
+		case "faqPageId":
+			updateDoc[key] = value
+			// Update pageId if it's being changed
+			if newPageId, ok := value.(primitive.ObjectID); ok {
+				pageId = newPageId
+			}
+		case "name", "description", "isActive", "sortOrder":
 			updateDoc[key] = value
 		}
 	}
@@ -809,11 +964,28 @@ func (s *faqGroupSvcs) Patch(ctx context.Context, id string, updates map[string]
 	update := bson.M{"$set": updateDoc}
 
 	_, err = s.repo.Patch(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamp
+	err = s.updateParentPageTimestamp(ctx, pageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent page timestamp: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *faqGroupSvcs) Delete(ctx context.Context, id string) error {
 	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	// Get existing group to access pageId
+	existing, err := s.GetOne(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -828,7 +1000,18 @@ func (s *faqGroupSvcs) Delete(ctx context.Context, id string) error {
 	}}
 
 	_, err = s.repo.Patch(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamp
+	err = s.updateParentPageTimestamp(ctx, existing.FaqPageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent page timestamp: %v\n", err)
+	}
+
+	return nil
 }
 
 // =============================================================================
@@ -914,7 +1097,19 @@ func (s *faqQuestionSvcs) Add(ctx context.Context, data *models.FaqQuestionDto) 
 		UpdatedBy:  userId,
 	}
 
-	return s.repo.Add(ctx, faqQuestion)
+	err := s.repo.Add(ctx, faqQuestion)
+	if err != nil {
+		return err
+	}
+
+	// Update parent group and page timestamps
+	err = s.updateParentGroupAndPageTimestamp(ctx, faqQuestion.FaqGroupId, faqQuestion.FaqPageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent timestamps: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *faqQuestionSvcs) AddMany(ctx context.Context, data []models.FaqQuestionDto) error {
@@ -924,6 +1119,7 @@ func (s *faqQuestionSvcs) AddMany(ctx context.Context, data []models.FaqQuestion
 
 	userId := getUserId(ctx)
 	var faqQuestions []any
+	pageIds := make(map[primitive.ObjectID]bool)
 
 	for _, dto := range data {
 		faqQuestion := &models.FaqQuestion{
@@ -941,9 +1137,25 @@ func (s *faqQuestionSvcs) AddMany(ctx context.Context, data []models.FaqQuestion
 			UpdatedBy:  userId,
 		}
 		faqQuestions = append(faqQuestions, faqQuestion)
+		// Track unique page IDs
+		pageIds[dto.FaqPageId] = true
 	}
 
-	return s.repo.AddMany(ctx, faqQuestions)
+	err := s.repo.AddMany(ctx, faqQuestions)
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamps for all affected pages
+	for pageId := range pageIds {
+		err = s.updateParentPageTimestamp(ctx, pageId)
+		if err != nil {
+			// Log error but don't fail the operation
+			fmt.Printf("Warning: Failed to update parent page timestamp for page %v: %v\n", pageId, err)
+		}
+	}
+
+	return nil
 }
 
 func (s *faqQuestionSvcs) Update(ctx context.Context, id string, data *models.FaqQuestionDto) error {
@@ -978,13 +1190,30 @@ func (s *faqQuestionSvcs) Update(ctx context.Context, id string, data *models.Fa
 	update := bson.M{"$set": faqQuestion}
 
 	_, err = s.repo.Patch(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Update parent group and page timestamps
+	err = s.updateParentGroupAndPageTimestamp(ctx, faqQuestion.FaqGroupId, faqQuestion.FaqPageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent timestamps: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *faqQuestionSvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) error {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return helpers.InvalidObjectId()
+	}
+
+	// Get existing question to access pageId
+	existing, err := s.GetOne(ctx, id)
+	if err != nil {
+		return err
 	}
 
 	userId := getUserId(ctx)
@@ -994,9 +1223,27 @@ func (s *faqQuestionSvcs) Patch(ctx context.Context, id string, updates map[stri
 		"updatedBy": userId,
 	}
 
+	// Track the group and page IDs for updating parent timestamps
+	groupId := existing.FaqGroupId
+	pageId := existing.FaqPageId
+
 	for key, value := range updates {
 		switch key {
-		case "faqPageId", "faqGroupId", "question", "answer", "isActive", "sortOrder":
+		case "faqPageId":
+			updateDoc[key] = value
+			// Update pageId if it's being changed
+			if newPageId, ok := value.(primitive.ObjectID); ok {
+				pageId = newPageId
+			}
+		case "faqGroupId":
+			updateDoc[key] = value
+			// Update groupId if it's being changed
+			if newGroupId, ok := value.(primitive.ObjectID); ok {
+				groupId = &newGroupId
+			} else if value == nil {
+				groupId = nil
+			}
+		case "question", "answer", "isActive", "sortOrder":
 			updateDoc[key] = value
 		}
 	}
@@ -1005,11 +1252,28 @@ func (s *faqQuestionSvcs) Patch(ctx context.Context, id string, updates map[stri
 	update := bson.M{"$set": updateDoc}
 
 	_, err = s.repo.Patch(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Update parent group and page timestamps
+	err = s.updateParentGroupAndPageTimestamp(ctx, groupId, pageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent group and page timestamps: %v\n", err)
+	}
+
+	return nil
 }
 
 func (s *faqQuestionSvcs) Delete(ctx context.Context, id string) error {
 	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	// Get existing question to access pageId
+	existing, err := s.GetOne(ctx, id)
 	if err != nil {
 		return err
 	}
@@ -1024,5 +1288,16 @@ func (s *faqQuestionSvcs) Delete(ctx context.Context, id string) error {
 	}}
 
 	_, err = s.repo.Patch(ctx, filter, update)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Update parent page timestamp
+	err = s.updateParentPageTimestamp(ctx, existing.FaqPageId)
+	if err != nil {
+		// Log error but don't fail the operation
+		fmt.Printf("Warning: Failed to update parent page timestamp: %v\n", err)
+	}
+
+	return nil
 }
