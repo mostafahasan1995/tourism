@@ -4,12 +4,14 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type HotelsFilter struct {
-	SearchWord             string `json:"searchWord"`
-	IsDisplayInPerfectStay *bool  `json:"isDisplayInPerfectStay"`
-	HotelType              string `json:"hotelType"`
+	IDs                    []primitive.ObjectID `json:"ids"`
+	SearchWord             string               `json:"searchWord"`
+	IsDisplayInPerfectStay *bool                `json:"isDisplayInPerfectStay"`
+	HotelType              string               `json:"hotelType"`
 	//
 	SortBy          []string `json:"sortBy"`
 	ReviewScore     int      `json:"reviewScore"`
@@ -37,6 +39,11 @@ func (f HotelsFilter) BuildPipeline(m bson.M) []bson.M {
 
 	// Default filter for non-trashed items
 	m["trash"] = bson.M{"$ne": true}
+
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		m["_id"] = bson.M{"$in": f.IDs}
+	}
 
 	if f.SearchWord != "" {
 		m["name"] = bson.M{
@@ -98,6 +105,11 @@ func (f HotelsFilter) BuildPipeline(m bson.M) []bson.M {
 // ToBsonFilter converts the filter to a MongoDB filter
 func (f HotelsFilter) ToBsonFilter() bson.M {
 	filter := bson.M{"trash": bson.M{"$ne": true}}
+
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		filter["_id"] = bson.M{"$in": f.IDs}
+	}
 
 	if f.SearchWord != "" {
 		filter["name"] = bson.M{

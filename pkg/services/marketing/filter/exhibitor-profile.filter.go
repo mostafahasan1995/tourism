@@ -10,16 +10,17 @@ import (
 )
 
 type ExhibitorProfileFilter struct {
-	Page         int                `bson:"page" json:"page"`
-	Size         int                `bson:"size" json:"size"`
-	HotelId      primitive.ObjectID `bson:"hotelId,omitempty" json:"hotelId,omitempty"`
-	HotelName    string             `bson:"hotelName" json:"hotelName"`
-	IsActive     *bool              `bson:"isActive,omitempty" json:"isActive,omitempty"`
-	IsPublished  *bool              `bson:"isPublished,omitempty" json:"isPublished,omitempty"`
-	Rating       *float64           `bson:"rating,omitempty" json:"rating,omitempty"`
-	MinRating    *float64           `bson:"minRating,omitempty" json:"minRating,omitempty"`
-	MaxRating    *float64           `bson:"maxRating,omitempty" json:"maxRating,omitempty"`
-	PropertyType string             `bson:"propertyType" json:"propertyType"`
+	IDs          []primitive.ObjectID `bson:"ids,omitempty" json:"ids,omitempty"`
+	Page         int                  `bson:"page" json:"page"`
+	Size         int                  `bson:"size" json:"size"`
+	HotelId      primitive.ObjectID   `bson:"hotelId,omitempty" json:"hotelId,omitempty"`
+	HotelName    string               `bson:"hotelName" json:"hotelName"`
+	IsActive     *bool                `bson:"isActive,omitempty" json:"isActive,omitempty"`
+	IsPublished  *bool                `bson:"isPublished,omitempty" json:"isPublished,omitempty"`
+	Rating       *float64             `bson:"rating,omitempty" json:"rating,omitempty"`
+	MinRating    *float64             `bson:"minRating,omitempty" json:"minRating,omitempty"`
+	MaxRating    *float64             `bson:"maxRating,omitempty" json:"maxRating,omitempty"`
+	PropertyType string               `bson:"propertyType" json:"propertyType"`
 }
 
 func (f ExhibitorProfileFilter) BuildPipeline(m bson.M) []bson.M {
@@ -31,6 +32,11 @@ func (f ExhibitorProfileFilter) BuildPipeline(m bson.M) []bson.M {
 	m["trash"] = bson.M{"$ne": true}
 
 	var ands bson.A
+
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		ands = append(ands, bson.M{"_id": bson.M{"$in": f.IDs}})
+	}
 
 	// Add hotel ID filter if provided
 	if !f.HotelId.IsZero() {
@@ -100,6 +106,11 @@ func (f ExhibitorProfileFilter) ToBsonFilter() bson.M {
 		{"trash": bson.M{"$ne": true}},
 	}
 
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		filterConditions = append(filterConditions, bson.M{"_id": bson.M{"$in": f.IDs}})
+	}
+
 	// Add hotel ID filter if provided
 	if !f.HotelId.IsZero() {
 		filterConditions = append(filterConditions, bson.M{"hotelId": f.HotelId})
@@ -157,14 +168,15 @@ func (f ExhibitorProfileFilter) ToBsonFilter() bson.M {
 
 // ExhibitorRequestFilter defines the filter criteria for exhibitor requests
 type ExhibitorRequestFilter struct {
-	HotelName       *string    `json:"hotelName,omitempty"`
-	Location        *string    `json:"location,omitempty"`
-	Email           *string    `json:"email,omitempty"`
-	Status          *string    `json:"status,omitempty"`
-	RequestDateFrom *time.Time `json:"requestDateFrom,omitempty"`
-	RequestDateTo   *time.Time `json:"requestDateTo,omitempty"`
-	Page            int        `json:"page"`
-	Size            int        `json:"size"`
+	IDs             []primitive.ObjectID `json:"ids,omitempty"`
+	HotelName       *string              `json:"hotelName,omitempty"`
+	Location        *string              `json:"location,omitempty"`
+	Email           *string              `json:"email,omitempty"`
+	Status          *string              `json:"status,omitempty"`
+	RequestDateFrom *time.Time           `json:"requestDateFrom,omitempty"`
+	RequestDateTo   *time.Time           `json:"requestDateTo,omitempty"`
+	Page            int                  `json:"page"`
+	Size            int                  `json:"size"`
 }
 
 func (f ExhibitorRequestFilter) BuildPipeline(m bson.M) []bson.M {
@@ -176,6 +188,11 @@ func (f ExhibitorRequestFilter) BuildPipeline(m bson.M) []bson.M {
 	m["trash"] = bson.M{"$ne": true}
 
 	var ands bson.A
+
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		ands = append(ands, bson.M{"_id": bson.M{"$in": f.IDs}})
+	}
 
 	if f.HotelName != nil && *f.HotelName != "" {
 		ands = append(ands, bson.M{"heroSection.hotelName": bson.M{"$regex": *f.HotelName, "$options": "i"}})
@@ -273,6 +290,11 @@ func (f *ExhibitorRequestFilter) ParseQueryParams(q url.Values) {
 // ToBsonFilter converts the filter to a BSON filter for MongoDB
 func (f *ExhibitorRequestFilter) ToBsonFilter() bson.M {
 	filter := bson.M{"trash": false}
+
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		filter["_id"] = bson.M{"$in": f.IDs}
+	}
 
 	if f.HotelName != nil && *f.HotelName != "" {
 		filter["heroSection.hotelName"] = bson.M{"$regex": *f.HotelName, "$options": "i"}

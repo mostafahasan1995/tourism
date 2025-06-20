@@ -2,6 +2,9 @@ package interactions
 
 import (
 	"context"
+	"errors"
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/interactions/filter"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/types"
@@ -17,8 +20,8 @@ import (
 
 type DiarySvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Diary, error)
-	GetAll(ctx context.Context) ([]models.Diary, error)
-	Get(ctx context.Context, skip, limit int64) (*models.DiaryWithPagination, error)
+	GetAll(ctx context.Context, query string) ([]models.Diary, error)
+	Get(ctx context.Context, skip, limit int64, query string) (*models.DiaryWithPagination, error)
 	Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error)
 }
 
@@ -41,17 +44,18 @@ func (d *diarysvcs) GetOne(ctx context.Context, id string) (*models.Diary, error
 	return d.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 }
 
-func (d *diarysvcs) GetAll(ctx context.Context) ([]models.Diary, error) {
-	match := bson.M{
-		"$match": bson.M{"trash": false},
+func (d *diarysvcs) GetAll(ctx context.Context, query string) ([]models.Diary, error) {
+	match := bson.M{"trash": false}
+
+	f, err := helpers.ParseFilters[filter.DiaryFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
 	}
 
-	pipeline := []bson.M{
-		match,
-	}
+	pipeline := f.BuildPipeline(match)
 
 	var result []models.Diary
-	err := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
 			return err
 		}
@@ -64,20 +68,28 @@ func (d *diarysvcs) GetAll(ctx context.Context) ([]models.Diary, error) {
 	return result, nil
 }
 
-func (d *diarysvcs) Get(ctx context.Context, skip, limit int64) (*models.DiaryWithPagination, error) {
+func (d *diarysvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.DiaryWithPagination, error) {
 	match := bson.M{"trash": false}
 
-	count, err := d.repo.Count(ctx, match)
+	f, err := helpers.ParseFilters[filter.DiaryFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	pipeline := f.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := d.repo.Count(ctx, countPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	pipeline := []bson.M{
-		{"$match": match},
-		{"$sort": bson.M{"_id": -1}},
-		{"$skip": skip},
-		{"$limit": limit},
-	}
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
 	var result []models.Diary
 	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {

@@ -35,7 +35,9 @@ func NewDiaryHandler(i *do.Injector, r *chi.Mux) {
 func (h *DiaryHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.diarysvcs.GetAll(ctx)
+	query := r.URL.Query().Get("query")
+
+	result, err := h.diarysvcs.GetAll(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -51,7 +53,9 @@ func (h *DiaryHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return errGetPaginate
 	}
 
-	result, err := h.diarysvcs.Get(ctx, skip, limit)
+	query := r.URL.Query().Get("query")
+
+	result, err := h.diarysvcs.Get(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}
