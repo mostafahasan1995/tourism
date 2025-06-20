@@ -10,24 +10,25 @@ import (
 
 type ProgramFilter struct {
 	// Basic filters
-	CustomerName *string             `json:"customerName"`
-	Title        *string             `json:"title"`
-	ServiceType  []enums.ServiceType `json:"serviceType"`
-	TravelReqId  *primitive.ObjectID `json:"travelReqId"`
-	CustomerId   *primitive.ObjectID `json:"customerId"`
-	AgentId      *primitive.ObjectID `json:"agentId"`
-	Status       *string             `json:"status"`
-	Package      *primitive.ObjectID `json:"package"`
-	ProgramType  *string             `json:"programType"`
-	Source       *string             `json:"source"`
-	Company      *string             `json:"company"`
-	Coordinator  *string             `json:"coordinator"`
-	Purpose      *string             `json:"purpose"`
-	StartDate    *time.Time          `json:"startDate"`
-	EndDate      *time.Time          `json:"endDate"`
-	GroupSize    *enums.GroupSize    `json:"groupSize"`
-	CreatedBy    *primitive.ObjectID `json:"createdBy"`
-	UpdatedBy    *primitive.ObjectID `json:"updatedBy"`
+	IDs          []primitive.ObjectID `json:"ids"`
+	CustomerName *string              `json:"customerName"`
+	Title        *string              `json:"title"`
+	ServiceType  []enums.ServiceType  `json:"serviceType"`
+	TravelReqId  *primitive.ObjectID  `json:"travelReqId"`
+	CustomerId   *primitive.ObjectID  `json:"customerId"`
+	AgentId      *primitive.ObjectID  `json:"agentId"`
+	Status       *string              `json:"status"`
+	Package      *primitive.ObjectID  `json:"package"`
+	ProgramType  *string              `json:"programType"`
+	Source       *string              `json:"source"`
+	Company      *string              `json:"company"`
+	Coordinator  *string              `json:"coordinator"`
+	Purpose      *string              `json:"purpose"`
+	StartDate    *time.Time           `json:"startDate"`
+	EndDate      *time.Time           `json:"endDate"`
+	GroupSize    *enums.GroupSize     `json:"groupSize"`
+	CreatedBy    *primitive.ObjectID  `json:"createdBy"`
+	UpdatedBy    *primitive.ObjectID  `json:"updatedBy"`
 
 	// Website-specific filters
 	Destinations   []DestinationFilter  `json:"destinations"`   // Filter by destination pairs
@@ -44,6 +45,11 @@ type ProgramFilter struct {
 }
 
 func (f ProgramFilter) BuildPipeline(m bson.M) []bson.M {
+	// Filter by IDs if provided
+	if len(f.IDs) > 0 {
+		m["_id"] = bson.M{"$in": f.IDs}
+	}
+
 	// Add basic filters to the match stage
 	if f.Title != nil {
 		m["title"] = bson.M{"$regex": *f.Title, "$options": "i"}
