@@ -24,6 +24,7 @@ func NewPackageHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/packages", func(r chi.Router) {
 		r.Get("/", helpers.Make(h.Get))
+		r.Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -41,6 +42,18 @@ func (l *PackageHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	query := r.URL.Query().Get("query")
 
 	result, err := l.packagesvcs.Get(ctx, skip, limit, query)
+	if err != nil {
+		return err
+
+	}
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+func (l *PackageHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	query := r.URL.Query().Get("query")
+
+	result, err := l.packagesvcs.GetAll(ctx, query)
 	if err != nil {
 		return err
 

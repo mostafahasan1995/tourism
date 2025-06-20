@@ -38,27 +38,27 @@ type Accommodation struct {
 }
 
 type FlightTicket struct {
-	ArrangeByUs            bool               `bson:"arrangeByUs" json:"arrangeByUs"`
-	DestinationFrom        primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
-	DestinationTo          primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
-	TripType               string             `bson:"tripType" json:"tripType"`       // e.g round-trip - one-way - multi-city
-	TravelClass            string             `bson:"travelClass" json:"travelClass"` // e.g economy - business - first class
-	StartDate              time.Time          `bson:"startDate" json:"startDate"`
-	EndDate                time.Time          `bson:"endDate" json:"endDate"`
-	FlexibleTravelDates    string             `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
-	DepartureDate          time.Time          `bson:"departureDate" json:"departureDate"`
-	ReturnDate             time.Time          `bson:"returnDate" json:"returnDate"`
-	PreferredDepartureTime string             `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
-	LayoverPreferences     string             `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
-	PreferredAirlines      string             `bson:"preferredAirlines" json:"preferredAirlines"`           // e.g. franch arilines
-	ExtraBaggage           bool               `bson:"extraBaggage" json:"extraBaggage"`
-	SpecialMeals           bool               `bson:"specialMeals" json:"specialMeals"`
-	TravelWithPet          bool               `bson:"travelWithPet" json:"travelWithPet"`
-	Adults                 int                `bson:"adults" json:"adults"`
-	Children               int                `bson:"children" json:"children"`
-	Infant                 int                `bson:"infant" json:"infant"`
-	PreferredContactMethod string             `bson:"preferredContactMethod" json:"preferredContactMethod"`
-	SpecialRequirements    string             `bson:"specialRequirements" json:"specialRequirements"`
+	ArrangeByUs     bool               `bson:"arrangeByUs" json:"arrangeByUs"`
+	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
+	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
+	TripType        string             `bson:"tripType" json:"tripType"`       // e.g round-trip - one-way - multi-city
+	TravelClass     string             `bson:"travelClass" json:"travelClass"` // e.g economy - business - first class
+	//StartDate              time.Time          `bson:"startDate" json:"startDate"`
+	//EndDate                time.Time          `bson:"endDate" json:"endDate"`
+	FlexibleTravelDates    string    `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
+	DepartureDate          time.Time `bson:"departureDate" json:"departureDate"`
+	ReturnDate             time.Time `bson:"returnDate" json:"returnDate"`
+	PreferredDepartureTime string    `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
+	LayoverPreferences     string    `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
+	PreferredAirlines      string    `bson:"preferredAirlines" json:"preferredAirlines"`           // e.g. franch arilines
+	ExtraBaggage           bool      `bson:"extraBaggage" json:"extraBaggage"`
+	SpecialMeals           bool      `bson:"specialMeals" json:"specialMeals"`
+	TravelWithPet          bool      `bson:"travelWithPet" json:"travelWithPet"`
+	Adults                 int       `bson:"adults" json:"adults"`
+	Children               int       `bson:"children" json:"children"`
+	Infant                 int       `bson:"infant" json:"infant"`
+	PreferredContactMethod string    `bson:"preferredContactMethod" json:"preferredContactMethod"`
+	SpecialRequirements    string    `bson:"specialRequirements" json:"specialRequirements"`
 }
 
 type Transportation struct {
@@ -113,6 +113,7 @@ type VipCarDest struct {
 	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
 	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
 	Transportation  `bson:",inline"`
+	Services        Services `bson:"services" json:"services"`
 }
 
 // custom plan
@@ -123,7 +124,12 @@ type CustomPlan struct {
 
 // flight request
 type FlightTicketRequest struct {
-	Destinations []FlightTicket `bson:"destinations" json:"destinations"`
+	Destinations []FlightTicketDestination `bson:"destinations" json:"destinations"`
+}
+
+type FlightTicketDestination struct {
+	FlightTicket `bson:",inline"`
+	Services     Services `bson:"services" json:"services"`
 }
 
 // partner request

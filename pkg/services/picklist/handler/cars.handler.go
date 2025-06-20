@@ -25,8 +25,8 @@ func NewCarsHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/cars", func(r chi.Router) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
-		r.Get("/", helpers.Make(h.GetAll))
-		r.Get("/paginated", helpers.Make(h.GetPaginated))
+		r.Get("/", helpers.Make(h.GetPaginated))
+		r.Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))

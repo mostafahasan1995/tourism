@@ -2,7 +2,7 @@ package ourservice
 
 import (
 	"context"
-	"errors"
+	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -18,8 +18,8 @@ import (
 )
 
 type PackageSvcs interface {
-	Get(ctx context.Context, skip, limit int64, query string) (*models.PackageWithPagination, error)
-	GetAll(ctx context.Context) ([]models.Package, error)
+	Get(ctx context.Context, skip, limit int64, query any) (*models.PackageWithPagination, error)
+	GetAll(ctx context.Context, query any) ([]models.Package, error)
 	Add(ctx context.Context, data *models.PackageDto) (*models.Package, error)
 	Update(ctx context.Context, pkgId string, data *models.PackageDto) (*models.Package, error)
 	Delete(ctx context.Context, pkgId string) error
@@ -35,34 +35,37 @@ func NewPackageSvcs(i *do.Injector) (PackageSvcs, error) {
 	}, nil
 }
 
-func (p *packagesvcs) GetAll(ctx context.Context) ([]models.Package, error) {
-
-	pipeline := []bson.M{
-		{"$match": bson.M{"trash": false}},
+func (p *packagesvcs) GetAll(ctx context.Context, query any) ([]models.Package, error) {
+	match := bson.M{"trash": false}
+	f, err := helpers.ParseFilters[filter.PackageFilter](query)
+	if err != nil {
+		return nil, err
 	}
 
+	pipeline := f.BuildPipeline(match)
+
 	var result []models.Package
-	err := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+	errAgg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
 
-	if err != nil {
-		return nil, err
+	if errAgg != nil {
+		return nil, errAgg
 	}
 
 	return result, nil
 }
 
-func (p *packagesvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.PackageWithPagination, error) {
+func (p *packagesvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.PackageWithPagination, error) {
 
 	match := bson.M{"trash": false}
 
-	filters, err := filter.NewPackageFilter(query)
+	f, err := helpers.ParseFilters[filter.PackageFilter](query)
 	if err != nil {
-		return nil, errors.New("invalid query")
+		return nil, err
 	}
 
-	pipeline := filters.BuildPipeline(match)
+	pipeline := f.BuildPipeline(match)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)

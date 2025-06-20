@@ -294,6 +294,27 @@ func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Cu
 		"passwordConfirmation": data.Security.NewPassword,
 	}
 
+	meta := []map[string]any{
+		{
+			"key":   "phonenumber",
+			"value": data.ClientContact.Mobile.Pre + data.ClientContact.Mobile.Content,
+		},
+		{
+			"key":   "whatsapp",
+			"value": data.ClientContact.Whatsapp.Pre + data.ClientContact.Whatsapp.Content,
+		},
+		{
+			"key":   "website",
+			"value": data.ClientContact.Website,
+		},
+		{
+			"key":   "nationality",
+			"value": data.Nationality,
+		},
+	}
+
+	user["meta"] = meta
+
 	resp, err := c.gateway.Request(ctx, "users", "users/register", "POST", "", user)
 
 	if err != nil {

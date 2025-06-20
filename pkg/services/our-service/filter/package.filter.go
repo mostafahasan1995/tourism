@@ -1,7 +1,6 @@
 package filter
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 
@@ -9,21 +8,23 @@ import (
 )
 
 type PackageFilter struct {
-	Name *string `json:"name"`
+	Name                *string `json:"name"`
+	AllowGeneralProgram *bool   `json:"allowGeneralProgram"`
+	AllowCustomProgram  *bool   `json:"allowCustomProgram"`
 }
 
-func NewPackageFilter(query string) (*PackageFilter, error) {
-	f := &PackageFilter{}
-	if query != "" {
-		if err := json.Unmarshal([]byte(query), &f); err != nil {
-			return nil, err
-		}
-	}
+// func NewPackageFilter(query string) (*PackageFilter, error) {
+// 	f := &PackageFilter{}
+// 	if query != "" {
+// 		if err := json.Unmarshal([]byte(query), &f); err != nil {
+// 			return nil, err
+// 		}
+// 	}
 
-	return f, nil
-}
+// 	return f, nil
+// }
 
-func (f *PackageFilter) BuildPipeline(m bson.M) []bson.M {
+func (f PackageFilter) BuildPipeline(m bson.M) []bson.M {
 
 	var ands bson.A
 	if f.Name != nil {
@@ -40,6 +41,13 @@ func (f *PackageFilter) BuildPipeline(m bson.M) []bson.M {
 		}
 
 		ands = append(ands, nameFilter)
+	}
+
+	if f.AllowGeneralProgram != nil {
+		m["allowGeneralProgram"] = *f.AllowGeneralProgram
+	}
+	if f.AllowCustomProgram != nil {
+		m["allowCustomProgram"] = *f.AllowCustomProgram
 	}
 
 	if len(ands) > 0 {

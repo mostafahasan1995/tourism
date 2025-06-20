@@ -38,14 +38,15 @@ type Program struct {
 }
 
 type ProgramDto struct {
-	Title       string             `bson:"title" json:"title" validate:"required"` // program title
-	ServiceType enums.ServiceType  `bson:"serviceType" json:"serviceType"`         // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
-	TravelReqId primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
-	CustomerId  primitive.ObjectID `bson:"customerId" json:"customerId"`
-	AgentId     primitive.ObjectID `bson:"agentId" json:"agentId"`
-	Status      string             `bson:"status" json:"status" validate:"required,oneof=pending active unactive"`
-	Package     primitive.ObjectID `bson:"package" json:"package" `
-	ProgramType string             `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	Title       string                   `bson:"title" json:"title" validate:"required"`                                                                                      // program title
+	ServiceType enums.ProgramServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	TravelReqId primitive.ObjectID       `bson:"travelReqId" json:"travelReqId"`
+	CustomerId  primitive.ObjectID       `bson:"customerId" json:"customerId"`
+	AgentId     primitive.ObjectID       `bson:"agentId" json:"agentId"`
+	Status      string                   `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
+	Package     primitive.ObjectID       `bson:"package" json:"package" `
+	ProgramType string                   `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	TravelType  enums.TravelType         `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism"`
 	//
 	Source      string          `bson:"source" json:"source"`
 	Company     string          `bson:"company" json:"company"`         // todo: maybe we need id here
@@ -54,6 +55,7 @@ type ProgramDto struct {
 	StartDate   time.Time       `bson:"startDate" json:"startDate" validate:"required"`
 	EndDate     time.Time       `bson:"endDate" json:"endDate" validate:"required"`
 	GroupSize   enums.GroupSize `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large"` //see group size values above
+	CoverImage  types.FileField `bson:"coverImage" json:"coverImage"`
 	//
 	GeneralType *GeneralProgram `bson:"generalType,omitempty" json:"generalType,omitempty" validate:"required_if=ProgramType general"`
 	CustomType  *CustomProgram  `bson:"customType,omitempty" json:"customType,omitempty" validate:"required_if=ProgramType custom"`

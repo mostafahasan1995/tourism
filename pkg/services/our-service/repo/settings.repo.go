@@ -16,7 +16,7 @@ type settingsrepo struct {
 	dbrepo.MainRepoImpl[models.Settings]
 }
 
-func NewSettingsRepoRepo(i *do.Injector) (SettingsRepo, error) {
+func NewSettingsRepo(i *do.Injector) (SettingsRepo, error) {
 	return &settingsrepo{
 		MainRepoImpl: dbrepo.MainRepoImpl[models.Settings]{
 			Db:       do.MustInvoke[*mongo.Client](i),

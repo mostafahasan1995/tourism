@@ -8,6 +8,7 @@ import (
 	"larsa-tourism-microservices/pkg/helpers"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member"
+	membermodels "larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -38,25 +39,26 @@ type TravelRequestSvcs interface {
 	Approve(ctx context.Context, id string) (*models.TravelRequest, error)
 	Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error)
 	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
-	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error)
-	Count(ctx context.Context, filter any) (int64, error)
+	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) (*models.AgentTransactionPagination, error)
 }
 
 type travelrequestsvcs struct {
-	repo        repo.TravelRequestRepo
-	invoicesvcs InvoiceSvcs
-	sortingsvcs dbsvcs.SortingSvcs
-	agentsvcs   member.AgentSvcs
-	withtxn     *db.WithTxn
+	repo         repo.TravelRequestRepo
+	invoicesvcs  InvoiceSvcs
+	sortingsvcs  dbsvcs.SortingSvcs
+	agentsvcs    member.AgentSvcs
+	settingssvcs SettingsSvcs
+	withtxn      *db.WithTxn
 }
 
 func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 	return &travelrequestsvcs{
-		repo:        do.MustInvoke[repo.TravelRequestRepo](i),
-		invoicesvcs: do.MustInvoke[InvoiceSvcs](i),
-		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		agentsvcs:   do.MustInvoke[member.AgentSvcs](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		repo:         do.MustInvoke[repo.TravelRequestRepo](i),
+		invoicesvcs:  do.MustInvoke[InvoiceSvcs](i),
+		sortingsvcs:  do.MustInvoke[dbsvcs.SortingSvcs](i),
+		agentsvcs:    do.MustInvoke[member.AgentSvcs](i),
+		settingssvcs: do.MustInvoke[SettingsSvcs](i),
+		withtxn:      do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -498,18 +500,10 @@ func (t *travelrequestsvcs) SetAsCompleted(ctx context.Context, id string) (*mod
 
 }
 
-func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error) {
+func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) (*models.AgentTransactionPagination, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
 		return nil, err
-	}
-
-	type aux struct {
-		models.TravelRequest `bson:",inline"`
-		Invoice              models.Invoice `bson:"invoice" json:"invoice"`
-		Customer             struct {
-			Name string `bson:"name" json:"name"`
-		} `bson:"customer" json:"customer"`
 	}
 
 	match := bson.M{
@@ -527,9 +521,17 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 
 	pipeline := []bson.M{
 		{"$match": match},
-		{"$sort": bson.M{"_id": -1}},
-		{"$skip": skip},
-		{"$limit": limit},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	invoiceLookup := []bson.M{
 		{"$lookup": bson.M{
 			"from":         "tourismInvoices",
 			"localField":   "invoiceId",
@@ -540,6 +542,9 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 			"path":                       "$invoice",
 			"preserveNullAndEmptyArrays": true,
 		}},
+	}
+
+	customerLookup := []bson.M{
 		{"$lookup": bson.M{
 			"from":         "tourismCustomers",
 			"localField":   "customerId",
@@ -552,6 +557,49 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		}},
 	}
 
+	departureAgentLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "tourismAgents",
+			"localField":   "departureAgent",
+			"foreignField": "_id",
+			"as":           "departureAgentData",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$departureAgentData",
+			"preserveNullAndEmptyArrays": true,
+		}},
+	}
+
+	tripCoordinatorAgentLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "tourismAgents",
+			"localField":   "tripCoordinator",
+			"foreignField": "_id",
+			"as":           "tripCoordinatorData",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$tripCoordinatorData",
+			"preserveNullAndEmptyArrays": true,
+		}},
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	pipeline = append(pipeline, invoiceLookup...)
+	pipeline = append(pipeline, customerLookup...)
+	pipeline = append(pipeline, departureAgentLookup...)
+	pipeline = append(pipeline, tripCoordinatorAgentLookup...)
+
+	type aux struct {
+		models.TravelRequest `bson:",inline"`
+		Invoice              models.Invoice        `bson:"invoice" json:"invoice"`
+		Customer             membermodels.Customer `bson:"customer" json:"customer"`
+		DepartureAgentData   membermodels.Agent    `bson:"departureAgentData" json:"departureAgentData"`
+		TripCoordinatorData  membermodels.Agent    `bson:"tripCoordinatorData" json:"tripCoordinatorData"`
+	}
+
 	var result []aux
 	err = t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
@@ -561,10 +609,43 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		return nil, err
 	}
 
+	settings, err := t.settingssvcs.Get(ctx)
+	if err != nil {
+		return nil, errors.New("error get settings")
+	}
+
+	profitRatio := settings.ProfitRatio //platform profit ratio
+
 	var transactions []models.AgentTransaction
 	for _, r := range result {
 		if r.Invoice.Id == primitive.NilObjectID {
 			return nil, errors.New("invoice not found")
+		}
+
+		clientProfit := r.Invoice.Total * (profitRatio / 100)
+
+		var commission float64
+
+		if r.DepartureAgent == r.TripCoordinator {
+			profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
+			if profitOfTourismProgram {
+				commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
+
+			}
+
+		} else {
+			if r.DepartureAgent == _id {
+				profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
+				if profitOfTourismProgram {
+					commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
+				}
+
+			} else if r.TripCoordinator == _id {
+				profitOfTourismProgram := r.TripCoordinatorData.Financial.ProfitOfTourismProgram
+				if profitOfTourismProgram {
+					commission = clientProfit * (r.TripCoordinatorData.Financial.Ratio / 100)
+				}
+			}
 		}
 
 		transaction := models.AgentTransaction{
@@ -573,13 +654,22 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 			Date:            r.Date,
 			OrderId:         r.Invoice.InvoiceId,
 			CustomerName:    r.Customer.Name,
-			Commission:      r.Invoice.Total * 0.1, //todo : change rate
+			Commission:      commission,
 		}
 
 		transactions = append(transactions, transaction)
 	}
 
-	return transactions, nil
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+
+	return &models.AgentTransactionPagination{
+		Transactions: transactions,
+		Pagination: types.Pagination{
+			TotalPages: totalPages,
+			PerPage:    limit,
+			TotalCount: count,
+		},
+	}, nil
 
 }
 

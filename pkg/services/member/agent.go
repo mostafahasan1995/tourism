@@ -2,6 +2,7 @@ package member
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
@@ -43,6 +44,7 @@ type AgentSvcs interface {
 	SetAsPending(ctx context.Context, agentId string) error
 	//destination agent
 	GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error)
+	GetDestinationAgents(ctx context.Context, query string) ([]models.Agent, error)
 }
 
 type agentsvcs struct {
@@ -499,4 +501,73 @@ func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId str
 	}
 
 	return &result[0], nil
+}
+
+//test
+
+func (a *agentsvcs) GetDestinationAgents(ctx context.Context, query string) ([]models.Agent, error) {
+	if query == "" {
+		return nil, errors.New("query is required")
+	}
+
+	type aux struct {
+		Ids []primitive.ObjectID `json:"ids"`
+	}
+
+	var data aux
+	if err := json.Unmarshal([]byte(query), &data); err != nil {
+		return nil, err
+	}
+
+	ids := data.Ids
+
+	match := bson.M{"trash": false}
+
+	pipeline := []bson.M{
+		{"$match": match},
+	}
+
+	var destinationLookup = []bson.M{
+		{
+			"$lookup": bson.M{
+				"from": "tourismDestinations",
+				"let":  bson.M{"countries": "$countries"},
+				"pipeline": bson.A{
+					bson.M{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": bson.A{
+									bson.M{"$in": bson.A{"$name", "$$countries"}},
+									bson.M{"$in": bson.A{"$_id", ids}},
+								},
+							},
+						},
+					},
+				},
+				"as": "destinations",
+			},
+		},
+		{
+			"$match": bson.M{
+				"destinations": bson.M{"$ne": bson.A{}},
+			},
+		},
+		{
+			"$project": bson.M{
+				"destinations": 0,
+			},
+		},
+	}
+
+	pipeline = append(pipeline, destinationLookup...)
+
+	var result []models.Agent
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }

@@ -29,6 +29,7 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/all", helpers.Make(h.GetAll))
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.Get("/destinations", helpers.Make(h.GetDestinationAgents))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
@@ -246,4 +247,18 @@ func (h *AgentHandler) SetAsPending(w http.ResponseWriter, r *http.Request) erro
 	}
 
 	return helpers.WriteJson(w, http.StatusOK, "ok")
+}
+
+// test
+func (h *AgentHandler) GetDestinationAgents(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.agentsvcs.GetDestinationAgents(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
 }

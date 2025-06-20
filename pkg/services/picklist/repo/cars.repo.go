@@ -137,7 +137,7 @@ func (l *carsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mode
 	cars := &models.Cars{
 		CarsDto: models.CarsDto{
 			CarType: data.CarType,
-			Image:   data.Image,
+			Images:  data.Images,
 		},
 		Id:        id,
 		Trash:     false,
