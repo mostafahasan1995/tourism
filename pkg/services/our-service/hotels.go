@@ -23,6 +23,7 @@ type HotelsSvcs interface {
 	Add(ctx context.Context, data *models.HotelsDto) (*models.Hotels, error)
 	Update(ctx context.Context, id string, data *models.HotelsDto) (*models.Hotels, error)
 	Delete(ctx context.Context, id string) error
+	Count(ctx context.Context, filter any) (int64, error)
 }
 
 type hotelsSvcs struct {
@@ -183,4 +184,8 @@ func (h *hotelsSvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (h *hotelsSvcs) Count(ctx context.Context, filter any) (int64, error) {
+	return h.repo.Count(ctx, filter)
 }

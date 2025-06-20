@@ -104,6 +104,7 @@ type ProgramSvcs interface {
 	Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error)
 	Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error)
 	Delete(ctx context.Context, id string) error
+	Count(ctx context.Context, filter any) (int64, error)
 }
 
 type programsvcs struct {
@@ -158,19 +159,6 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, customerLookup...)
 	pipeline = append(pipeline, packageLookup...)
 	pipeline = append(pipeline, updatedByUserLookup...)
-
-	// Add duration calculation
-	pipeline = append(pipeline, bson.M{
-		"$set": bson.M{
-			"duration": bson.M{
-				"$dateDiff": bson.M{
-					"startDate": "$startDate",
-					"endDate":   "$endDate",
-					"unit":      "day",
-				},
-			},
-		},
-	})
 
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -424,4 +412,8 @@ func (p *programsvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (p *programsvcs) Count(ctx context.Context, filter any) (int64, error) {
+	return p.repo.Count(ctx, filter)
 }

@@ -159,12 +159,12 @@ func (s *exhibitorProfileSvcs) AddExhibitorRequest(ctx context.Context, data *mo
 	profileDto := &models.ExhibitorProfileDto{
 		HotelId: data.HotelId,
 		HeroSection: models.HeroSection{
-			HotelName:    data.HotelName,
-			Rating:       0,
-			PropertyType: data.PropertyType,
-			Overview:     data.Overview,
-			Images:       []types.FileField{}, // Empty array for images to be added later
-			Logo:         nil,                 // Null logo to be added later
+
+			Rating: 0,
+
+			Overview: data.Overview,
+			Images:   []types.FileField{}, // Empty array for images to be added later
+			Logo:     nil,                 // Null logo to be added later
 		},
 		FacilitiesSection: models.GetDefaultFacilityOptions(),
 		DynamicSections:   []models.DynamicSection{},

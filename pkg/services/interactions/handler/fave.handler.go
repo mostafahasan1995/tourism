@@ -8,7 +8,6 @@ import (
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
-	"strconv"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
@@ -95,19 +94,12 @@ func (h *FaveHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 func (h *FaveHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
 	query := r.URL.Query().Get("query")
-	skipStr := r.URL.Query().Get("skip")
-	limitStr := r.URL.Query().Get("limit")
-
-	skip, err := strconv.ParseInt(skipStr, 10, 64)
-	if err != nil {
-		skip = 0
-	}
-
-	limit, err := strconv.ParseInt(limitStr, 10, 64)
-	if err != nil {
-		limit = 10
-	}
 
 	result, err := h.favesvcs.Get(ctx, skip, limit, query)
 	if err != nil {
@@ -115,6 +107,7 @@ func (h *FaveHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return helpers.WriteJson(w, http.StatusOK, result)
+
 }
 
 func (h *FaveHandler) Add(w http.ResponseWriter, r *http.Request) error {

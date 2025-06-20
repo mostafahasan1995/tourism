@@ -32,6 +32,7 @@ type ReviewsSvcs interface {
 	UpdateReviewStatus(ctx context.Context, reviewId string, status string) (*models.Review, error)
 	ApproveReview(ctx context.Context, reviewId string) (*models.Review, error)
 	RejectReview(ctx context.Context, reviewId string) (*models.Review, error)
+	Count(ctx context.Context, filter any) (int64, error)
 }
 
 type reviewsSvcs struct {
@@ -555,4 +556,8 @@ func (s *reviewsSvcs) ApproveReview(ctx context.Context, reviewId string) (*mode
 
 func (s *reviewsSvcs) RejectReview(ctx context.Context, reviewId string) (*models.Review, error) {
 	return s.UpdateReviewStatus(ctx, reviewId, "rejected")
+}
+
+func (s *reviewsSvcs) Count(ctx context.Context, filter any) (int64, error) {
+	return s.repo.Count(ctx, filter)
 }

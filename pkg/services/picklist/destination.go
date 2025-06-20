@@ -22,6 +22,7 @@ type DestinationSvcs interface {
 	Add(ctx context.Context, data *models.DestinationDto) (*models.Destination, error)
 	Update(ctx context.Context, id string, data *models.DestinationDto) (*models.Destination, error)
 	Delete(ctx context.Context, id string) error
+	Count(ctx context.Context, filter any) (int64, error)
 }
 
 type destinationSvcs struct {
@@ -138,4 +139,8 @@ func (d *destinationSvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (d *destinationSvcs) Count(ctx context.Context, filter any) (int64, error) {
+	return d.repo.Count(ctx, filter)
 }

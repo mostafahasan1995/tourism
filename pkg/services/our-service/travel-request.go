@@ -39,6 +39,7 @@ type TravelRequestSvcs interface {
 	Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error)
 	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
 	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) ([]models.AgentTransaction, error)
+	Count(ctx context.Context, filter any) (int64, error)
 }
 
 type travelrequestsvcs struct {
@@ -580,4 +581,8 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 
 	return transactions, nil
 
+}
+
+func (t *travelrequestsvcs) Count(ctx context.Context, filter any) (int64, error) {
+	return t.repo.Count(ctx, filter)
 }

@@ -109,15 +109,15 @@ type PhoneDto struct {
 }
 
 type ExhibitorRequestDto struct {
-	HotelId      primitive.ObjectID `bson:"hotelId" json:"hotelId" validate:"required"`
-	HotelName    string             `bson:"hotelName" json:"hotelName" validate:"required"`
-	HotelWebsite string             `bson:"hotelWebsite" json:"hotelWebsite"`
-	Phone        PhoneDto           `bson:"phone" json:"phone"`
-	Email        string             `bson:"email" json:"email"`
-	Location     string             `bson:"location" json:"location"`
-	PropertyType string             `bson:"propertyType" json:"propertyType" validate:"required"`
-	Overview     string             `bson:"overview" json:"overview" validate:"required"`
-	Status       string             `bson:"status" json:"status" validate:"omitempty,oneof=Pending Replied Closed"`
+	HotelId primitive.ObjectID `bson:"hotelId" json:"hotelId" validate:"required"`
+
+	HotelWebsite string   `bson:"hotelWebsite" json:"hotelWebsite"`
+	Phone        PhoneDto `bson:"phone" json:"phone"`
+	Email        string   `bson:"email" json:"email"`
+	Location     string   `bson:"location" json:"location"`
+
+	Overview string `bson:"overview" json:"overview" validate:"required"`
+	Status   string `bson:"status" json:"status" validate:"omitempty,oneof=Pending Replied Closed"`
 }
 
 func (e *ExhibitorRequestDto) Validate(v *validator.Validate) error {

@@ -6,6 +6,8 @@ import (
 	ourservice "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/picklist"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type StatisticsResponse struct {
@@ -124,50 +126,52 @@ func (s *statisticsSvcs) GetStatistics(ctx context.Context) (*StatisticsResponse
 }
 
 func (s *statisticsSvcs) GetProgramsCount(ctx context.Context) (int64, error) {
-	result, err := s.programSvcs.GetAll(ctx, "")
-	if err != nil {
-		return 0, err
-	}
-	return int64(len(result)), nil
+	filter := bson.M{"trash": bson.M{"$ne": true}}
+	return s.programSvcs.Count(ctx, filter)
 }
 
 func (s *statisticsSvcs) GetTripsCount(ctx context.Context) (int64, error) {
 	approved := "approved"
 	f := &filter.TravelReqFilters{Status: &approved}
-	result, err := s.travelRequestSvcs.GetAll(ctx, f)
-	if err != nil {
-		return 0, err
-	}
-	return int64(len(result)), nil
+	pipeline := f.BuildPipeline(bson.M{})
+	return s.travelRequestSvcs.Count(ctx, pipeline)
 }
 
 func (s *statisticsSvcs) GetCountriesCount(ctx context.Context) (int64, error) {
-	destinations, err := s.destSvcs.GetAll(ctx, "")
-	if err != nil {
-		return 0, err
-	}
-	return int64(len(destinations)), nil
+	filter := bson.M{"trash": bson.M{"$ne": true}}
+	return s.destSvcs.Count(ctx, filter)
 }
 
 func (s *statisticsSvcs) GetHotelsCount(ctx context.Context) (int64, error) {
-	emptyFilter := filter.HotelsFilter{}
-	result, err := s.hotelsSvcs.GetAll(ctx, emptyFilter, 1, 1000)
-	if err != nil {
-		return 0, err
-	}
-	return int64(result.Pagination.TotalCount), nil
+
+	filter := bson.M{"trash": false}
+	return s.hotelsSvcs.Count(ctx, filter)
 }
 
 func (s *statisticsSvcs) GetHappyTravelersCount(ctx context.Context) (int64, error) {
+
 	reviews, err := s.reviewSvcs.GetAll(ctx)
 	if err != nil {
 		return 0, err
 	}
-	seen := make(map[string]struct{})
-	for _, r := range reviews {
-		if r.Value >= 3 {
-			seen[r.UserId] = struct{}{}
+
+	uniqueUsers := make(map[string]bool)
+	for _, review := range reviews {
+
+		if !review.Trash && review.Value >= 3 && review.Status == "approved" {
+			if review.UserId == "000000000000000000000000" {
+
+				if review.Email != "" {
+					uniqueUsers[review.Email] = true
+				}
+			} else {
+
+				if review.UserId != "" {
+					uniqueUsers[review.UserId] = true
+				}
+			}
 		}
 	}
-	return int64(len(seen)), nil
+
+	return int64(len(uniqueUsers)), nil
 }
