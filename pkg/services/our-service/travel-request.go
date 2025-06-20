@@ -40,6 +40,7 @@ type TravelRequestSvcs interface {
 	Reject(ctx context.Context, id string, data *models.RejectMyReq) (*models.TravelRequest, error)
 	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
 	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) (*models.AgentTransactionPagination, error)
+	Count(ctx context.Context, filter any) (int64, error)
 }
 
 type travelrequestsvcs struct {
