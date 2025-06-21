@@ -3,7 +3,7 @@ package interactions
 import (
 	"context"
 	"errors"
-	"fmt"
+	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/util"
@@ -19,22 +19,27 @@ type GameSvcs interface {
 	GetGame(ctx context.Context) (*models.Game, error)
 	UpdateBox(ctx context.Context, boxId string, data models.MysteryBox) (*models.Game, error)
 	UpdateSettings(ctx context.Context, data *models.Attempts) (*models.Game, error)
-	OpenBox(ctx context.Context, boxId string) (*models.MysteryBox, error)
+	//OpenBox(ctx context.Context, boxId string) (*models.MysteryBox, error)
 	GetCustomers(ctx context.Context) (any, error)
+	//
+	TryBox(ctx context.Context, data *models.TryBoxDto) (*models.Coupon, error)
 }
 
 type gamesvcs struct {
-	repo             repo.GameRepo
-	gamecustomerrepo repo.GameCustomerRepo
+	repo       repo.GameRepo
+	couponrepo repo.CouponRepo
+	withtxn    *db.WithTxn
 }
 
 func NewGameSvcs(i *do.Injector) (GameSvcs, error) {
 	return &gamesvcs{
-		repo:             do.MustInvoke[repo.GameRepo](i),
-		gamecustomerrepo: do.MustInvoke[repo.GameCustomerRepo](i),
+		repo:       do.MustInvoke[repo.GameRepo](i),
+		couponrepo: do.MustInvoke[repo.CouponRepo](i),
+		withtxn:    do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
+// game
 func (g *gamesvcs) Init(ctx context.Context) (*models.Game, error) {
 	game := &models.Game{
 		Id:   primitive.NewObjectID(),
@@ -187,136 +192,270 @@ func (g *gamesvcs) UpdateSettings(ctx context.Context, data *models.Attempts) (*
 
 }
 
-func (g *gamesvcs) OpenBox(ctx context.Context, boxId string) (*models.MysteryBox, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
+func (g *gamesvcs) TryBox(ctx context.Context, data *models.TryBoxDto) (*models.Coupon, error) {
+	result, err := g.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		//check if already won
+		_, errW := g.couponrepo.GetByFilter(ctx, bson.M{
+			"email": data.Email,
+			"won":   true,
+		})
 
-	//check if already won
-	_, errW := g.gamecustomerrepo.GetByFilter(ctx, bson.M{
-		"userId": cfg.User.Id,
-		"won":    true,
+		if errW == nil {
+			return nil, errors.New("already won")
+		} else {
+			if !errors.Is(errW, mongo.ErrNoDocuments) {
+				return nil, errors.New("error check for prev won")
+			}
+		}
+
+		game, err := g.repo.GetByFilter(ctx, bson.M{"name": "game"})
+		if err != nil {
+			return nil, errors.New("error get game")
+		}
+
+		attempts := game.Attempts
+
+		var numOfAttempts int
+
+		switch attempts.Unit {
+		case models.AttemptsUnitPerDay:
+			{
+				// Get attempts for current day
+				now := time.Now().UTC()
+				startOfDay := now.Truncate(24 * time.Hour)
+				filter := bson.M{
+					"email": data.Email,
+					"date": bson.M{
+						"$gte": startOfDay,
+					},
+				}
+				count, err := g.couponrepo.Count(ctx, filter)
+				if err != nil {
+					return nil, err
+				}
+				numOfAttempts = int(count)
+			}
+
+		case models.AttemptsUnitPerWeek:
+			{
+				// Get attempts for current week
+				now := time.Now().UTC()
+				startOfWeek := now.AddDate(0, 0, -int(now.Weekday()))
+				startOfWeek = time.Date(startOfWeek.Year(), startOfWeek.Month(), startOfWeek.Day(), 0, 0, 0, 0, startOfWeek.Location())
+
+				filter := bson.M{
+					"email": data.Email,
+					"date": bson.M{
+						"$gte": startOfWeek,
+					},
+				}
+				count, err := g.couponrepo.Count(ctx, filter)
+				if err != nil {
+					return nil, err
+				}
+				numOfAttempts = int(count)
+			}
+
+		case models.AttemptsUnitPerMonth:
+			{
+				// Get attempts for current month
+				now := time.Now().UTC()
+				startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+
+				filter := bson.M{
+					"email": data.Email,
+					"date": bson.M{
+						"$gte": startOfMonth,
+					},
+				}
+				count, err := g.couponrepo.Count(ctx, filter)
+				if err != nil {
+					return nil, err
+				}
+				numOfAttempts = int(count)
+			}
+		}
+
+		// Check if user has exceeded their attempts
+		if numOfAttempts >= attempts.Value {
+			return nil, errors.New("maximum attempts reached for this period")
+		}
+
+		var selectedBox *models.MysteryBox
+		for _, box := range game.Boxes {
+			if box.Id == data.BoxId {
+				selectedBox = &box
+				break
+			}
+		}
+
+		if selectedBox == nil {
+			return nil, errors.New("box not found")
+		}
+
+		won := selectedBox.Discount.Value > 0
+		var code string
+		if won {
+			code = util.GenerateUniqueString(10)
+		}
+
+		coupon := &models.Coupon{
+			Id:       primitive.NewObjectID(),
+			Email:    data.Email,
+			BoxId:    selectedBox.Id,
+			Code:     code,
+			Discount: selectedBox.Discount,
+			Validity: selectedBox.ValidityPeriod,
+			Won:      won,
+			Date:     time.Now(),
+		}
+
+		if err := g.couponrepo.Add(ctx, coupon); err != nil {
+			return nil, err
+		}
+
+		return coupon, nil
+
 	})
 
-	if errW == nil {
-		return nil, errors.New("already won")
-	} else {
-		if !errors.Is(errW, mongo.ErrNoDocuments) {
-			return nil, errors.New("error check for prev won")
-		}
-	}
-
-	_id, err := primitive.ObjectIDFromHex(boxId)
 	if err != nil {
 		return nil, err
 	}
-
-	game, err := g.repo.GetByFilter(ctx, bson.M{"name": "game"})
-	if err != nil {
-		return nil, errors.New("error get game")
-	}
-
-	attempts := game.Attempts
-
-	var numOfAttempts int
-
-	switch attempts.Unit {
-	case models.AttemptsUnitPerDay:
-		{
-			// Get attempts for current day
-			now := time.Now().UTC()
-			startOfDay := now.Truncate(24 * time.Hour)
-			filter := bson.M{
-				"userId": cfg.User.Id,
-				"date": bson.M{
-					"$gte": startOfDay,
-				},
-			}
-			count, err := g.gamecustomerrepo.Count(ctx, filter)
-			if err != nil {
-				return nil, err
-			}
-			numOfAttempts = int(count)
-		}
-
-	case models.AttemptsUnitPerWeek:
-		{
-			// Get attempts for current week
-			now := time.Now().UTC()
-			startOfWeek := now.AddDate(0, 0, -int(now.Weekday()))
-			startOfWeek = time.Date(startOfWeek.Year(), startOfWeek.Month(), startOfWeek.Day(), 0, 0, 0, 0, startOfWeek.Location())
-
-			filter := bson.M{
-				"userId": cfg.User.Id,
-				"date": bson.M{
-					"$gte": startOfWeek,
-				},
-			}
-			count, err := g.gamecustomerrepo.Count(ctx, filter)
-			if err != nil {
-				return nil, err
-			}
-			numOfAttempts = int(count)
-		}
-
-	case models.AttemptsUnitPerMonth:
-		{
-			// Get attempts for current month
-			now := time.Now().UTC()
-			startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
-
-			filter := bson.M{
-				"userId": cfg.User.Id,
-				"date": bson.M{
-					"$gte": startOfMonth,
-				},
-			}
-			count, err := g.gamecustomerrepo.Count(ctx, filter)
-			if err != nil {
-				return nil, err
-			}
-			numOfAttempts = int(count)
-		}
-	}
-
-	// Check if user has exceeded their attempts
-	if numOfAttempts >= attempts.Value {
-		return nil, errors.New("maximum attempts reached for this period")
-	}
-
-	var selectedBox *models.MysteryBox
-	for _, box := range game.Boxes {
-		if box.Id == _id {
-			selectedBox = &box
-			break
-		}
-	}
-
-	if selectedBox == nil {
-		return nil, errors.New("box not found")
-	}
-
-	won := selectedBox.Discount.Value > 0
-
-	rec := &models.GameCustomer{
-		Id:       primitive.NewObjectID(),
-		UserId:   cfg.User.Id,
-		Email:    cfg.User.UserData.Email,
-		BoxId:    selectedBox.Id,
-		Discount: fmt.Sprintf("%d%s", selectedBox.Discount.Value, selectedBox.Discount.Unit),
-		Validity: fmt.Sprintf("%d%s", selectedBox.ValidityPeriod.Value, selectedBox.ValidityPeriod.Unit),
-		Won:      won,
-		Date:     time.Now(),
-	}
-
-	if err := g.gamecustomerrepo.Add(ctx, rec); err != nil {
-		return nil, err
-	}
-
-	return selectedBox, nil
+	return result.(*models.Coupon), nil
 
 }
+
+// player
+// func (g *gamesvcs) OpenBox(ctx context.Context, boxId string) (*models.MysteryBox, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	//check if already won
+// 	_, errW := g.gamecustomerrepo.GetByFilter(ctx, bson.M{
+// 		"userId": cfg.User.Id,
+// 		"won":    true,
+// 	})
+
+// 	if errW == nil {
+// 		return nil, errors.New("already won")
+// 	} else {
+// 		if !errors.Is(errW, mongo.ErrNoDocuments) {
+// 			return nil, errors.New("error check for prev won")
+// 		}
+// 	}
+
+// 	_id, err := primitive.ObjectIDFromHex(boxId)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	game, err := g.repo.GetByFilter(ctx, bson.M{"name": "game"})
+// 	if err != nil {
+// 		return nil, errors.New("error get game")
+// 	}
+
+// 	attempts := game.Attempts
+
+// 	var numOfAttempts int
+
+// 	switch attempts.Unit {
+// 	case models.AttemptsUnitPerDay:
+// 		{
+// 			// Get attempts for current day
+// 			now := time.Now().UTC()
+// 			startOfDay := now.Truncate(24 * time.Hour)
+// 			filter := bson.M{
+// 				"userId": cfg.User.Id,
+// 				"date": bson.M{
+// 					"$gte": startOfDay,
+// 				},
+// 			}
+// 			count, err := g.gamecustomerrepo.Count(ctx, filter)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			numOfAttempts = int(count)
+// 		}
+
+// 	case models.AttemptsUnitPerWeek:
+// 		{
+// 			// Get attempts for current week
+// 			now := time.Now().UTC()
+// 			startOfWeek := now.AddDate(0, 0, -int(now.Weekday()))
+// 			startOfWeek = time.Date(startOfWeek.Year(), startOfWeek.Month(), startOfWeek.Day(), 0, 0, 0, 0, startOfWeek.Location())
+
+// 			filter := bson.M{
+// 				"userId": cfg.User.Id,
+// 				"date": bson.M{
+// 					"$gte": startOfWeek,
+// 				},
+// 			}
+// 			count, err := g.gamecustomerrepo.Count(ctx, filter)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			numOfAttempts = int(count)
+// 		}
+
+// 	case models.AttemptsUnitPerMonth:
+// 		{
+// 			// Get attempts for current month
+// 			now := time.Now().UTC()
+// 			startOfMonth := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
+
+// 			filter := bson.M{
+// 				"userId": cfg.User.Id,
+// 				"date": bson.M{
+// 					"$gte": startOfMonth,
+// 				},
+// 			}
+// 			count, err := g.gamecustomerrepo.Count(ctx, filter)
+// 			if err != nil {
+// 				return nil, err
+// 			}
+// 			numOfAttempts = int(count)
+// 		}
+// 	}
+
+// 	// Check if user has exceeded their attempts
+// 	if numOfAttempts >= attempts.Value {
+// 		return nil, errors.New("maximum attempts reached for this period")
+// 	}
+
+// 	var selectedBox *models.MysteryBox
+// 	for _, box := range game.Boxes {
+// 		if box.Id == _id {
+// 			selectedBox = &box
+// 			break
+// 		}
+// 	}
+
+// 	if selectedBox == nil {
+// 		return nil, errors.New("box not found")
+// 	}
+
+// 	won := selectedBox.Discount.Value > 0
+
+// 	rec := &models.GameCustomer{
+// 		Id:       primitive.NewObjectID(),
+// 		UserId:   cfg.User.Id,
+// 		Email:    cfg.User.UserData.Email,
+// 		BoxId:    selectedBox.Id,
+// 		Discount: fmt.Sprintf("%d%s", selectedBox.Discount.Value, selectedBox.Discount.Unit),
+// 		Validity: fmt.Sprintf("%d%s", selectedBox.ValidityPeriod.Value, selectedBox.ValidityPeriod.Unit),
+// 		Won:      won,
+// 		Date:     time.Now(),
+// 	}
+
+// 	if err := g.gamecustomerrepo.Add(ctx, rec); err != nil {
+// 		return nil, err
+// 	}
+
+// 	return selectedBox, nil
+
+// }
 
 func (g *gamesvcs) GetCustomers(ctx context.Context) (any, error) {
 	pipeline := []bson.M{
@@ -367,7 +506,7 @@ func (g *gamesvcs) GetCustomers(ctx context.Context) (any, error) {
 	}
 
 	var result []aux
-	err := g.gamecustomerrepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+	err := g.couponrepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
 			return err
 		}

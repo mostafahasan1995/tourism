@@ -17,8 +17,8 @@ type GameCustomer struct {
 	Date     time.Time          `bson:"date" json:"date"`
 }
 
-type GameCustomerRes struct {
-	Id       primitive.ObjectID `bson:"_id" json:"_id"`
-	Email    string             `bson:"email" json:"email"`
-	Attempts int                `bson:"attempts" json:"attempts"`
-}
+// type GameCustomerRes struct {
+// 	Id       primitive.ObjectID `bson:"_id" json:"_id"`
+// 	Email    string             `bson:"email" json:"email"`
+// 	Attempts int                `bson:"attempts" json:"attempts"`
+// }
