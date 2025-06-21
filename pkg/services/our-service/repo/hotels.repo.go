@@ -22,6 +22,7 @@ type HotelsRepo interface {
 	dbrepo.MainRepo[models.Hotels]
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
 	GetAll(ctx context.Context, filter filter.HotelsFilter, page, perPage int64) (models.HotelsPagination, error)
+	GetAllHotels(ctx context.Context, hotelFilter filter.HotelsFilter) ([]models.Hotels, error)
 	Update(ctx context.Context, id primitive.ObjectID, data *models.HotelsDto) (*models.Hotels, error)
 	Delete(ctx context.Context, id string) error
 }
@@ -61,6 +62,63 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 	data.CalculateAverageRating()
 	return &data, nil
 }
+
+
+
+
+func (l *hotelsrepo) GetAllHotels(ctx context.Context, hotelFilter filter.HotelsFilter) ([]models.Hotels, error){
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	coll := l.db.Database(cfg.Db).Collection(l.collName)
+
+	// Use the ToBsonFilter method to build the MongoDB filter
+	filterBody := hotelFilter.ToBsonFilter()
+
+	
+
+
+	findOptions := options.Find().
+		SetSort(bson.M{"createdAt": -1}) // Sort by creation date, newest first
+
+	cur, err := coll.Find(ctx, filterBody, findOptions)
+	if err != nil {
+
+		return nil, err
+	}
+
+	var hotels []models.Hotels
+	if err := cur.All(ctx, &hotels); err != nil {
+
+		return nil, err
+	}
+
+	// Calculate average rating for each hotel
+	for i := range hotels {
+		hotels[i].CalculateAverageRating()
+	}
+
+
+
+	// result := models.Hotels{
+	// 	Hotels: hotels,
+	// 	Pagination: common.Pagination{
+	// 		TotalPages: float64(totalPages),
+	// 		PerPage:    perPage,
+	// 		TotalCount: totalCount,
+	// 	},
+	// }
+
+	return hotels, nil
+}
+
+
+
+
+
+
 
 func (l *hotelsrepo) GetAll(ctx context.Context, hotelFilter filter.HotelsFilter, page, perPage int64) (models.HotelsPagination, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
