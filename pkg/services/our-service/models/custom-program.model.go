@@ -1,6 +1,10 @@
 package models
 
-import "go.mongodb.org/mongo-driver/bson/primitive"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type CustomProgram struct {
 	Delegation          Delegation                 `bson:"delegation,omitempty" json:"delegation,omitempty"`
@@ -131,9 +135,12 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 }
 
 type ProgramAccommodation struct {
-	Accommodation `bson:",inline"`
-	PricePerNight float64 `bson:"pricePerNight" json:"pricePerNight"`
-	TotalStayCost float64 `bson:"totalStayCost" json:"totalStayCost"`
+	Accommodation      `bson:",inline"`
+	AccommodationHotel string    `bson:"accommodationHotel" json:"accommodationHotel"`
+	StartDate          time.Time `bson:"startDate" json:"startDate"`
+	EndDate            time.Time `bson:"endDate" json:"endDate"`
+	PricePerNight      float64   `bson:"pricePerNight" json:"pricePerNight"`
+	TotalStayCost      float64   `bson:"totalStayCost" json:"totalStayCost"`
 }
 
 type ProgramFlightTicket struct {
