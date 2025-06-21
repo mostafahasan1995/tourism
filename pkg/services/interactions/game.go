@@ -461,8 +461,7 @@ func (g *gamesvcs) GetCustomers(ctx context.Context) (any, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{}},
 		{"$group": bson.M{
-			"_id":   "$userId",
-			"email": bson.M{"$first": "$email"},
+			"_id": "$email",
 			"attempts": bson.M{
 				"$sum": 1,
 			},
@@ -475,34 +474,47 @@ func (g *gamesvcs) GetCustomers(ctx context.Context) (any, error) {
 					},
 				},
 			},
-			"discount": bson.M{
-				"$max": bson.M{
-					"$cond": bson.M{
-						"if":   "$won",
-						"then": "$discount",
-						"else": "",
-					},
-				},
+			"lastDate": bson.M{
+				"$max": "$date",
 			},
-			"validity": bson.M{
-				"$max": bson.M{
+			"winningData": bson.M{
+				"$push": bson.M{
 					"$cond": bson.M{
-						"if":   "$won",
-						"then": "$validity",
-						"else": "",
+						"if": "$won",
+						"then": bson.M{
+							"discount": "$discount",
+							"validity": "$validity",
+						},
+						"else": "$$REMOVE",
 					},
 				},
 			},
 		}},
+		{"$addFields": bson.M{
+			"discount": bson.M{
+				"$arrayElemAt": []interface{}{"$winningData.discount", 0},
+			},
+			"validity": bson.M{
+				"$arrayElemAt": []interface{}{"$winningData.validity", 0},
+			},
+		}},
+		{"$project": bson.M{
+			"_id":      1,
+			"attempts": 1,
+			"won":      1,
+			"lastDate": 1,
+			"discount": 1,
+			"validity": 1,
+		}},
 	}
 
 	type aux struct {
-		Id       primitive.ObjectID `bson:"_id" json:"_id"`
-		Email    string             `bson:"email" json:"email"`
-		Attempts int                `bson:"attempts" json:"attempts"`
-		Won      int                `bson:"won" json:"won"`
-		Discount string             `bson:"discount" json:"discount"`
-		Validity string             `bson:"validity" json:"validity"`
+		Email    string          `bson:"_id" json:"email"`
+		Attempts int             `bson:"attempts" json:"attempts"`
+		Won      int             `bson:"won" json:"won"`
+		LastDate time.Time       `bson:"lastDate" json:"lastDate"`
+		Discount models.Discount `bson:"discount" json:"discount"`
+		Validity models.Validity `bson:"validity" json:"validity"`
 	}
 
 	var result []aux

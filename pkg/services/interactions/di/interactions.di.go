@@ -24,7 +24,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewDiaryRepo) //deprecated
 
 	do.Provide(i, repo.NewGameRepo)
-	do.Provide(i, repo.NewGameCustomerRepo)
+	//do.Provide(i, repo.NewGameCustomerRepo)
 	do.Provide(i, repo.NewCouponRepo)
 	do.Provide(i, repo.NewTravelerStoryRepo)
 	do.Provide(i, repo.NewClientStoryRepo)
