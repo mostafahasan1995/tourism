@@ -26,7 +26,7 @@ type PartnerRequestDto struct {
 	Email       string      `bson:"email" json:"email" validate:"required,email"`
 
 	// Services Offered
-	ServicesOffered []string `bson:"servicesOffered" json:"servicesOffered" validate:"required"`
+	ServicesOffered []string `bson:"servicesOffered" json:"servicesOffered" `
 
 	// Additional Fields
 	CompanyLogo types.FileField `bson:"companyLogo" json:"companyLogo"`
