@@ -13,27 +13,27 @@ import (
 	"github.com/samber/do"
 )
 
-type SettingsHandler struct {
-	settingssvcs       ourservice.SettingsSvcs
-	validationInstance *validator.Validate
+type FinancialSettingsHandler struct {
+	financialsettingssvcs ourservice.FinancialSettingsSvcs
+	validationInstance    *validator.Validate
 }
 
-func NewSettingsHandler(i *do.Injector, r *chi.Mux) {
-	h := &SettingsHandler{
-		settingssvcs:       do.MustInvoke[ourservice.SettingsSvcs](i),
-		validationInstance: do.MustInvoke[*validator.Validate](i),
+func NewFinancialSettingsHandler(i *do.Injector, r *chi.Mux) {
+	h := &FinancialSettingsHandler{
+		financialsettingssvcs: do.MustInvoke[ourservice.FinancialSettingsSvcs](i),
+		validationInstance:    do.MustInvoke[*validator.Validate](i),
 	}
 
-	r.Route("/settings", func(r chi.Router) {
+	r.Route("/financial-settings", func(r chi.Router) {
 		r.Get("/", helpers.Make(h.Get))
 		r.Put("/", helpers.Make(h.Update))
 	})
 }
 
-func (h *SettingsHandler) Get(w http.ResponseWriter, r *http.Request) error {
+func (h *FinancialSettingsHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.settingssvcs.Get(ctx)
+	result, err := h.financialsettingssvcs.Get(ctx)
 	if err != nil {
 		return err
 	}
@@ -41,15 +41,15 @@ func (h *SettingsHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-func (h *SettingsHandler) Update(w http.ResponseWriter, r *http.Request) error {
+func (h *FinancialSettingsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	var data models.SettingsDto
+	var data models.FinancialSettingsDto
 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
 		return err
 	}
 
-	result, err := h.settingssvcs.Update(ctx, &data)
+	result, err := h.financialsettingssvcs.Update(ctx, &data)
 	if err != nil {
 		return err
 	}

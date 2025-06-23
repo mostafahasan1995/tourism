@@ -1,0 +1,179 @@
+{
+    "title": "Test program 1 - delegation request",
+    "coverImage": {},
+    "travelType": "relaxation-trip",
+    "serviceType": "custom-program",
+    "travelReqId": "6857ff4104b97396d3ff1765",
+    "customerId": "685287a33c018c1fbc2d2e4f",
+    "status": "pending",
+    "package": "507f191e810c19729de860ea",
+    "programType": "custom",
+    "source": "United Arab Emirates",
+    "company": "org1",
+    "coordinator": "coord1",
+    "purpose": "conference",
+    "startDate": "2025-06-23T00:00:00.000Z",
+    "endDate": "2025-06-27T00:00:00.000Z",
+    "groupSize": "couple",
+    "customType": {
+        "delegation": {
+            "delegationType": "group",
+            "organizationName": "",
+            "tripCoordinatorName": ""
+        },
+        "businessMan": {
+            "purpose": "conference",
+            "clientIsCoordinator": false,
+            "coordinatorName": "",
+            "coordinatorPhone": {},
+            "coordinatorEmail": ""
+        },
+        "customPlan": {},
+        "vipCar": {
+            "destinations": []
+        },
+        "flightTicketRequest": {
+            "destinations": []
+        },
+        "partnerRequest": {},
+        "destinations": [
+            {
+                "destinationFrom": "6852875c3c804bc813b6a039",
+                "destinationTo": "685286b13c804bc813b6a038",
+                "tripDetails": {
+                    "startDate": "2025-06-22T00:00:00.000Z",
+                    "endDate": "2025-06-25T00:00:00.000Z",
+                    "days": 3
+                },
+                "accommodation": [
+                    {
+                        "city": "Amman",
+                        "preferences": "standard",
+                        "accommodationHotel": "Petra View Hotel",
+                        "numOfRooms": 1,
+                        "bedType": "double",
+                        "numOfBeds": 1,
+                        "numOfBathrooms": 1,
+                        "privateMeetingRoom": true,
+                        "startDate": "2025-06-23T00:00:00.000Z",
+                        "endDate": "2025-06-25T00:00:00.000Z",
+                        "pricePerNight": 100,
+                        "totalStayCost": 200,
+                        "specialRequests": [
+                            []
+                        ]
+                    },
+                    {
+                        "city": "Patra",
+                        "preferences": "deluxe",
+                        "accommodationHotel": "",
+                        "numOfRooms": 1,
+                        "bedType": "single",
+                        "numOfBeds": 1,
+                        "numOfBathrooms": 1,
+                        "privateMeetingRoom": true,
+                        "startDate": "2025-06-26T00:00:00.000Z",
+                        "endDate": "2025-06-28T00:00:00.000Z",
+                        "pricePerNight": 150,
+                        "totalStayCost": 300,
+                        "specialRequests": [
+                            [
+                                []
+                            ]
+                        ]
+                    }
+                ],
+                "flightTickets": {
+                    "tripType": "roundTrip",
+                    "travelClass": "first",
+                    "totalCost": 500,
+                    "startDate": "2025-06-22T00:00:00.000Z",
+                    "endDate": "2025-06-26T00:00:00.000Z",
+                    "departureDate": "2025-06-22T00:00:00.000Z",
+                    "returnDate": "2025-06-26T00:00:00.000Z",
+                    "flexibleTravelDates": "fixed",
+                    "arrangeFlightTickets": true,
+                    "adults": 1,
+                    "children": 1,
+                    "infant": 1,
+                    "preferredDepartureTime": "morning",
+                    "layoverPreferences": "shortest-layover",
+                    "preferredAirlines": "Emirates",
+                    "extraBaggage": true,
+                    "weight": 0,
+                    "specialMeals": true,
+                    "travelWithPet": false,
+                    "specialRequirements": "none",
+                    "preferredContactMethod": "phone"
+                },
+                "transportation": {
+                    "driversLanguage": "",
+                    "arrangeFlightTickets": false,
+                    "transportationType": "No Transportation Needed",
+                    "driverLanguagesSpoken": [
+                        "english",
+                        "arabic"
+                    ],
+                    "totalCost": 200,
+                    "capacity": "2",
+                    "startTime": "16:02",
+                    "endTime": "21:02",
+                    "carTypeId": "6853fbb565c65a99242e0c47",
+                    "startDate": "0001-01-01T00:00:00Z",
+                    "endDate": "0001-01-01T00:00:00Z"
+                },
+                "activities": {
+                    "activities": [],
+                    "totalCost": 0
+                },
+                "agenda": {
+                    "needAgenda": true,
+                    "items": [
+                        "Agneda item one",
+                        "agenda item tow"
+                    ],
+                    "files": [
+                        {
+                            "_id": "6857ff13d7f23015b6270231",
+                            "originalName": "Germany.jpg",
+                            "path": "https://services.larsa.io/files/file/d0lfvck5drjs739an280/2025/6/09458e57-0b10-4bdd-9012-140817b21601.jpg",
+                            "service": "",
+                            "expire": "0001-01-01T00:00:00Z",
+                            "variants": []
+                        }
+                    ]
+                },
+                "services": {
+                    "tourGuide": {
+                        "active": false,
+                        "cost": 0
+                    },
+                    "translator": {
+                        "active": false,
+                        "cost": 0
+                    },
+                    "airportPickup": {
+                        "active": false,
+                        "cost": 0
+                    },
+                    "tourAfterMeeting": {
+                        "active": false,
+                        "cost": 0
+                    },
+                    "photography": {
+                        "active": false,
+                        "cost": 0
+                    },
+                    "airportMeetAndGreet": {
+                        "active": false,
+                        "cost": 0
+                    },
+                    "simCardAndInternet": {
+                        "active": false,
+                        "cost": 0
+                    }
+                }
+            }
+        ]
+    }
+}

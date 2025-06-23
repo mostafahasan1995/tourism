@@ -44,22 +44,24 @@ type TravelRequestSvcs interface {
 }
 
 type travelrequestsvcs struct {
-	repo         repo.TravelRequestRepo
-	invoicesvcs  InvoiceSvcs
-	sortingsvcs  dbsvcs.SortingSvcs
-	agentsvcs    member.AgentSvcs
-	settingssvcs SettingsSvcs
-	withtxn      *db.WithTxn
+	repo                  repo.TravelRequestRepo
+	invoicesvcs           InvoiceSvcs
+	sortingsvcs           dbsvcs.SortingSvcs
+	agentsvcs             member.AgentSvcs
+	customersvcs          member.CustomerSvcs
+	financialsettingssvcs FinancialSettingsSvcs
+	withtxn               *db.WithTxn
 }
 
 func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 	return &travelrequestsvcs{
-		repo:         do.MustInvoke[repo.TravelRequestRepo](i),
-		invoicesvcs:  do.MustInvoke[InvoiceSvcs](i),
-		sortingsvcs:  do.MustInvoke[dbsvcs.SortingSvcs](i),
-		agentsvcs:    do.MustInvoke[member.AgentSvcs](i),
-		settingssvcs: do.MustInvoke[SettingsSvcs](i),
-		withtxn:      do.MustInvoke[*db.WithTxn](i),
+		repo:                  do.MustInvoke[repo.TravelRequestRepo](i),
+		invoicesvcs:           do.MustInvoke[InvoiceSvcs](i),
+		sortingsvcs:           do.MustInvoke[dbsvcs.SortingSvcs](i),
+		agentsvcs:             do.MustInvoke[member.AgentSvcs](i),
+		customersvcs:          do.MustInvoke[member.CustomerSvcs](i),
+		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
+		withtxn:               do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
 
@@ -203,6 +205,17 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 		return nil, err
 	}
 	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		userId := cfg.User.Id // same as customerId
+		//check if the user making the request is customer
+		customer, err := t.customersvcs.GetOne(ctx, userId.Hex())
+		if err != nil {
+			return nil, errors.New("error get customer, check if user is customer")
+		}
+
+		if data.ClientEmail != customer.Security.Email {
+			return nil, errors.New("client email is not the same as customer email")
+		}
+
 		seq, err := t.sortingsvcs.GetAndUpdateSourceSeq(ctx, "travelRequest")
 		if err != nil {
 			return nil, err
@@ -216,7 +229,7 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 			TravelRequestDto: *data,
 			Date:             time.Now(),
 			Status:           enums.TravelReqStatusPending,
-			CustomerId:       cfg.User.Id,
+			CustomerId:       customer.Id,
 			CreatedAt:        time.Now(),
 			CreatedBy:        cfg.User.Id,
 		}
@@ -610,12 +623,12 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		return nil, err
 	}
 
-	settings, err := t.settingssvcs.Get(ctx)
+	financialSettings, err := t.financialsettingssvcs.Get(ctx)
 	if err != nil {
 		return nil, errors.New("error get settings")
 	}
 
-	profitRatio := settings.ProfitRatio //platform profit ratio
+	profitRatio := financialSettings.ProfitRatio //platform profit ratio
 
 	var transactions []models.AgentTransaction
 	for _, r := range result {
