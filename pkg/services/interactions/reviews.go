@@ -22,6 +22,7 @@ type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
 	GetAll(ctx context.Context) ([]models.Review, error)
+	GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	AddFromDashboard(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
@@ -64,6 +65,51 @@ func (s *reviewsSvcs) GetAll(ctx context.Context) ([]models.Review, error) {
 	return result, nil
 
 }
+
+func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error) {
+	match := bson.M{}
+
+	filters, err := helpers.ParseFilters[filter.ReviewsFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	// Don't filter by status - get all reviews regardless of status
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Review
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ReviewPagination{
+		Reviews:    result,
+		Pagination: pagination,
+	}, nil
+}
+
 func (s *reviewsSvcs) GetOne(ctx context.Context, id string) (*models.Review, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
