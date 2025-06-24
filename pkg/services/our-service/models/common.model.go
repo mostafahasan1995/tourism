@@ -38,27 +38,25 @@ type Accommodation struct {
 }
 
 type FlightTicket struct {
-	ArrangeByUs     bool               `bson:"arrangeByUs" json:"arrangeByUs"`
-	DestinationFrom primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
-	DestinationTo   primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
-	TripType        string             `bson:"tripType" json:"tripType"`       // e.g round-trip - one-way - multi-city
-	TravelClass     string             `bson:"travelClass" json:"travelClass"` // e.g economy - business - first class
-	//StartDate              time.Time          `bson:"startDate" json:"startDate"`
-	//EndDate                time.Time          `bson:"endDate" json:"endDate"`
-	FlexibleTravelDates    string    `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
-	DepartureDate          time.Time `bson:"departureDate" json:"departureDate"`
-	ReturnDate             time.Time `bson:"returnDate" json:"returnDate"`
-	PreferredDepartureTime string    `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
-	LayoverPreferences     string    `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
-	PreferredAirlines      string    `bson:"preferredAirlines" json:"preferredAirlines"`           // e.g. franch arilines
-	ExtraBaggage           bool      `bson:"extraBaggage" json:"extraBaggage"`
-	SpecialMeals           bool      `bson:"specialMeals" json:"specialMeals"`
-	TravelWithPet          bool      `bson:"travelWithPet" json:"travelWithPet"`
-	Adults                 int       `bson:"adults" json:"adults"`
-	Children               int       `bson:"children" json:"children"`
-	Infant                 int       `bson:"infant" json:"infant"`
-	PreferredContactMethod string    `bson:"preferredContactMethod" json:"preferredContactMethod"`
-	SpecialRequirements    string    `bson:"specialRequirements" json:"specialRequirements"`
+	ArrangeByUs            bool               `bson:"arrangeByUs" json:"arrangeByUs"`
+	DestinationFrom        primitive.ObjectID `bson:"destinationFrom" json:"destinationFrom"`
+	DestinationTo          primitive.ObjectID `bson:"destinationTo" json:"destinationTo"`
+	TripType               string             `bson:"tripType" json:"tripType"`       // e.g round-trip - one-way - multi-city
+	TravelClass            string             `bson:"travelClass" json:"travelClass"` // e.g economy - business - first class
+	FlexibleTravelDates    string             `bson:"flexibleTravelDates" json:"flexibleTravelDates"`
+	DepartureDate          *time.Time         `bson:"departureDate" json:"departureDate"`
+	ReturnDate             *time.Time         `bson:"returnDate" json:"returnDate"`
+	PreferredDepartureTime string             `bson:"preferredDepartureTime" json:"preferredDepartureTime"` // e.g. evening - morning
+	LayoverPreferences     string             `bson:"layoverPreferences" json:"layoverPreferences"`         // short transit time
+	PreferredAirlines      string             `bson:"preferredAirlines" json:"preferredAirlines"`           // e.g. franch arilines
+	ExtraBaggage           bool               `bson:"extraBaggage" json:"extraBaggage"`
+	SpecialMeals           bool               `bson:"specialMeals" json:"specialMeals"`
+	TravelWithPet          bool               `bson:"travelWithPet" json:"travelWithPet"`
+	Adults                 int                `bson:"adults" json:"adults"`
+	Children               int                `bson:"children" json:"children"`
+	Infant                 int                `bson:"infant" json:"infant"`
+	PreferredContactMethod string             `bson:"preferredContactMethod" json:"preferredContactMethod"`
+	SpecialRequirements    string             `bson:"specialRequirements" json:"specialRequirements"`
 }
 
 type Transportation struct {
@@ -66,8 +64,8 @@ type Transportation struct {
 	Capacity              string             `bson:"capacity" json:"capacity"`
 	DriverLanguagesSpoken []string           `bson:"driverLanguagesSpoken" json:"driverLanguagesSpoken"`
 	LuxuryFeatures        []string           `bson:"luxuryFeatures" json:"luxuryFeatures"`
-	StartDate             time.Time          `bson:"startDate" json:"startDate"`
-	EndDate               time.Time          `bson:"endDate" json:"endDate"`
+	StartDate             *time.Time         `bson:"startDate" json:"startDate"`
+	EndDate               *time.Time         `bson:"endDate" json:"endDate"`
 	StartTime             string             `bson:"startTime" json:"startTime"`
 	EndTime               string             `bson:"endTime" json:"endTime"`
 	CarTypeId             primitive.ObjectID `bson:"carTypeId" json:"carTypeId"`
