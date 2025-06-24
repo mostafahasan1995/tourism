@@ -28,6 +28,7 @@ type InvoiceAdjustment struct {
 	Title   string  `bson:"title" json:"title"`
 	Amount  float64 `bson:"amount" json:"amount"`
 	Percent float64 `bson:"percent" json:"percent"`
+	Val     float64 `bson:"val" json:"val"`
 }
 
 type InvoiceContact struct {
@@ -79,19 +80,23 @@ func (i *Invoice) SetTotals() error {
 
 	total := subTotal
 
-	for _, adjustment := range i.Adjustments {
-
-		if adjustment.Type == "addition" {
+	for j, adjustment := range i.Adjustments {
+		switch adjustment.Type {
+		case "addition":
 			if adjustment.Percent > 0 {
-				total += subTotal * adjustment.Percent / 100
+				i.Adjustments[j].Val = subTotal * adjustment.Percent / 100
+				total += i.Adjustments[j].Val
 			} else if adjustment.Amount > 0 {
-				total += adjustment.Amount
+				i.Adjustments[j].Val = adjustment.Amount
+				total += i.Adjustments[j].Val
 			}
-		} else if adjustment.Type == "substruction" {
+		case "substruction":
 			if adjustment.Percent > 0 {
-				total -= subTotal * adjustment.Percent / 100
+				i.Adjustments[j].Val = subTotal * adjustment.Percent / 100
+				total -= i.Adjustments[j].Val
 			} else if adjustment.Amount > 0 {
-				total -= adjustment.Amount
+				i.Adjustments[j].Val = adjustment.Amount
+				total -= i.Adjustments[j].Val
 			}
 		}
 	}
