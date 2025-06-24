@@ -10,13 +10,14 @@ import (
 )
 
 type ReviewsFilter struct {
-	Status   *string `json:"status"`
-	Type     *string `json:"type"`
-	Ref      *string `json:"ref"`
-	UserId   *string `json:"userId"`
-	Username *string `json:"username"`
-	Customer *string `json:"customer"`
-	Search   *string `json:"search"`
+	Status   *string   `json:"status"`
+	Type     *string   `json:"type"`
+	Ref      *string   `json:"ref"`
+	UserId   *string   `json:"userId"`
+	Username *string   `json:"username"`
+	Customer *string   `json:"customer"`
+	Search   *string   `json:"search"`
+	Ids      *[]string `json:"ids"`
 }
 
 func NewReviewsFilter(query string) (*ReviewsFilter, error) {
@@ -50,6 +51,18 @@ func (f ReviewsFilter) BuildPipeline(m bson.M) []bson.M {
 
 	if f.UserId != nil {
 		ands = append(ands, bson.M{"userId": *f.UserId})
+	}
+
+	if f.Ids != nil && len(*f.Ids) > 0 {
+		var objectIds []primitive.ObjectID
+		for _, id := range *f.Ids {
+			if objId, err := primitive.ObjectIDFromHex(id); err == nil {
+				objectIds = append(objectIds, objId)
+			}
+		}
+		if len(objectIds) > 0 {
+			ands = append(ands, bson.M{"_id": bson.M{"$in": objectIds}})
+		}
 	}
 
 	if f.Username != nil {
