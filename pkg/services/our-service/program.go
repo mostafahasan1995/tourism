@@ -417,3 +417,9 @@ func (p *programsvcs) Delete(ctx context.Context, id string) error {
 func (p *programsvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return p.repo.Count(ctx, filter)
 }
+
+func (p *programsvcs) GetProgramDetials(ctx context.Context, id string) (*models.Program, error) {
+
+	return nil, nil
+
+}

@@ -25,6 +25,45 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var programLookup = []bson.M{
+	{"$lookup": bson.M{
+		"from":         "tourismPrograms",
+		"localField":   "program",
+		"foreignField": "_id",
+		"as":           "programData",
+	}},
+	{"$unwind": bson.M{
+		"path":                       "$programData",
+		"preserveNullAndEmptyArrays": true,
+	}},
+}
+
+var travelReqCustomerLookup = []bson.M{
+	{"$lookup": bson.M{
+		"from":         "tourismCustomers",
+		"localField":   "customerId",
+		"foreignField": "_id",
+		"as":           "customerData",
+	}},
+	{"$unwind": bson.M{
+		"path":                       "$customerData",
+		"preserveNullAndEmptyArrays": true,
+	}},
+}
+
+var travelReqPackageLookup = []bson.M{
+	{"$lookup": bson.M{
+		"from":         "tourismPackages",
+		"localField":   "package",
+		"foreignField": "_id",
+		"as":           "packageData",
+	}},
+	{"$unwind": bson.M{
+		"path":                       "$packageData",
+		"preserveNullAndEmptyArrays": true,
+	}},
+}
+
 type TravelRequestSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query any) (*models.TravelRequestPagination, error)
 	GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.CustomerTravelRequestPagination, error)
@@ -32,7 +71,7 @@ type TravelRequestSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.TravelRequest, error)
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
-	MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error)
+	MyRequests(ctx context.Context, status string) ([]models.TravelRequestRes, error)
 	//UpdateStatus(ctx context.Context, id string, data *models.ChangeStatusDto) (*models.TravelRequest, error)
 	Patch(ctx context.Context, filter, update bson.M) (*models.TravelRequest, error)
 	BulkWrite(ctx context.Context, writes []mongo.WriteModel) (*mongo.BulkWriteResult, error)
@@ -97,16 +136,9 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query an
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	pipeline = append(pipeline, bson.M{"$lookup": bson.M{
-		"from":         "tourismPrograms",
-		"localField":   "program",
-		"foreignField": "_id",
-		"as":           "programData",
-	}})
-	pipeline = append(pipeline, bson.M{"$unwind": bson.M{
-		"path":                       "$programData",
-		"preserveNullAndEmptyArrays": true,
-	}})
+	pipeline = append(pipeline, programLookup...)
+	pipeline = append(pipeline, travelReqCustomerLookup...)
+	pipeline = append(pipeline, travelReqPackageLookup...)
 
 	var result []models.TravelRequestRes
 	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -138,16 +170,10 @@ func (t *travelrequestsvcs) GetAll(ctx context.Context, query any) ([]models.Tra
 
 	pipeline := f.BuildPipeline(match)
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
-	pipeline = append(pipeline, bson.M{"$lookup": bson.M{
-		"from":         "tourismPrograms",
-		"localField":   "program",
-		"foreignField": "_id",
-		"as":           "programData",
-	}})
-	pipeline = append(pipeline, bson.M{"$unwind": bson.M{
-		"path":                       "$programData",
-		"preserveNullAndEmptyArrays": true,
-	}})
+
+	pipeline = append(pipeline, programLookup...)
+	pipeline = append(pipeline, travelReqCustomerLookup...)
+	pipeline = append(pipeline, travelReqPackageLookup...)
 
 	var result []models.TravelRequestRes
 	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -312,7 +338,7 @@ func (t *travelrequestsvcs) Update(ctx context.Context, id string, data *models.
 
 }
 
-func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]models.TravelRequest, error) {
+func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]models.TravelRequestRes, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
@@ -329,7 +355,11 @@ func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]mo
 		{"$sort": bson.M{"_id": -1}},
 	}
 
-	var requests []models.TravelRequest
+	pipeline = append(pipeline, programLookup...)
+	pipeline = append(pipeline, travelReqCustomerLookup...)
+	pipeline = append(pipeline, travelReqPackageLookup...)
+
+	var requests []models.TravelRequestRes
 	err = t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &requests)
 	})
