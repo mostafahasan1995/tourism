@@ -527,17 +527,17 @@ func (t *travelrequestsvcs) BulkWrite(ctx context.Context, writes []mongo.WriteM
 }
 
 func (t *travelrequestsvcs) SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error) {
-	_id, err := primitive.ObjectIDFromHex(id)
+	_id, err := primitive.ObjectIDFromHex(id) // travel request id
 	if err != nil {
 		return nil, err
 	}
 
-	filter := bson.M{"_id": _id}
+	filter := bson.M{"_id": _id, "program": bson.M{"$ne": primitive.NilObjectID}}
 	update := bson.M{"$set": bson.M{"status": enums.TravelReqStatusCompleted}}
 
 	updatedTravelReq, err := t.repo.Patch(ctx, filter, update)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("error updated status , check if travel request has program")
 	}
 
 	return updatedTravelReq, nil

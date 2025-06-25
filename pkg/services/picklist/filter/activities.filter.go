@@ -1,40 +1,45 @@
 package filter
 
 import (
-	"encoding/json"
+	"fmt"
+	"regexp"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ActivitiesFilter struct {
-	SearchWord string `json:"searchWord"`
-	Page       int64  `json:"page"`
-	Size       int64  `json:"size"`
-}
-
-func NewActivitiesFilter(query string) (*ActivitiesFilter, error) {
-	f := &ActivitiesFilter{}
-	if query != "" {
-		if err := json.Unmarshal([]byte(query), f); err != nil {
-			return nil, err
-		}
-	}
-	return f, nil
+	SearchWord    *string              `json:"searchWord"`
+	ActivitiesIds []primitive.ObjectID `json:"activitiesIds"`
+	Page          *int64               `json:"page"`
+	Size          *int64               `json:"size"`
 }
 
 func (f ActivitiesFilter) BuildPipeline(m bson.M) []bson.M {
-	if m == nil {
-		m = bson.M{}
+
+	var ands []bson.M
+	if f.SearchWord != nil {
+		pattern := fmt.Sprintf(".*%s.*", *f.SearchWord)
+		re, _ := regexp.Compile(pattern)
+		wordFilter := bson.M{
+			"$expr": bson.M{
+				"$regexMatch": bson.M{
+					"input":   "$name",
+					"regex":   re.String(),
+					"options": "i",
+				},
+			},
+		}
+
+		ands = append(ands, wordFilter)
 	}
 
-	// Default filter for non-trashed items
-	m["trash"] = bson.M{"$ne": true}
+	if len(f.ActivitiesIds) > 0 {
+		m["_id"] = bson.M{"$in": f.ActivitiesIds}
+	}
 
-	if f.SearchWord != "" {
-		m["name"] = bson.M{
-			"$regex":   f.SearchWord,
-			"$options": "i",
-		}
+	if len(ands) > 0 {
+		m["$and"] = ands
 	}
 
 	return []bson.M{

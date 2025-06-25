@@ -44,7 +44,7 @@ func (a *activitiesSvcs) GetOne(ctx context.Context, id string) (*models.Activit
 }
 
 func (a *activitiesSvcs) GetAll(ctx context.Context, query any) ([]models.Activities, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	filters, err := helpers.ParseFilters[filter.ActivitiesFilter](query)
 	if err != nil {
