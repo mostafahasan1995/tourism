@@ -21,8 +21,9 @@ import (
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
-	GetAll(ctx context.Context) ([]models.Review, error)
+	GetAllApproved(ctx context.Context) ([]models.Review, error)
 	GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
+	GetAllWithoutPagination(ctx context.Context, query any) ([]models.Review, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	AddFromDashboard(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
@@ -46,9 +47,10 @@ func NewReviewsSvcs(i *do.Injector) (ReviewsSvcs, error) {
 	}, nil
 }
 
-func (s *reviewsSvcs) GetAll(ctx context.Context) ([]models.Review, error) {
+func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.Review, error) {
 	pipeline := []bson.M{
-		{"$match": bson.M{"trash": false}},
+		{"$match": bson.M{"trash": false, "status": "approved"}},
+		{"$sort": bson.M{"date": -1, "createdAt": -1}},
 	}
 
 	var result []models.Review
@@ -63,7 +65,29 @@ func (s *reviewsSvcs) GetAll(ctx context.Context) ([]models.Review, error) {
 	}
 
 	return result, nil
+}
 
+func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([]models.Review, error) {
+	match := bson.M{}
+
+	filters, err := helpers.ParseFilters[filter.ReviewsFilter](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	// Don't filter by status - get all reviews regardless of status
+	pipeline := filters.BuildPipeline(match)
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+
+	var result []models.Review
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
 
 func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error) {

@@ -41,8 +41,9 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		})
 		//dashboard
 		r.With(middleware.Auth("authenticate")).Post("/dashboard", helpers.Make(h.AddDashboardReview))
-		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
-		r.With(middleware.Auth("authenticate")).Get("/admin/all", helpers.Make(h.GetAllWithPagination))
+		r.Get("/all", helpers.Make(h.GetAllApproved))
+		r.With(middleware.Auth("authenticate")).Get("/admin", helpers.Make(h.GetAllWithPagination))
+		r.With(middleware.Auth("authenticate")).Get("/admin/all", helpers.Make(h.GetAllWithoutPagination))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -52,13 +53,26 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectReview))
 	})
 }
-func (h *ReviewsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+func (h *ReviewsHandler) GetAllApproved(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.reviewsSvcs.GetAll(ctx)
+	result, err := h.reviewsSvcs.GetAllApproved(ctx)
 	if err != nil {
 		return err
 	}
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
+func (h *ReviewsHandler) GetAllWithoutPagination(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.reviewsSvcs.GetAllWithoutPagination(ctx, query)
+	if err != nil {
+		return err
+	}
+
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
