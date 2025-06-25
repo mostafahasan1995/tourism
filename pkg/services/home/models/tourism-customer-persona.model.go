@@ -16,9 +16,9 @@ type TravelPerkDto struct {
 
 type CustomerPersonaDto struct {
 	Title                  string             `bson:"title" json:"title" validate:"required"`
-	ExplorationPreferences []string           `bson:"explorationPreferences" json:"explorationPreferences"` // What's your ideal way to explore a new city?
-	RelaxationPreferences  []string           `bson:"relaxationPreferences" json:"relaxationPreferences"`   // How do you prefer to relax during a trip?
-	TravelMustHaves        []string           `bson:"travelMustHaves" json:"travelMustHaves"`               // What's your biggest travel must-have?
+	ExplorationPreferences string             `bson:"explorationPreferences" json:"explorationPreferences"` // What's your ideal way to explore a new city?
+	RelaxationPreferences  string             `bson:"relaxationPreferences" json:"relaxationPreferences"`   // How do you prefer to relax during a trip?
+	TravelMustHaves        string             `bson:"travelMustHaves" json:"travelMustHaves"`               // What's your biggest travel must-have?
 	TravelPerks            []TravelPerkDto    `bson:"travelPerks" json:"travelPerks"`                       // Special perks for this persona
 	PersonaImage           types.FileField    `bson:"personaImage" json:"personaImage" validate:"required"` // Visual representation of the persona
 	Description            string             `bson:"description" json:"description"`                       // Detailed description

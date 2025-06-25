@@ -42,6 +42,7 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		//dashboard
 		r.With(middleware.Auth("authenticate")).Post("/dashboard", helpers.Make(h.AddDashboardReview))
 		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
+		r.With(middleware.Auth("authenticate")).Get("/admin/all", helpers.Make(h.GetAllWithPagination))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -60,6 +61,25 @@ func (h *ReviewsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	}
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
+
+func (h *ReviewsHandler) GetAllWithPagination(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.reviewsSvcs.GetAllWithPagination(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJson(w, http.StatusOK, result)
+}
+
 func (h *ReviewsHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
