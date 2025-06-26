@@ -97,8 +97,31 @@ var customerLookup = []bson.M{
 	},
 }
 
+var durationLookup = bson.M{
+	"$addFields": bson.M{
+		"duration": bson.M{
+			"$cond": bson.M{
+				"if": bson.M{
+					"$and": []interface{}{
+						bson.M{"$ne": []interface{}{"$startDate", nil}},
+						bson.M{"$ne": []interface{}{"$endDate", nil}},
+					},
+				},
+				"then": bson.M{
+					"$dateDiff": bson.M{
+						"startDate": "$startDate",
+						"endDate":   "$endDate",
+						"unit":      "day",
+					},
+				},
+				"else": 0,
+			},
+		},
+	},
+}
+
 type ProgramSvcs interface {
-	GetOne(ctx context.Context, id string) (*models.Program, error)
+	GetOne(ctx context.Context, id string) (*models.ProgramRes, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
 	GetAll(ctx context.Context, query string) ([]models.Program, error)
 	Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error)
@@ -125,13 +148,41 @@ func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 
 //
 
-func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.Program, error) {
+func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, err
 	}
 
-	return p.repo.GetByFilter(ctx, bson.M{"_id": _id})
+	// Build aggregation pipeline for detailed program information
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"_id":   _id,
+				"trash": false,
+			},
+		},
+	}
+
+	// Add lookups for comprehensive data
+	pipeline = append(pipeline, customerLookup...)
+	pipeline = append(pipeline, packageLookup...)
+	pipeline = append(pipeline, updatedByUserLookup...)
+	pipeline = append(pipeline, durationLookup)
+
+	var result []models.ProgramRes
+	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	if len(result) == 0 {
+		return nil, errors.New("program not found")
+	}
+
+	return &result[0], nil
 }
 
 func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error) {
@@ -159,6 +210,9 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, customerLookup...)
 	pipeline = append(pipeline, packageLookup...)
 	pipeline = append(pipeline, updatedByUserLookup...)
+
+	// Calculate duration in days between startDate and endDate
+	pipeline = append(pipeline, durationLookup)
 
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -418,8 +472,96 @@ func (p *programsvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return p.repo.Count(ctx, filter)
 }
 
-func (p *programsvcs) GetProgramDetials(ctx context.Context, id string) (*models.Program, error) {
+func (p *programsvcs) GetProgramDetials(ctx context.Context, id string) (*models.ProgramRes, error) {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
 
-	return nil, nil
+	// Build aggregation pipeline for detailed program information
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"_id":   _id,
+				"trash": false,
+			},
+		},
+	}
 
+	// Add lookups for comprehensive data
+	pipeline = append(pipeline, customerLookup...)
+	pipeline = append(pipeline, packageLookup...)
+	pipeline = append(pipeline, updatedByUserLookup...)
+	pipeline = append(pipeline, durationLookup)
+
+	// Add travel request lookup if needed
+	travelRequestLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "travelRequests",
+			"localField":   "travelReqId",
+			"foreignField": "_id",
+			"as":           "travelRequestObj",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$travelRequestObj",
+			"preserveNullAndEmptyArrays": true,
+		}},
+		{
+			"$set": bson.M{
+				"travelRequestStatus": "$travelRequestObj.status",
+				"travelRequestTitle":  "$travelRequestObj.title",
+			},
+		},
+		{
+			"$project": bson.M{
+				"travelRequestObj": 0,
+			},
+		},
+	}
+	pipeline = append(pipeline, travelRequestLookup...)
+
+	// Add created by user lookup
+	createdByUserLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "createdBy",
+			"foreignField": "_id",
+			"as":           "createdByUser",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$createdByUser",
+			"preserveNullAndEmptyArrays": true,
+		}},
+		{
+			"$set": bson.M{
+				"createdByName": bson.M{
+					"$concat": []interface{}{
+						"$createdByUser.firstName",
+						" ",
+						"$createdByUser.lastName",
+					},
+				},
+			},
+		},
+		{
+			"$project": bson.M{
+				"createdByUser": 0,
+			},
+		},
+	}
+	pipeline = append(pipeline, createdByUserLookup...)
+
+	var result []models.ProgramRes
+	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	if len(result) == 0 {
+		return nil, errors.New("program not found")
+	}
+
+	return &result[0], nil
 }
