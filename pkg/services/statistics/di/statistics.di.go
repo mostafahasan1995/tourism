@@ -10,16 +10,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
-	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // Init registers all statistics-related dependencies and handlers
 func Init(injector *do.Injector, router *chi.Mux) {
 	// Register the manual statistics repository
-	do.Provide(injector, func(i *do.Injector) (repository.ManualStatisticsRepository, error) {
-		db := do.MustInvoke[*mongo.Database](i)
-		return repository.NewManualStatisticsRepository(db), nil
-	})
+	do.Provide(injector, repository.NewManualStatisticsRepository)
 
 	// Register the statistics service
 	do.Provide(injector, func(i *do.Injector) (statistics.StatisticsSvcs, error) {

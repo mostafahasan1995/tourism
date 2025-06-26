@@ -3,8 +3,10 @@ package repository
 import (
 	"context"
 	"larsa-tourism-microservices/pkg/services/statistics/models"
+	"larsa-tourism-microservices/pkg/util"
 	"time"
 
+	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,18 +21,25 @@ type ManualStatisticsRepository interface {
 }
 
 type manualStatisticsRepository struct {
-	collection *mongo.Collection
+	db       *mongo.Client
+	collName string
 }
 
-func NewManualStatisticsRepository(db *mongo.Database) ManualStatisticsRepository {
+func NewManualStatisticsRepository(i *do.Injector) (ManualStatisticsRepository, error) {
 	return &manualStatisticsRepository{
-		collection: db.Collection("manual_statistics"),
-	}
+		db:       do.MustInvoke[*mongo.Client](i),
+		collName: "manualStatistics",
+	}, nil
 }
 
 func (r *manualStatisticsRepository) GetManualStatistics(ctx context.Context) (*models.ManualStatistics, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+	coll := r.db.Database(cfg.Db).Collection(r.collName)
 	var stats models.ManualStatistics
-	err := r.collection.FindOne(ctx, bson.M{}).Decode(&stats)
+	err = coll.FindOne(ctx, bson.M{}).Decode(&stats)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			// Return default statistics with auto-calculate enabled
@@ -46,6 +55,11 @@ func (r *manualStatisticsRepository) GetManualStatistics(ctx context.Context) (*
 }
 
 func (r *manualStatisticsRepository) UpdateManualStatistics(ctx context.Context, stats *models.ManualStatistics) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+	coll := r.db.Database(cfg.Db).Collection(r.collName)
 	stats.UpdatedAt = time.Now()
 
 	filter := bson.M{}
@@ -54,20 +68,30 @@ func (r *manualStatisticsRepository) UpdateManualStatistics(ctx context.Context,
 	}
 
 	opts := options.Update().SetUpsert(true)
-	_, err := r.collection.UpdateOne(ctx, filter, update, opts)
+	_, err = coll.UpdateOne(ctx, filter, update, opts)
 	return err
 }
 
 func (r *manualStatisticsRepository) CreateManualStatistics(ctx context.Context, stats *models.ManualStatistics) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+	coll := r.db.Database(cfg.Db).Collection(r.collName)
 	stats.ID = primitive.NewObjectID()
 	stats.CreatedAt = time.Now()
 	stats.UpdatedAt = time.Now()
 
-	_, err := r.collection.InsertOne(ctx, stats)
+	_, err = coll.InsertOne(ctx, stats)
 	return err
 }
 
 func (r *manualStatisticsRepository) ToggleAutoCalculate(ctx context.Context, autoCalculate bool) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+	coll := r.db.Database(cfg.Db).Collection(r.collName)
 	filter := bson.M{}
 	update := bson.M{
 		"$set": bson.M{
@@ -77,6 +101,6 @@ func (r *manualStatisticsRepository) ToggleAutoCalculate(ctx context.Context, au
 	}
 
 	opts := options.Update().SetUpsert(true)
-	_, err := r.collection.UpdateOne(ctx, filter, update, opts)
+	_, err = coll.UpdateOne(ctx, filter, update, opts)
 	return err
 }
