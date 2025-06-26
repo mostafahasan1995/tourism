@@ -12,7 +12,7 @@ type ClientStoryDto struct {
 	Country     string            `bson:"country" json:"country"`
 	City        string            `bson:"city" json:"city"`
 	Description string            `bson:"description" json:"description"`
-	CoverImage  []types.FileField `bson:"coverImage" json:"CoverImage"`
+	CoverImage  types.FileField   `bson:"coverImage" json:"CoverImage"`
 	Videos      []types.FileField `bson:"videos" json:"videos"`
 }
 
