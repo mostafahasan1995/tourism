@@ -472,96 +472,96 @@ func (p *programsvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return p.repo.Count(ctx, filter)
 }
 
-func (p *programsvcs) GetProgramDetials(ctx context.Context, id string) (*models.ProgramRes, error) {
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
+// func (p *programsvcs) GetProgramDetials(ctx context.Context, id string) (*models.ProgramRes, error) {
+// 	_id, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// Build aggregation pipeline for detailed program information
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"_id":   _id,
-				"trash": false,
-			},
-		},
-	}
+// 	// Build aggregation pipeline for detailed program information
+// 	pipeline := []bson.M{
+// 		{
+// 			"$match": bson.M{
+// 				"_id":   _id,
+// 				"trash": false,
+// 			},
+// 		},
+// 	}
 
-	// Add lookups for comprehensive data
-	pipeline = append(pipeline, customerLookup...)
-	pipeline = append(pipeline, packageLookup...)
-	pipeline = append(pipeline, updatedByUserLookup...)
-	pipeline = append(pipeline, durationLookup)
+// 	// Add lookups for comprehensive data
+// 	pipeline = append(pipeline, customerLookup...)
+// 	pipeline = append(pipeline, packageLookup...)
+// 	pipeline = append(pipeline, updatedByUserLookup...)
+// 	pipeline = append(pipeline, durationLookup)
 
-	// Add travel request lookup if needed
-	travelRequestLookup := []bson.M{
-		{"$lookup": bson.M{
-			"from":         "travelRequests",
-			"localField":   "travelReqId",
-			"foreignField": "_id",
-			"as":           "travelRequestObj",
-		}},
-		{"$unwind": bson.M{
-			"path":                       "$travelRequestObj",
-			"preserveNullAndEmptyArrays": true,
-		}},
-		{
-			"$set": bson.M{
-				"travelRequestStatus": "$travelRequestObj.status",
-				"travelRequestTitle":  "$travelRequestObj.title",
-			},
-		},
-		{
-			"$project": bson.M{
-				"travelRequestObj": 0,
-			},
-		},
-	}
-	pipeline = append(pipeline, travelRequestLookup...)
+// 	// Add travel request lookup if needed
+// 	travelRequestLookup := []bson.M{
+// 		{"$lookup": bson.M{
+// 			"from":         "travelRequests",
+// 			"localField":   "travelReqId",
+// 			"foreignField": "_id",
+// 			"as":           "travelRequestObj",
+// 		}},
+// 		{"$unwind": bson.M{
+// 			"path":                       "$travelRequestObj",
+// 			"preserveNullAndEmptyArrays": true,
+// 		}},
+// 		{
+// 			"$set": bson.M{
+// 				"travelRequestStatus": "$travelRequestObj.status",
+// 				"travelRequestTitle":  "$travelRequestObj.title",
+// 			},
+// 		},
+// 		{
+// 			"$project": bson.M{
+// 				"travelRequestObj": 0,
+// 			},
+// 		},
+// 	}
+// 	pipeline = append(pipeline, travelRequestLookup...)
 
-	// Add created by user lookup
-	createdByUserLookup := []bson.M{
-		{"$lookup": bson.M{
-			"from":         "users",
-			"localField":   "createdBy",
-			"foreignField": "_id",
-			"as":           "createdByUser",
-		}},
-		{"$unwind": bson.M{
-			"path":                       "$createdByUser",
-			"preserveNullAndEmptyArrays": true,
-		}},
-		{
-			"$set": bson.M{
-				"createdByName": bson.M{
-					"$concat": []interface{}{
-						"$createdByUser.firstName",
-						" ",
-						"$createdByUser.lastName",
-					},
-				},
-			},
-		},
-		{
-			"$project": bson.M{
-				"createdByUser": 0,
-			},
-		},
-	}
-	pipeline = append(pipeline, createdByUserLookup...)
+// 	// Add created by user lookup
+// 	createdByUserLookup := []bson.M{
+// 		{"$lookup": bson.M{
+// 			"from":         "users",
+// 			"localField":   "createdBy",
+// 			"foreignField": "_id",
+// 			"as":           "createdByUser",
+// 		}},
+// 		{"$unwind": bson.M{
+// 			"path":                       "$createdByUser",
+// 			"preserveNullAndEmptyArrays": true,
+// 		}},
+// 		{
+// 			"$set": bson.M{
+// 				"createdByName": bson.M{
+// 					"$concat": []interface{}{
+// 						"$createdByUser.firstName",
+// 						" ",
+// 						"$createdByUser.lastName",
+// 					},
+// 				},
+// 			},
+// 		},
+// 		{
+// 			"$project": bson.M{
+// 				"createdByUser": 0,
+// 			},
+// 		},
+// 	}
+// 	pipeline = append(pipeline, createdByUserLookup...)
 
-	var result []models.ProgramRes
-	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		return cur.All(ctx, &result)
-	})
-	if errAg != nil {
-		return nil, errAg
-	}
+// 	var result []models.ProgramRes
+// 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+// 		return cur.All(ctx, &result)
+// 	})
+// 	if errAg != nil {
+// 		return nil, errAg
+// 	}
 
-	if len(result) == 0 {
-		return nil, errors.New("program not found")
-	}
+// 	if len(result) == 0 {
+// 		return nil, errors.New("program not found")
+// 	}
 
-	return &result[0], nil
-}
+// 	return &result[0], nil
+// }

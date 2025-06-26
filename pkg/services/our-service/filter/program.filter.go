@@ -31,7 +31,8 @@ type ProgramFilter struct {
 	UpdatedBy    *primitive.ObjectID  `json:"updatedBy"`
 
 	// Website-specific filters
-	Destinations   []DestinationFilter  `json:"destinations"`   // Filter by destination pairs
+	//Destinations   []DestinationFilter  `json:"destinations"`   // Filter by destination pairs
+	DestinationIds []primitive.ObjectID `json:"destinationIds"` // Filter by destination IDs
 	Activities     []primitive.ObjectID `json:"activities"`     // Filter by activity IDs
 	MinPrice       *float64             `json:"minPrice"`       // Minimum price filter
 	MaxPrice       *float64             `json:"maxPrice"`       // Maximum price filter
@@ -124,36 +125,40 @@ func (f ProgramFilter) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	// Website-specific filters for general programs
-	if len(f.Destinations) > 0 {
-		orConditions := make([]bson.M, 0)
-		for _, dest := range f.Destinations {
-			if dest.DestinationFrom != nil && dest.DestinationTo != nil {
-				// Match programs that have both from and to destinations
-				orConditions = append(orConditions, bson.M{
-					"$and": []bson.M{
-						{"generalType.destinations": bson.M{
-							"$elemMatch": bson.M{"from": *dest.DestinationFrom},
-						}},
-						{"generalType.destinations": bson.M{
-							"$elemMatch": bson.M{"to": *dest.DestinationTo},
-						}},
-					},
-				})
-			} else if dest.DestinationFrom != nil {
-				// Match programs that have the from destination
-				orConditions = append(orConditions, bson.M{
-					"generalType.destinations.from": *dest.DestinationFrom,
-				})
-			} else if dest.DestinationTo != nil {
-				// Match programs that have the to destination
-				orConditions = append(orConditions, bson.M{
-					"generalType.destinations.to": *dest.DestinationTo,
-				})
-			}
-		}
-		if len(orConditions) > 0 {
-			m["$or"] = orConditions
-		}
+	// if len(f.Destinations) > 0 {
+	// 	orConditions := make([]bson.M, 0)
+	// 	for _, dest := range f.Destinations {
+	// 		if dest.DestinationFrom != nil && dest.DestinationTo != nil {
+	// 			// Match programs that have both from and to destinations
+	// 			orConditions = append(orConditions, bson.M{
+	// 				"$and": []bson.M{
+	// 					{"generalType.destinations": bson.M{
+	// 						"$elemMatch": bson.M{"from": *dest.DestinationFrom},
+	// 					}},
+	// 					{"generalType.destinations": bson.M{
+	// 						"$elemMatch": bson.M{"to": *dest.DestinationTo},
+	// 					}},
+	// 				},
+	// 			})
+	// 		} else if dest.DestinationFrom != nil {
+	// 			// Match programs that have the from destination
+	// 			orConditions = append(orConditions, bson.M{
+	// 				"generalType.destinations.from": *dest.DestinationFrom,
+	// 			})
+	// 		} else if dest.DestinationTo != nil {
+	// 			// Match programs that have the to destination
+	// 			orConditions = append(orConditions, bson.M{
+	// 				"generalType.destinations.to": *dest.DestinationTo,
+	// 			})
+	// 		}
+	// 	}
+	// 	if len(orConditions) > 0 {
+	// 		m["$or"] = orConditions
+	// 	}
+	// }
+
+	if len(f.DestinationIds) > 0 {
+		m["generalType.destinations.from"] = bson.M{"$in": f.DestinationIds}
 	}
 
 	if len(f.Activities) > 0 {

@@ -3,7 +3,7 @@
 
 
 const q = encodeURIComponent(JSON.stringify({
-    "programType":"general"
+    "destinationIds":["684ae381f5287f24dbfce7d0"]
 }))
 
 
