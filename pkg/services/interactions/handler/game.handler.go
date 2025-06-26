@@ -27,7 +27,7 @@ func NewGameHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Get("/customers", helpers.Make(h.GetCustomers))
 		r.With(middleware.Auth("authenticate")).Patch("/boxes/{boxId}", helpers.Make(h.UpdateBox))
 		//r.With(middleware.Auth("authenticate")).Post("/boxes/{boxid}/open", helpers.Make(h.OpenBox))
-		r.With(middleware.Auth("authenticate")).Post("/boxes/try", helpers.Make(h.TryBox))
+		r.Post("/boxes/try", helpers.Make(h.TryBox))
 		r.With(middleware.Auth("authenticate")).Patch("/settings", helpers.Make(h.UpdateSettings))
 	})
 }
