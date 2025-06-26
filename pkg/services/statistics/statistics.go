@@ -6,6 +6,8 @@ import (
 	ourservice "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/picklist"
+	"larsa-tourism-microservices/pkg/services/statistics/models"
+	"larsa-tourism-microservices/pkg/services/statistics/repository"
 
 	"go.mongodb.org/mongo-driver/bson"
 )
@@ -26,6 +28,10 @@ type StatisticsSvcs interface {
 	GetCountriesCount(ctx context.Context) (int64, error)
 	GetHotelsCount(ctx context.Context) (int64, error)
 	GetHappyTravelersCount(ctx context.Context) (int64, error)
+	// Manual statistics methods
+	GetManualStatistics(ctx context.Context) (*models.ManualStatistics, error)
+	UpdateManualStatistics(ctx context.Context, req *models.ManualStatisticsRequest) (*models.ManualStatistics, error)
+	ToggleAutoCalculate(ctx context.Context, autoCalculate bool) (*models.ManualStatistics, error)
 }
 
 type statisticsSvcs struct {
@@ -35,6 +41,7 @@ type statisticsSvcs struct {
 	packageSvcs       ourservice.PackageSvcs
 	destSvcs          picklist.DestinationSvcs
 	reviewSvcs        interactions.ReviewsSvcs
+	manualStatsRepo   repository.ManualStatisticsRepository
 }
 
 func NewStatisticsSvcs(
@@ -44,6 +51,7 @@ func NewStatisticsSvcs(
 	packageSvcs ourservice.PackageSvcs,
 	destSvcs picklist.DestinationSvcs,
 	reviewSvcs interactions.ReviewsSvcs,
+	manualStatsRepo repository.ManualStatisticsRepository,
 ) StatisticsSvcs {
 	return &statisticsSvcs{
 		programSvcs:       programSvcs,
@@ -52,11 +60,30 @@ func NewStatisticsSvcs(
 		packageSvcs:       packageSvcs,
 		destSvcs:          destSvcs,
 		reviewSvcs:        reviewSvcs,
+		manualStatsRepo:   manualStatsRepo,
 	}
 }
 
 // GetStatistics concurrently fetches all metrics
 func (s *statisticsSvcs) GetStatistics(ctx context.Context) (*StatisticsResponse, error) {
+	// Check if auto-calculate is enabled
+	manualStats, err := s.manualStatsRepo.GetManualStatistics(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// If auto-calculate is disabled, return manual statistics
+	if !manualStats.AutoCalculate {
+		return &StatisticsResponse{
+			ProgramsCount:      manualStats.ProgramsCount,
+			TripsCount:         manualStats.TripsCount,
+			CountriesCount:     manualStats.CountriesCount,
+			HotelsCount:        manualStats.HotelsCount,
+			HappyTravelerCount: manualStats.HappyTravelerCount,
+		}, nil
+	}
+
+	// Auto-calculate is enabled, fetch real data
 	programsCh := make(chan int64)
 	tripsCh := make(chan int64)
 	countriesCh := make(chan int64)
@@ -150,7 +177,7 @@ func (s *statisticsSvcs) GetHotelsCount(ctx context.Context) (int64, error) {
 
 func (s *statisticsSvcs) GetHappyTravelersCount(ctx context.Context) (int64, error) {
 
-	reviews, err := s.reviewSvcs.GetAll(ctx)
+	reviews, err := s.reviewSvcs.GetAllApproved(ctx)
 	if err != nil {
 		return 0, err
 	}
@@ -174,4 +201,56 @@ func (s *statisticsSvcs) GetHappyTravelersCount(ctx context.Context) (int64, err
 	}
 
 	return int64(len(uniqueUsers)), nil
+}
+
+// GetManualStatistics retrieves the current manual statistics configuration
+func (s *statisticsSvcs) GetManualStatistics(ctx context.Context) (*models.ManualStatistics, error) {
+	return s.manualStatsRepo.GetManualStatistics(ctx)
+}
+
+// UpdateManualStatistics updates manual statistics values
+func (s *statisticsSvcs) UpdateManualStatistics(ctx context.Context, req *models.ManualStatisticsRequest) (*models.ManualStatistics, error) {
+	// Get current manual statistics
+	currentStats, err := s.manualStatsRepo.GetManualStatistics(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update only provided fields
+	if req.ProgramsCount != nil {
+		currentStats.ProgramsCount = *req.ProgramsCount
+	}
+	if req.TripsCount != nil {
+		currentStats.TripsCount = *req.TripsCount
+	}
+	if req.CountriesCount != nil {
+		currentStats.CountriesCount = *req.CountriesCount
+	}
+	if req.HotelsCount != nil {
+		currentStats.HotelsCount = *req.HotelsCount
+	}
+	if req.HappyTravelerCount != nil {
+		currentStats.HappyTravelerCount = *req.HappyTravelerCount
+	}
+	if req.AutoCalculate != nil {
+		currentStats.AutoCalculate = *req.AutoCalculate
+	}
+
+	// Update in database
+	err = s.manualStatsRepo.UpdateManualStatistics(ctx, currentStats)
+	if err != nil {
+		return nil, err
+	}
+
+	return currentStats, nil
+}
+
+// ToggleAutoCalculate toggles the auto-calculate mode
+func (s *statisticsSvcs) ToggleAutoCalculate(ctx context.Context, autoCalculate bool) (*models.ManualStatistics, error) {
+	err := s.manualStatsRepo.ToggleAutoCalculate(ctx, autoCalculate)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.manualStatsRepo.GetManualStatistics(ctx)
 }

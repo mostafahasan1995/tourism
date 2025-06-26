@@ -6,6 +6,7 @@ import (
 	picklist "larsa-tourism-microservices/pkg/services/picklist"
 	"larsa-tourism-microservices/pkg/services/statistics"
 	"larsa-tourism-microservices/pkg/services/statistics/handler"
+	"larsa-tourism-microservices/pkg/services/statistics/repository"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
@@ -13,6 +14,9 @@ import (
 
 // Init registers all statistics-related dependencies and handlers
 func Init(injector *do.Injector, router *chi.Mux) {
+	// Register the manual statistics repository
+	do.Provide(injector, repository.NewManualStatisticsRepository)
+
 	// Register the statistics service
 	do.Provide(injector, func(i *do.Injector) (statistics.StatisticsSvcs, error) {
 		programSvcs := do.MustInvoke[ourservice.ProgramSvcs](i)
@@ -21,6 +25,7 @@ func Init(injector *do.Injector, router *chi.Mux) {
 		packageSvcs := do.MustInvoke[ourservice.PackageSvcs](i)
 		destSvcs := do.MustInvoke[picklist.DestinationSvcs](i)
 		reviewSvcs := do.MustInvoke[interactions.ReviewsSvcs](i)
+		manualStatsRepo := do.MustInvoke[repository.ManualStatisticsRepository](i)
 
 		return statistics.NewStatisticsSvcs(
 			programSvcs,
@@ -29,6 +34,7 @@ func Init(injector *do.Injector, router *chi.Mux) {
 			packageSvcs,
 			destSvcs,
 			reviewSvcs,
+			manualStatsRepo,
 		), nil
 	})
 

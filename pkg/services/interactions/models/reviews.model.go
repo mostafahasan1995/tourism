@@ -25,7 +25,7 @@ type ReviewDto struct {
 	UserImg            *types.FileField       `bson:"userImg,omitempty" json:"userImg,omitempty"`
 	Destination        string                 `bson:"destination,omitempty" json:"destination,omitempty"`
 	Countries          []string               `bson:"countries,omitempty" json:"countries,omitempty"`
-	Description        string                 `bson:"description" json:"description" validate:"required"`
+	Description        interface{}            `bson:"description" json:"description" validate:"required"`
 	AdviceForTravelers string                 `bson:"adviceForTravelers,omitempty" json:"adviceForTravelers,omitempty"`
 	Value              float64                `bson:"value" json:"value" validate:"required,min=1,max=5"`
 	Images             []types.FileField      `bson:"images" json:"images"`
