@@ -14,7 +14,7 @@ type TravelerStoryDto struct {
 	DiaryTitle   string               `bson:"diaryTitle" json:"diaryTitle"`
 	TripType     string               `bson:"tripType" json:"tripType"`
 	Bio          string               `bson:"bio" json:"bio"`
-	CoverImage   []types.FileField    `bson:"coverImage" json:"coverImage"`
+	CoverImage   types.FileField      `bson:"coverImage" json:"coverImage"`
 	Status       string               `bson:"status" json:"status"`
 	ZoneName     string               `bson:"zoneName" json:"zoneName"`
 	Description  string               `bson:"description" json:"description"`
