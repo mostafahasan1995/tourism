@@ -35,6 +35,7 @@ const (
 	ProgramServiceTypeHotelBooking   ProgramServiceType = "hotel-booking"
 )
 
+//travel type
 type TravelType string
 
 const (
@@ -47,4 +48,13 @@ const (
 	TravelTypeBusinessTrip        TravelType = "business-trip"            // Business Trip (رحلة عمل)
 	TravelTypeShoppingTrip        TravelType = "shopping-trip"            // Shopping Trip (رحلة تسوق)
 	TravelTypeWellnessMedicalTrip TravelType = "wellness-medical-tourism" // Wellness or Medical Tourism (رحلة صحية أو استشفائية)
+)
+
+//program type
+
+type ProgramType string
+
+const (
+	ProgramTypeGeneral ProgramType = "general"
+	ProgramTypeCustom  ProgramType = "custom"
 )

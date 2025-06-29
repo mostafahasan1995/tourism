@@ -49,7 +49,6 @@ func (l *HotelsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
 
-
 func (l *HotelsHandler) GetAllHotels(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
@@ -140,9 +139,6 @@ func (l *HotelsHandler) GetAllHotels(w http.ResponseWriter, r *http.Request) err
 		return fmt.Errorf("invalid price range: %v", err)
 	}
 
-
-
-
 	result, err := l.hotelssvcs.GetAllHotels(ctx, hotelFilter)
 	if err != nil {
 
@@ -151,6 +147,7 @@ func (l *HotelsHandler) GetAllHotels(w http.ResponseWriter, r *http.Request) err
 
 	return helpers.WriteJson(w, http.StatusOK, result)
 }
+
 func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 

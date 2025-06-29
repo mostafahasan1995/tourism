@@ -45,7 +45,7 @@ type ProgramDto struct {
 	AgentId     primitive.ObjectID       `bson:"agentId" json:"agentId"`
 	Status      string                   `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
 	Package     primitive.ObjectID       `bson:"package" json:"package" `
-	ProgramType string                   `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	ProgramType enums.ProgramType        `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	TravelType  enums.TravelType         `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism"`
 	//
 	Source      string          `bson:"source" json:"source"`

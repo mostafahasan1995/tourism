@@ -20,6 +20,9 @@ import (
 	member "larsa-tourism-microservices/pkg/services/member/di"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
 
+	//
+	transtest "larsa-tourism-microservices/pkg/services/trans-test/di"
+
 	"larsa-tourism-microservices/pkg/util"
 	"log"
 	"net/http"
@@ -97,6 +100,7 @@ func Start() error {
 	interactions.Init(injector, r)
 	marketing.Init(injector, r)
 	statistics.Init(injector, r)
+	transtest.Init(injector, r)
 
 	fmt.Println("start server")
 
