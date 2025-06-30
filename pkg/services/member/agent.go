@@ -2,7 +2,6 @@ package member
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
@@ -19,6 +18,8 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"

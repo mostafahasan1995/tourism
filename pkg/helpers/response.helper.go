@@ -2,10 +2,11 @@ package helpers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
+
+	"github.com/goccy/go-json"
 )
 
 type APIFunc func(w http.ResponseWriter, r *http.Request) error

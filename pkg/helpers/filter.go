@@ -1,8 +1,9 @@
 package helpers
 
 import (
-	"encoding/json"
 	"reflect"
+
+	"github.com/goccy/go-json"
 
 	"go.mongodb.org/mongo-driver/bson"
 )

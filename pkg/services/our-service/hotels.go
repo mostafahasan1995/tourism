@@ -2,7 +2,6 @@ package ourservice
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
@@ -11,6 +10,8 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"log"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"

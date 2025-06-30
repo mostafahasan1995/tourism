@@ -1,10 +1,11 @@
 package filters
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
 	"time"
+
+	"github.com/goccy/go-json"
 
 	"go.mongodb.org/mongo-driver/bson"
 )

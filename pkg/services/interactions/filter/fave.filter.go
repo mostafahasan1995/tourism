@@ -1,8 +1,9 @@
 package filter
 
 import (
-	"encoding/json"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
+
+	"github.com/goccy/go-json"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

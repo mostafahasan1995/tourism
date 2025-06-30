@@ -2,9 +2,10 @@ package transl
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"larsa-tourism-microservices/pkg/util"
+
+	"github.com/goccy/go-json"
 )
 
 type Localizable[T any] map[string]T

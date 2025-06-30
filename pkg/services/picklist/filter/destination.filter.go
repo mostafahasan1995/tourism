@@ -1,7 +1,7 @@
 package filter
 
 import (
-	"encoding/json"
+	"github.com/goccy/go-json"
 
 	"go.mongodb.org/mongo-driver/bson"
 )

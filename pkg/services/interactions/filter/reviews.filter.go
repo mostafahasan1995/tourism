@@ -1,9 +1,10 @@
 package filter
 
 import (
-	"encoding/json"
 	"fmt"
 	"regexp"
+
+	"github.com/goccy/go-json"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"

@@ -2,7 +2,6 @@ package member
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"larsa-tourism-microservices/pkg/gateway"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -11,6 +10,8 @@ import (
 	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 	messagingtpls "larsa-tourism-microservices/pkg/services/messaging/template"
 	"larsa-tourism-microservices/pkg/util"
+
+	"github.com/goccy/go-json"
 
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"

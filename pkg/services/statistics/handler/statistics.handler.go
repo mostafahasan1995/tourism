@@ -1,12 +1,13 @@
 package handler
 
 import (
-	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/statistics"
 	"larsa-tourism-microservices/pkg/services/statistics/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
+
+	"github.com/goccy/go-json"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/samber/do"
