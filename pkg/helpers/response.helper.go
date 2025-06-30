@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"net/http"
 
+	//"encoding/json"
+
 	"github.com/goccy/go-json"
 )
 
@@ -40,7 +42,7 @@ func WriteJson(w http.ResponseWriter, status int, v any) error {
 func WriteJsonCtx(ctx context.Context, w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
+	return json.NewEncoder(w).EncodeContext(ctx, v)
 }
 
 func WriteJsonString(w http.ResponseWriter, status int, v string) error {

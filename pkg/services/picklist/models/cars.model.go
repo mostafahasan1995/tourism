@@ -2,6 +2,7 @@ package models
 
 import (
 	// "larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -10,17 +11,14 @@ import (
 )
 
 type CarsDto struct {
-	CarType string            `bson:"carType" json:"carType"`
-	Images  []types.FileField `bson:"images" json:"images"`
+	CarType transl.Localizable[string] `bson:"carType" json:"carType"`
+	Images  []types.FileField          `bson:"images" json:"images"`
 }
 
 type Cars struct {
-	CarsDto `bson:",inline"`
-
-	Id primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-
-	Trash bool `bson:"trash" json:"trash"`
-
+	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	CarsDto   `bson:",inline"`
+	Trash     bool               `bson:"trash" json:"trash"`
 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
@@ -28,7 +26,6 @@ type Cars struct {
 }
 
 type CarsPagination struct {
-	Cars []Cars `bson:"cars" json:"cars"`
-
+	Cars       []Cars            `bson:"cars" json:"cars"`
 	Pagination common.Pagination `bson:"pagination" json:"pagination"`
 }

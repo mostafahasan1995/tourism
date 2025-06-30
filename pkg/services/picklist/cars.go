@@ -45,7 +45,7 @@ func (c *carsSvcs) GetOne(ctx context.Context, id string) (*models.Cars, error) 
 }
 
 func (c *carsSvcs) GetAll(ctx context.Context, query any) ([]models.Cars, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	filters, err := helpers.ParseFilters[filter.CarsFilter](query)
 	if err != nil {

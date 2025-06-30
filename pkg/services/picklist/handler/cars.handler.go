@@ -44,24 +44,21 @@ func (l *CarsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *CarsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-	filterParam := r.URL.Query().Get("query")
-	var carFilter filter.CarsFilter
-	if filterParam != "" {
-		err := json.Unmarshal([]byte(filterParam), &carFilter)
-		if err != nil {
-			return helpers.InvalidJSON()
-		}
-	}
-	result, err := l.carssvcs.GetAll(ctx, carFilter)
+	query := r.URL.Query().Get("query")
+	result, err := l.carssvcs.GetAll(ctx, query)
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	errRes := helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+	if errRes != nil {
+		return errRes
+	}
+	return nil
 }
 
 func (l *CarsHandler) GetPaginated(w http.ResponseWriter, r *http.Request) error {
@@ -78,14 +75,17 @@ func (l *CarsHandler) GetPaginated(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	if err := helpers.WriteJsonCtx(ctx, w, http.StatusOK, result); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l *CarsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.CarsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -96,7 +96,7 @@ func (l *CarsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, car)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, car)
 }
 
 func (l *CarsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -108,7 +108,7 @@ func (l *CarsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]string{"message": "Car deleted successfully"})
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{"message": "Car deleted successfully"})
 }
 
 func (l *CarsHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -127,5 +127,5 @@ func (l *CarsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, updatedCar)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, updatedCar)
 }

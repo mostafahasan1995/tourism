@@ -64,7 +64,7 @@ func (h *ProgramHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ProgramHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
