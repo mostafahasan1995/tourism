@@ -27,7 +27,6 @@ func NewGameHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/", helpers.Make(h.GetGame))
 		r.With(middleware.Auth("authenticate")).Get("/customers", helpers.Make(h.GetCustomers))
 		r.With(middleware.Auth("authenticate")).Patch("/boxes/{boxId}", helpers.Make(h.UpdateBox))
-		//r.With(middleware.Auth("authenticate")).Post("/boxes/{boxid}/open", helpers.Make(h.OpenBox))
 		r.Post("/boxes/try", helpers.Make(h.TryBox))
 		r.With(middleware.Auth("authenticate")).Patch("/settings", helpers.Make(h.UpdateSettings))
 	})
@@ -41,7 +40,7 @@ func (h *GameHandler) GetGame(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *GameHandler) GetCustomers(w http.ResponseWriter, r *http.Request) error {
@@ -52,7 +51,7 @@ func (h *GameHandler) GetCustomers(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *GameHandler) UpdateBox(w http.ResponseWriter, r *http.Request) error {
@@ -61,7 +60,7 @@ func (h *GameHandler) UpdateBox(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "boxId")
 
 	var data models.MysteryBox
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -70,14 +69,14 @@ func (h *GameHandler) UpdateBox(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *GameHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.Attempts
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -86,27 +85,14 @@ func (h *GameHandler) UpdateSettings(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
-
-// func (h *GameHandler) OpenBox(w http.ResponseWriter, r *http.Request) error {
-// 	ctx, _ := util.AddCtxAppCfg(r)
-
-// 	boxid := chi.URLParam(r, "boxid")
-
-// 	result, err := h.gameSvcs.OpenBox(ctx, boxid)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	return helpers.WriteJson(w, http.StatusOK, result)
-// }
 
 func (h *GameHandler) TryBox(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.TryBoxDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -115,5 +101,5 @@ func (h *GameHandler) TryBox(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

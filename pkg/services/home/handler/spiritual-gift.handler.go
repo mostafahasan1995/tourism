@@ -52,7 +52,7 @@ func (h *SpiritualGiftHandler) Get(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *SpiritualGiftHandler) GetById(w http.ResponseWriter, r *http.Request) error {
@@ -64,7 +64,7 @@ func (h *SpiritualGiftHandler) GetById(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *SpiritualGiftHandler) GetCurrent(w http.ResponseWriter, r *http.Request) error {
@@ -75,13 +75,14 @@ func (h *SpiritualGiftHandler) GetCurrent(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
+
 func (h *SpiritualGiftHandler) Save(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.SpiritualGiftDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -102,7 +103,7 @@ func (h *SpiritualGiftHandler) Save(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *SpiritualGiftHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -110,7 +111,7 @@ func (h *SpiritualGiftHandler) Update(w http.ResponseWriter, r *http.Request) er
 	id := chi.URLParam(r, "id")
 
 	var data models.SpiritualGiftDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -129,7 +130,7 @@ func (h *SpiritualGiftHandler) Update(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *SpiritualGiftHandler) Toggle(w http.ResponseWriter, r *http.Request) error {
@@ -139,7 +140,7 @@ func (h *SpiritualGiftHandler) Toggle(w http.ResponseWriter, r *http.Request) er
 	var data struct {
 		Enabled bool `json:"enabled"`
 	}
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -159,7 +160,7 @@ func (h *SpiritualGiftHandler) Toggle(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *SpiritualGiftHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -170,7 +171,7 @@ func (h *SpiritualGiftHandler) Delete(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]string{
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{
 		"message": "Spiritual gift configuration deleted successfully",
 	})
 }

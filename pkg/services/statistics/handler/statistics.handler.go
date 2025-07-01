@@ -47,7 +47,7 @@ func (h *StatisticsHandler) GetStatistics(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *StatisticsHandler) GetProgramsCount(w http.ResponseWriter, r *http.Request) error {
@@ -58,7 +58,7 @@ func (h *StatisticsHandler) GetProgramsCount(w http.ResponseWriter, r *http.Requ
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]int64{"count": count})
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]int64{"count": count})
 }
 
 func (h *StatisticsHandler) GetTripsCount(w http.ResponseWriter, r *http.Request) error {
@@ -69,7 +69,7 @@ func (h *StatisticsHandler) GetTripsCount(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]int64{"count": count})
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]int64{"count": count})
 }
 
 func (h *StatisticsHandler) GetCountriesCount(w http.ResponseWriter, r *http.Request) error {
@@ -80,7 +80,7 @@ func (h *StatisticsHandler) GetCountriesCount(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]int64{"count": count})
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]int64{"count": count})
 }
 
 func (h *StatisticsHandler) GetHotelsCount(w http.ResponseWriter, r *http.Request) error {
@@ -91,7 +91,7 @@ func (h *StatisticsHandler) GetHotelsCount(w http.ResponseWriter, r *http.Reques
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]int64{"count": count})
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]int64{"count": count})
 }
 
 func (h *StatisticsHandler) GetHappyTravelersCount(w http.ResponseWriter, r *http.Request) error {
@@ -102,7 +102,7 @@ func (h *StatisticsHandler) GetHappyTravelersCount(w http.ResponseWriter, r *htt
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]int64{"count": count})
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]int64{"count": count})
 }
 
 // GetManualStatistics retrieves the current manual statistics configuration
@@ -114,7 +114,7 @@ func (h *StatisticsHandler) GetManualStatistics(w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 // UpdateManualStatistics updates manual statistics values
@@ -122,8 +122,8 @@ func (h *StatisticsHandler) UpdateManualStatistics(w http.ResponseWriter, r *htt
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var req models.ManualStatisticsRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return helpers.WriteJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &req); err != nil {
+		return helpers.WriteJsonCtx(ctx, w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
 	result, err := h.statisticsSvcs.UpdateManualStatistics(ctx, &req)
@@ -131,7 +131,7 @@ func (h *StatisticsHandler) UpdateManualStatistics(w http.ResponseWriter, r *htt
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 // ToggleAutoCalculate toggles the auto-calculate mode
@@ -139,8 +139,8 @@ func (h *StatisticsHandler) ToggleAutoCalculate(w http.ResponseWriter, r *http.R
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var req models.AutoCalculateRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		return helpers.WriteJson(w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &req); err != nil {
+		return helpers.WriteJsonCtx(ctx, w, http.StatusBadRequest, map[string]string{"error": "Invalid request body"})
 	}
 
 	result, err := h.statisticsSvcs.ToggleAutoCalculate(ctx, req.AutoCalculate)
@@ -148,5 +148,5 @@ func (h *StatisticsHandler) ToggleAutoCalculate(w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

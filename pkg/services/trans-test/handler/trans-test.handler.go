@@ -39,7 +39,7 @@ func (h *TransTestHandler) GetOne(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TransTestHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -60,24 +60,6 @@ func (h *TransTestHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(200)
 
 	return json.NewEncoder(w).EncodeContext(ctx, result)
-
-	// b, err := json.MarshalContext(ctx, result)
-	// if err != nil {
-	// 	return err
-	// }
-
-	// w.Header().Set("Content-Type", "application/json")
-	// w.WriteHeader(200)
-
-	// if _, err := w.Write(b); err != nil {
-	// 	return err
-	// }
-
-	// return nil
-
-	// return json.NewEncoder(w).Encode(result)
-
-	//return helpers.WriteJson(w, http.StatusOK, result)
 }
 
 func (h *TransTestHandler) Add(w http.ResponseWriter, r *http.Request) error {
@@ -93,5 +75,5 @@ func (h *TransTestHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

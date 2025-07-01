@@ -232,7 +232,7 @@ func (h *FaqHandler) GetAllPages(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) GetOnePage(w http.ResponseWriter, r *http.Request) error {
@@ -243,7 +243,7 @@ func (h *FaqHandler) GetOnePage(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) GetPageComplete(w http.ResponseWriter, r *http.Request) error {
@@ -254,14 +254,14 @@ func (h *FaqHandler) GetPageComplete(w http.ResponseWriter, r *http.Request) err
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) AddPage(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.FaqPageDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -273,14 +273,14 @@ func (h *FaqHandler) AddPage(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ page created successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *FaqHandler) AddManyPages(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data []models.FaqPageDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -292,7 +292,7 @@ func (h *FaqHandler) AddManyPages(w http.ResponseWriter, r *http.Request) error 
 	response := map[string]string{
 		"message": "FAQ pages created successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *FaqHandler) UpdatePage(w http.ResponseWriter, r *http.Request) error {
@@ -300,7 +300,7 @@ func (h *FaqHandler) UpdatePage(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.FaqPageDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -312,7 +312,7 @@ func (h *FaqHandler) UpdatePage(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ page updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) PatchPage(w http.ResponseWriter, r *http.Request) error {
@@ -320,7 +320,7 @@ func (h *FaqHandler) PatchPage(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -332,7 +332,7 @@ func (h *FaqHandler) PatchPage(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ page updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) DeletePage(w http.ResponseWriter, r *http.Request) error {
@@ -347,7 +347,7 @@ func (h *FaqHandler) DeletePage(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ page deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) InitializeStaticPages(w http.ResponseWriter, r *http.Request) error {
@@ -361,7 +361,7 @@ func (h *FaqHandler) InitializeStaticPages(w http.ResponseWriter, r *http.Reques
 	response := map[string]string{
 		"message": "Static FAQ pages initialized successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 // =============================================================================
@@ -411,7 +411,7 @@ func (h *FaqHandler) GetAllGroups(w http.ResponseWriter, r *http.Request) error 
 			"faqGroups":  groupsWithQuestions,
 			"pagination": result.Pagination,
 		}
-		return helpers.WriteJson(w, http.StatusOK, response)
+		return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 	}
 
 	// Default behavior - return groups without questions
@@ -419,7 +419,7 @@ func (h *FaqHandler) GetAllGroups(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) GetOneGroup(w http.ResponseWriter, r *http.Request) error {
@@ -430,7 +430,7 @@ func (h *FaqHandler) GetOneGroup(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) GetGroupWithQuestions(w http.ResponseWriter, r *http.Request) error {
@@ -441,14 +441,14 @@ func (h *FaqHandler) GetGroupWithQuestions(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) AddGroup(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.FaqGroupDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -472,14 +472,14 @@ func (h *FaqHandler) AddGroup(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ group created successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *FaqHandler) AddManyGroups(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data []models.FaqGroupDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -505,7 +505,7 @@ func (h *FaqHandler) AddManyGroups(w http.ResponseWriter, r *http.Request) error
 	response := map[string]string{
 		"message": "FAQ groups created successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *FaqHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) error {
@@ -513,7 +513,7 @@ func (h *FaqHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.FaqGroupDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -525,7 +525,7 @@ func (h *FaqHandler) UpdateGroup(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ group updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) PatchGroup(w http.ResponseWriter, r *http.Request) error {
@@ -533,7 +533,7 @@ func (h *FaqHandler) PatchGroup(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -545,7 +545,7 @@ func (h *FaqHandler) PatchGroup(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ group updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) error {
@@ -560,7 +560,7 @@ func (h *FaqHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ group deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 // =============================================================================
@@ -582,7 +582,7 @@ func (h *FaqHandler) GetAllQuestions(w http.ResponseWriter, r *http.Request) err
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) GetOneQuestion(w http.ResponseWriter, r *http.Request) error {
@@ -593,14 +593,14 @@ func (h *FaqHandler) GetOneQuestion(w http.ResponseWriter, r *http.Request) erro
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaqHandler) AddQuestion(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.FaqQuestionDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -622,14 +622,14 @@ func (h *FaqHandler) AddQuestion(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "FAQ question created successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *FaqHandler) AddManyQuestions(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data []models.FaqQuestionDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -654,7 +654,7 @@ func (h *FaqHandler) AddManyQuestions(w http.ResponseWriter, r *http.Request) er
 	response := map[string]string{
 		"message": "FAQ questions created successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *FaqHandler) UpdateQuestion(w http.ResponseWriter, r *http.Request) error {
@@ -662,7 +662,7 @@ func (h *FaqHandler) UpdateQuestion(w http.ResponseWriter, r *http.Request) erro
 	id := chi.URLParam(r, "id")
 
 	var data models.FaqQuestionDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -674,7 +674,7 @@ func (h *FaqHandler) UpdateQuestion(w http.ResponseWriter, r *http.Request) erro
 	response := map[string]string{
 		"message": "FAQ question updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) PatchQuestion(w http.ResponseWriter, r *http.Request) error {
@@ -682,7 +682,7 @@ func (h *FaqHandler) PatchQuestion(w http.ResponseWriter, r *http.Request) error
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -694,7 +694,7 @@ func (h *FaqHandler) PatchQuestion(w http.ResponseWriter, r *http.Request) error
 	response := map[string]string{
 		"message": "FAQ question updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) error {
@@ -709,7 +709,7 @@ func (h *FaqHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) erro
 	response := map[string]string{
 		"message": "FAQ question deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 // Debug route - temporary for troubleshooting
@@ -720,5 +720,5 @@ func (h *FaqHandler) DebugAllQuestions(w http.ResponseWriter, r *http.Request) e
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

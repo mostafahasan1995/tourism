@@ -12,7 +12,7 @@ import (
 func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, interactions.NewFaveSvcs)
 	do.Provide(i, interactions.NewTestimonialSvcs)
-	do.Provide(i, interactions.NewDiarySvcs) // deprecated
+	//do.Provide(i, interactions.NewDiarySvcs) // deprecated
 
 	do.Provide(i, interactions.NewGameSvcs)
 	do.Provide(i, interactions.NewTravelExperSvcs)
@@ -21,7 +21,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 
 	do.Provide(i, repo.NewFaveRepo)
 	do.Provide(i, repo.NewTestimonialRepo)
-	do.Provide(i, repo.NewDiaryRepo) //deprecated
+	//do.Provide(i, repo.NewDiaryRepo) //deprecated
 
 	do.Provide(i, repo.NewGameRepo)
 	//do.Provide(i, repo.NewGameCustomerRepo)
@@ -33,7 +33,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 
 	handler.NewFaveHandler(i, r)
 	handler.NewTestimonialHandler(i, r)
-	handler.NewDiaryHandler(i, r) //deprecated
+	//handler.NewDiaryHandler(i, r) //deprecated
 
 	handler.NewGameHandler(i, r)
 	handler.NewTravelExperHandler(i, r)

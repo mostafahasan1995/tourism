@@ -18,14 +18,14 @@ func Make(h APIFunc) http.HandlerFunc {
 		err := h(w, r)
 		if err != nil {
 			if apiErr, ok := err.(APIError); ok {
-				WriteJson(w, apiErr.StatusCode, apiErr)
+				WriteJsonCtx(r.Context(), w, apiErr.StatusCode, apiErr)
 			} else {
 				//WriteJson(w, http.StatusBadRequest, err.Error())
 				errResp := map[string]any{
 					"statusCode": http.StatusBadRequest,
 					"message":    err.Error(),
 				}
-				WriteJson(w, http.StatusBadRequest, errResp)
+				WriteJsonCtx(r.Context(), w, http.StatusBadRequest, errResp)
 			}
 			slog.Error("HTTP API error", "err", err.Error(), "path", r.URL.Path)
 		}
@@ -33,11 +33,11 @@ func Make(h APIFunc) http.HandlerFunc {
 	}
 }
 
-func WriteJson(w http.ResponseWriter, status int, v any) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
-	return json.NewEncoder(w).Encode(v)
-}
+// func WriteJson(w http.ResponseWriter, status int, v any) error {
+// 	w.Header().Set("Content-Type", "application/json")
+// 	w.WriteHeader(status)
+// 	return json.NewEncoder(w).Encode(v)
+// }
 
 func WriteJsonCtx(ctx context.Context, w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")

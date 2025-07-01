@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -9,14 +10,14 @@ import (
 )
 
 type TrustedPartnerDto struct {
-	Title        string             `bson:"title" json:"title" validate:"required"`
-	ProgramTitle string             `bson:"programTitle" json:"programTitle"`
-	ProgramId    primitive.ObjectID `bson:"programId" json:"programId"`
-	Description  string             `bson:"description" json:"description"`
-	Image        types.FileField    `bson:"image" json:"image" validate:"required"`
-	URL          string             `bson:"url" json:"url"`
-	DisplayOrder int                `bson:"displayOrder" json:"displayOrder"`
-	IsActive     bool               `bson:"isActive" json:"isActive"`
+	Title        transl.Localizable[string] `bson:"title" json:"title" validate:"required"`
+	ProgramTitle string                     `bson:"programTitle" json:"programTitle"`
+	ProgramId    primitive.ObjectID         `bson:"programId" json:"programId"`
+	Description  transl.Localizable[string] `bson:"description" json:"description"`
+	Image        types.FileField            `bson:"image" json:"image" validate:"required"`
+	URL          string                     `bson:"url" json:"url"`
+	DisplayOrder int                        `bson:"displayOrder" json:"displayOrder"`
+	IsActive     bool                       `bson:"isActive" json:"isActive"`
 }
 
 type TrustedPartner struct {

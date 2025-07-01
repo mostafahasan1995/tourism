@@ -69,7 +69,7 @@ func (h *VisitorHandler) Get(w http.ResponseWriter, r *http.Request) error {
 
 	// Parse filter parameters
 	var filterQuery filter.VisitorFilter
-	if err := json.NewDecoder(r.Body).Decode(&filterQuery); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &filterQuery); err != nil {
 		// If no body or invalid JSON, use query parameters
 		filterQuery = filter.VisitorFilter{
 			Page: 1,
@@ -98,7 +98,7 @@ func (h *VisitorHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -110,7 +110,7 @@ func (h *VisitorHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) GetByHotelId(w http.ResponseWriter, r *http.Request) error {
@@ -138,14 +138,14 @@ func (h *VisitorHandler) GetByHotelId(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	var data models.VisitorDto
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -158,7 +158,7 @@ func (h *VisitorHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *VisitorHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -166,7 +166,7 @@ func (h *VisitorHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.VisitorDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -179,7 +179,7 @@ func (h *VisitorHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -187,7 +187,7 @@ func (h *VisitorHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -196,7 +196,7 @@ func (h *VisitorHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -211,7 +211,7 @@ func (h *VisitorHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "Visitor deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *VisitorHandler) AddTag(w http.ResponseWriter, r *http.Request) error {
@@ -219,7 +219,7 @@ func (h *VisitorHandler) AddTag(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.AddVisitorTagDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -232,7 +232,7 @@ func (h *VisitorHandler) AddTag(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) RemoveTag(w http.ResponseWriter, r *http.Request) error {
@@ -245,7 +245,7 @@ func (h *VisitorHandler) RemoveTag(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) UpdateTags(w http.ResponseWriter, r *http.Request) error {
@@ -253,7 +253,7 @@ func (h *VisitorHandler) UpdateTags(w http.ResponseWriter, r *http.Request) erro
 	id := chi.URLParam(r, "id")
 
 	var data models.UpdateVisitorTagsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -266,7 +266,7 @@ func (h *VisitorHandler) UpdateTags(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) AddInterest(w http.ResponseWriter, r *http.Request) error {
@@ -274,7 +274,7 @@ func (h *VisitorHandler) AddInterest(w http.ResponseWriter, r *http.Request) err
 	id := chi.URLParam(r, "id")
 
 	var data models.AddVisitorInterestDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -287,7 +287,7 @@ func (h *VisitorHandler) AddInterest(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) RemoveInterest(w http.ResponseWriter, r *http.Request) error {
@@ -300,7 +300,7 @@ func (h *VisitorHandler) RemoveInterest(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) UpdateInterests(w http.ResponseWriter, r *http.Request) error {
@@ -308,7 +308,7 @@ func (h *VisitorHandler) UpdateInterests(w http.ResponseWriter, r *http.Request)
 	id := chi.URLParam(r, "id")
 
 	var data models.UpdateVisitorInterestsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -321,7 +321,7 @@ func (h *VisitorHandler) UpdateInterests(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) GetStats(w http.ResponseWriter, r *http.Request) error {
@@ -332,7 +332,7 @@ func (h *VisitorHandler) GetStats(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) GetHotelStats(w http.ResponseWriter, r *http.Request) error {
@@ -349,14 +349,14 @@ func (h *VisitorHandler) GetHotelStats(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) BulkUpdate(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.BulkUpdateVisitorsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -372,7 +372,7 @@ func (h *VisitorHandler) BulkUpdate(w http.ResponseWriter, r *http.Request) erro
 	response := map[string]string{
 		"message": "Visitors updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *VisitorHandler) MarkAsVIP(w http.ResponseWriter, r *http.Request) error {
@@ -384,7 +384,7 @@ func (h *VisitorHandler) MarkAsVIP(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) RemoveVIP(w http.ResponseWriter, r *http.Request) error {
@@ -396,7 +396,7 @@ func (h *VisitorHandler) RemoveVIP(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) ToggleActive(w http.ResponseWriter, r *http.Request) error {
@@ -408,7 +408,7 @@ func (h *VisitorHandler) ToggleActive(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *VisitorHandler) AddActivity(w http.ResponseWriter, r *http.Request) error {
@@ -416,7 +416,7 @@ func (h *VisitorHandler) AddActivity(w http.ResponseWriter, r *http.Request) err
 	id := chi.URLParam(r, "id")
 
 	var data models.VisitorActivity
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -435,7 +435,7 @@ func (h *VisitorHandler) AddActivity(w http.ResponseWriter, r *http.Request) err
 	response := map[string]string{
 		"message": "Activity added successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *VisitorHandler) GetVisitorActivities(w http.ResponseWriter, r *http.Request) error {
@@ -452,5 +452,5 @@ func (h *VisitorHandler) GetVisitorActivities(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

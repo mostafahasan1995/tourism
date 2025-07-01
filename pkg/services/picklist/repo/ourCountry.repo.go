@@ -1,241 +1,225 @@
 package repo
 
-import (
-	"context"
-	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
-	"larsa-tourism-microservices/pkg/services/picklist/filter"
-	"larsa-tourism-microservices/pkg/services/picklist/models"
-	"larsa-tourism-microservices/pkg/util"
-	"time"
+// type OurCountryRepo interface {
+// 	dbrepo.MainRepo[models.OurCountry]
+// 	GetOne(ctx context.Context, id string) (*models.OurCountry, error)
+// 	GetAll(ctx context.Context, match bson.M, skip, limit int64) ([]models.OurCountry, int64, error)
+// 	GetAllPaginated(ctx context.Context, f filter.OurCountryFilter) (*models.OurCountryPagination, error)
+// 	Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) (*models.OurCountry, error)
+// 	Delete(ctx context.Context, id string) error
+// }
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
-	"github.com/samber/do"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
-)
+// type ourCountryrepo struct {
+// 	dbrepo.MainRepoImpl[models.OurCountry]
+// 	db       *mongo.Client
+// 	collName string
+// }
 
-type OurCountryRepo interface {
-	dbrepo.MainRepo[models.OurCountry]
-	GetOne(ctx context.Context, id string) (*models.OurCountry, error)
-	GetAll(ctx context.Context, match bson.M, skip, limit int64) ([]models.OurCountry, int64, error)
-	GetAllPaginated(ctx context.Context, f filter.OurCountryFilter) (*models.OurCountryPagination, error)
-	Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) (*models.OurCountry, error)
-	Delete(ctx context.Context, id string) error
-}
+// func NewOurCountryRepo(i *do.Injector) (OurCountryRepo, error) {
+// 	return &ourCountryrepo{
+// 		MainRepoImpl: dbrepo.MainRepoImpl[models.OurCountry]{
+// 			Db:       do.MustInvoke[*mongo.Client](i),
+// 			CollName: "tourismOurCountry",
+// 		},
+// 		db:       do.MustInvoke[*mongo.Client](i),
+// 		collName: "tourismOurCountry",
+// 	}, nil
+// }
 
-type ourCountryrepo struct {
-	dbrepo.MainRepoImpl[models.OurCountry]
-	db       *mongo.Client
-	collName string
-}
+// func (l *ourCountryrepo) GetOne(ctx context.Context, id string) (*models.OurCountry, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	_id, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-func NewOurCountryRepo(i *do.Injector) (OurCountryRepo, error) {
-	return &ourCountryrepo{
-		MainRepoImpl: dbrepo.MainRepoImpl[models.OurCountry]{
-			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "tourismOurCountry",
-		},
-		db:       do.MustInvoke[*mongo.Client](i),
-		collName: "tourismOurCountry",
-	}, nil
-}
+// 	var data models.OurCountry
+// 	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
+// 		return nil, err
+// 	}
+// 	return &data, nil
+// }
 
-func (l *ourCountryrepo) GetOne(ctx context.Context, id string) (*models.OurCountry, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// func (l *ourCountryrepo) GetAll(ctx context.Context, match bson.M, skip, limit int64) ([]models.OurCountry, int64, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	var data models.OurCountry
-	if err := coll.FindOne(ctx, bson.M{"_id": _id, "trash": false}).Decode(&data); err != nil {
-		return nil, err
-	}
-	return &data, nil
-}
+// 	totalCount, err := coll.CountDocuments(ctx, match)
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
 
-func (l *ourCountryrepo) GetAll(ctx context.Context, match bson.M, skip, limit int64) ([]models.OurCountry, int64, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, 0, err
-	}
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
+// 	cur, err := coll.Find(ctx, match, findOptions)
+// 	if err != nil {
+// 		return nil, 0, err
+// 	}
+// 	defer cur.Close(ctx)
 
-	totalCount, err := coll.CountDocuments(ctx, match)
-	if err != nil {
-		return nil, 0, err
-	}
+// 	var countries []models.OurCountry
+// 	if err := cur.All(ctx, &countries); err != nil {
+// 		return nil, 0, err
+// 	}
 
-	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
-	cur, err := coll.Find(ctx, match, findOptions)
-	if err != nil {
-		return nil, 0, err
-	}
-	defer cur.Close(ctx)
+// 	return countries, totalCount, nil
+// }
 
-	var countries []models.OurCountry
-	if err := cur.All(ctx, &countries); err != nil {
-		return nil, 0, err
-	}
+// func (l *ourCountryrepo) GetAllPaginated(ctx context.Context, f filter.OurCountryFilter) (*models.OurCountryPagination, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return countries, totalCount, nil
-}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-func (l *ourCountryrepo) GetAllPaginated(ctx context.Context, f filter.OurCountryFilter) (*models.OurCountryPagination, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
+// 	// Build filter using pipeline pattern for consistency
+// 	pipeline := f.BuildPipeline(bson.M{})
+// 	match := pipeline[0]["$match"].(bson.M)
 
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 	// Count total documents matching the filter
+// 	totalCount, err := coll.CountDocuments(ctx, match)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	// Build filter using pipeline pattern for consistency
-	pipeline := f.BuildPipeline(bson.M{})
-	match := pipeline[0]["$match"].(bson.M)
+// 	// Pagination defaults and limits
+// 	page := f.Page
+// 	if page <= 0 {
+// 		page = 1
+// 	}
+// 	size := f.Size
+// 	if size <= 0 {
+// 		size = 10 // Default page size
+// 	}
+// 	skip := int64((page - 1) * size)
+// 	limit := int64(size)
 
-	// Count total documents matching the filter
-	totalCount, err := coll.CountDocuments(ctx, match)
-	if err != nil {
-		return nil, err
-	}
+// 	// Query options with pagination
+// 	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
 
-	// Pagination defaults and limits
-	page := f.Page
-	if page <= 0 {
-		page = 1
-	}
-	size := f.Size
-	if size <= 0 {
-		size = 10 // Default page size
-	}
-	skip := int64((page - 1) * size)
-	limit := int64(size)
+// 	cur, err := coll.Find(ctx, match, findOptions)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	defer cur.Close(ctx)
 
-	// Query options with pagination
-	findOptions := options.Find().SetSkip(skip).SetLimit(limit).SetSort(bson.M{"_id": -1})
+// 	var countries []models.OurCountry
+// 	if err := cur.All(ctx, &countries); err != nil {
+// 		return nil, err
+// 	}
 
-	cur, err := coll.Find(ctx, match, findOptions)
-	if err != nil {
-		return nil, err
-	}
-	defer cur.Close(ctx)
+// 	// Calculate total pages
+// 	totalPages := float64(0)
+// 	if size > 0 {
+// 		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
+// 	}
 
-	var countries []models.OurCountry
-	if err := cur.All(ctx, &countries); err != nil {
-		return nil, err
-	}
+// 	result := &models.OurCountryPagination{
+// 		OurCountry: countries,
+// 		Pagination: common.Pagination{
+// 			TotalPages: totalPages,
+// 			PerPage:    int64(size),
+// 			TotalCount: totalCount,
+// 		},
+// 	}
 
-	// Calculate total pages
-	totalPages := float64(0)
-	if size > 0 {
-		totalPages = float64((totalCount + int64(size) - 1) / int64(size))
-	}
+// 	return result, nil
+// }
 
-	result := &models.OurCountryPagination{
-		OurCountry: countries,
-		Pagination: common.Pagination{
-			TotalPages: totalPages,
-			PerPage:    int64(size),
-			TotalCount: totalCount,
-		},
-	}
+// func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) (*models.OurCountry, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	return result, nil
-}
+// 	preOurCountry, err := l.GetOne(ctx, id.Hex())
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-func (l *ourCountryrepo) Update(ctx context.Context, id primitive.ObjectID, data *models.OurCountryDto) (*models.OurCountry, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
+// 	ourCountry := &models.OurCountry{
+// 		OurCountryDto: models.OurCountryDto{
+// 			Name:        data.Name,
+// 			Image:       data.Image,
+// 			Icon:        data.Icon,
+// 			Galeres:     data.Galeres,
+// 			Description: data.Description,
+// 		},
+// 		Id:        id,
+// 		Trash:     false,
+// 		CreatedAt: preOurCountry.CreatedAt,
+// 		CreatedBy: preOurCountry.CreatedBy,
+// 		UpdatedBy: cfg.User.Id,
+// 		UpdatedAt: time.Now(),
+// 	}
 
-	preOurCountry, err := l.GetOne(ctx, id.Hex())
-	if err != nil {
-		return nil, err
-	}
+// 	filter := bson.M{"_id": id}
+// 	update := bson.M{"$set": ourCountry}
 
-	ourCountry := &models.OurCountry{
-		OurCountryDto: models.OurCountryDto{
-			Name:        data.Name,
-			Image:       data.Image,
-			Icon:        data.Icon,
-			Galeres:     data.Galeres,
-			Description: data.Description,
-		},
-		Id:        id,
-		Trash:     false,
-		CreatedAt: preOurCountry.CreatedAt,
-		CreatedBy: preOurCountry.CreatedBy,
-		UpdatedBy: cfg.User.Id,
-		UpdatedAt: time.Now(),
-	}
+// 	upsert := false
+// 	after := options.After
+// 	opts := &options.FindOneAndUpdateOptions{
+// 		ReturnDocument: &after,
+// 		Upsert:         &upsert,
+// 	}
 
-	filter := bson.M{"_id": id}
-	update := bson.M{"$set": ourCountry}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 	var updatedOurCountry models.OurCountry
+// 	if err := coll.FindOneAndUpdate(
+// 		ctx,
+// 		filter,
+// 		update,
+// 		opts,
+// 	).Decode(&updatedOurCountry); err != nil {
+// 		return nil, err
+// 	}
 
-	upsert := false
-	after := options.After
-	opts := &options.FindOneAndUpdateOptions{
-		ReturnDocument: &after,
-		Upsert:         &upsert,
-	}
+// 	return &updatedOurCountry, nil
+// }
 
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
-	var updatedOurCountry models.OurCountry
-	if err := coll.FindOneAndUpdate(
-		ctx,
-		filter,
-		update,
-		opts,
-	).Decode(&updatedOurCountry); err != nil {
-		return nil, err
-	}
+// func (l *ourCountryrepo) Delete(ctx context.Context, id string) error {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return &updatedOurCountry, nil
-}
+// 	_id, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return err
+// 	}
 
-func (l *ourCountryrepo) Delete(ctx context.Context, id string) error {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return err
-	}
+// 	coll := l.db.Database(cfg.Db).Collection(l.collName)
 
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
+// 	filter := bson.M{"_id": _id}
+// 	update := bson.M{"$set": bson.M{
+// 		"trash":     true,
+// 		"updatedAt": time.Now(),
+// 		"updatedBy": cfg.User.Id,
+// 	}}
 
-	coll := l.db.Database(cfg.Db).Collection(l.collName)
+// 	upsert := false
+// 	after := options.After
+// 	opt := options.FindOneAndUpdateOptions{
+// 		ReturnDocument: &after,
+// 		Upsert:         &upsert,
+// 	}
+// 	result := coll.FindOneAndUpdate(
+// 		ctx,
+// 		filter,
+// 		update,
+// 		&opt,
+// 	)
 
-	filter := bson.M{"_id": _id}
-	update := bson.M{"$set": bson.M{
-		"trash":     true,
-		"updatedAt": time.Now(),
-		"updatedBy": cfg.User.Id,
-	}}
+// 	if result.Err() != nil {
+// 		return result.Err()
+// 	}
 
-	upsert := false
-	after := options.After
-	opt := options.FindOneAndUpdateOptions{
-		ReturnDocument: &after,
-		Upsert:         &upsert,
-	}
-	result := coll.FindOneAndUpdate(
-		ctx,
-		filter,
-		update,
-		&opt,
-	)
-
-	if result.Err() != nil {
-		return result.Err()
-	}
-
-	return nil
-}
+// 	return nil
+// }
