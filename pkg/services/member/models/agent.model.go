@@ -3,6 +3,7 @@ package models
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/member/enums"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -11,17 +12,17 @@ import (
 )
 
 type AgentDto struct {
-	Name        string          `bson:"name" json:"name"`
-	Nationality string          `bson:"nationality" json:"nationality"`
-	SpokenLangs []string        `bson:"spokenLangs" json:"spokenLangs"`
-	Company     string          `bson:"company" json:"company"`
-	CompanyLogo types.FileField `bson:"companyLogo" json:"companyLogo"`
-	Bio         string          `bson:"bio" json:"bio"`
-	Image       types.FileField `bson:"image" json:"image"` // Changed from array to single object
-	Countries   []string        `bson:"countries" json:"countries"`
-	Contact     AgentContact    `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
-	Security    MemberSecurity  `bson:"security" json:"security"`
-	Financial   AgentFinancial  `bson:"financial" json:"financial"`
+	Name        transl.Localizable[string] `bson:"name" json:"name"`
+	Nationality string                     `bson:"nationality" json:"nationality"`
+	SpokenLangs []string                   `bson:"spokenLangs" json:"spokenLangs"`
+	Company     transl.Localizable[string] `bson:"company" json:"company"`
+	CompanyLogo types.FileField            `bson:"companyLogo" json:"companyLogo"`
+	Bio         transl.Localizable[string] `bson:"bio" json:"bio"`
+	Image       types.FileField            `bson:"image" json:"image"` // Changed from array to single object
+	Countries   []string                   `bson:"countries" json:"countries"`
+	Contact     AgentContact               `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
+	Security    MemberSecurity             `bson:"security" json:"security"`
+	Financial   AgentFinancial             `bson:"financial" json:"financial"`
 }
 
 type AgentFinancial struct {

@@ -47,7 +47,7 @@ func (l *HotelsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *HotelsHandler) GetAllHotels(w http.ResponseWriter, r *http.Request) error {
@@ -146,7 +146,7 @@ func (l *HotelsHandler) GetAllHotels(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -255,14 +255,14 @@ func (l *HotelsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *HotelsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.HotelsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -270,7 +270,7 @@ func (l *HotelsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *HotelsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -289,7 +289,7 @@ func (l *HotelsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.HotelsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -298,5 +298,5 @@ func (l *HotelsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

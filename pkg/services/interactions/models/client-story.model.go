@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -8,12 +9,12 @@ import (
 )
 
 type ClientStoryDto struct {
-	Title       string            `bson:"title" json:"title"`
-	Country     string            `bson:"country" json:"country"`
-	City        string            `bson:"city" json:"city"`
-	Description string            `bson:"description" json:"description"`
-	CoverImage  types.FileField   `bson:"coverImage" json:"CoverImage"`
-	Videos      []types.FileField `bson:"videos" json:"videos"`
+	Title       transl.Localizable[string] `bson:"title" json:"title"`
+	Country     string                     `bson:"country" json:"country"`
+	City        string                     `bson:"city" json:"city"`
+	Description transl.Localizable[string] `bson:"description" json:"description"`
+	CoverImage  types.FileField            `bson:"coverImage" json:"CoverImage"`
+	Videos      []types.FileField          `bson:"videos" json:"videos"`
 }
 
 type ClientStory struct {

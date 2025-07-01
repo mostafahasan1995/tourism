@@ -42,7 +42,7 @@ func (h *DestinationHandler) GetOne(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *DestinationHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -55,14 +55,14 @@ func (h *DestinationHandler) GetAll(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *DestinationHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.DestinationDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (h *DestinationHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *DestinationHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -80,7 +80,7 @@ func (h *DestinationHandler) Update(w http.ResponseWriter, r *http.Request) erro
 	destinationId := chi.URLParam(r, "id")
 
 	var data models.DestinationDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -89,7 +89,7 @@ func (h *DestinationHandler) Update(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *DestinationHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -101,5 +101,5 @@ func (h *DestinationHandler) Delete(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, "ok")
 }

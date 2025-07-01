@@ -54,11 +54,7 @@ func (l *CarsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	errRes := helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
-	if errRes != nil {
-		return errRes
-	}
-	return nil
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *CarsHandler) GetPaginated(w http.ResponseWriter, r *http.Request) error {
@@ -75,10 +71,7 @@ func (l *CarsHandler) GetPaginated(w http.ResponseWriter, r *http.Request) error
 	if err != nil {
 		return err
 	}
-	if err := helpers.WriteJsonCtx(ctx, w, http.StatusOK, result); err != nil {
-		return err
-	}
-	return nil
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *CarsHandler) Add(w http.ResponseWriter, r *http.Request) error {
@@ -115,7 +108,7 @@ func (l *CarsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.CarsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 

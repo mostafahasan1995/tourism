@@ -288,7 +288,7 @@ func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Cu
 	zeroId := primitive.NilObjectID
 
 	user := map[string]any{
-		"firstName":            data.Name,
+		"firstName":            data.Name.GetContentByLang("en"),
 		"lastName":             "-",
 		"email":                data.Security.Email,
 		"password":             data.Security.NewPassword,

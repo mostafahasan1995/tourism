@@ -44,7 +44,7 @@ func (h *CustomerHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -62,7 +62,7 @@ func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -73,14 +73,14 @@ func (h *CustomerHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.CustomerDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -89,14 +89,14 @@ func (h *CustomerHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerHandler) Register(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.CustomerRegisterData
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -105,7 +105,7 @@ func (h *CustomerHandler) Register(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -114,7 +114,7 @@ func (h *CustomerHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	customerId := chi.URLParam(r, "id")
 
 	var data models.CustomerDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -123,7 +123,7 @@ func (h *CustomerHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -135,5 +135,5 @@ func (h *CustomerHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, "ok")
 }

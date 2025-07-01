@@ -46,7 +46,7 @@ func (h *ProgramHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ProgramHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -77,14 +77,14 @@ func (h *ProgramHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ProgramHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.ProgramDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -97,7 +97,7 @@ func (h *ProgramHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ProgramHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -106,7 +106,7 @@ func (h *ProgramHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	programId := chi.URLParam(r, "id")
 
 	var data models.ProgramDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func (h *ProgramHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ProgramHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -131,5 +131,5 @@ func (h *ProgramHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, "ok")
 }

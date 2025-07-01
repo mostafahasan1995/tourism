@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -8,9 +9,9 @@ import (
 )
 
 type ActivitiesDto struct {
-	Name        string            `bson:"name" json:"name"`
-	Images      []types.FileField `bson:"images" json:"images"`
-	Description string            `bson:"description" json:"description"`
+	Name        transl.Localizable[string] `bson:"name" json:"name"`
+	Images      []types.FileField          `bson:"images" json:"images"`
+	Description transl.Localizable[string] `bson:"description" json:"description"`
 }
 
 type Activities struct {

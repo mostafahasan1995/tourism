@@ -51,7 +51,7 @@ func (h *TravelRequestHandler) GetOne(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -69,7 +69,7 @@ func (h *TravelRequestHandler) Get(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -82,7 +82,7 @@ func (h *TravelRequestHandler) GetAll(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) GetCustomerRequests(w http.ResponseWriter, r *http.Request) error {
@@ -101,7 +101,7 @@ func (h *TravelRequestHandler) GetCustomerRequests(w http.ResponseWriter, r *htt
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) GetAgentTransactions(w http.ResponseWriter, r *http.Request) error {
@@ -120,14 +120,14 @@ func (h *TravelRequestHandler) GetAgentTransactions(w http.ResponseWriter, r *ht
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.TravelRequestDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -140,7 +140,7 @@ func (h *TravelRequestHandler) Add(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -149,7 +149,7 @@ func (h *TravelRequestHandler) Update(w http.ResponseWriter, r *http.Request) er
 	id := chi.URLParam(r, "id")
 
 	var data models.TravelRequestDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -162,7 +162,7 @@ func (h *TravelRequestHandler) Update(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) MyRequests(w http.ResponseWriter, r *http.Request) error {
@@ -175,7 +175,7 @@ func (h *TravelRequestHandler) MyRequests(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) Approve(w http.ResponseWriter, r *http.Request) error {
@@ -188,7 +188,7 @@ func (h *TravelRequestHandler) Approve(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) Reject(w http.ResponseWriter, r *http.Request) error {
@@ -197,7 +197,7 @@ func (h *TravelRequestHandler) Reject(w http.ResponseWriter, r *http.Request) er
 	id := chi.URLParam(r, "id") // travel request id
 
 	var data models.RejectMyReq
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -206,7 +206,7 @@ func (h *TravelRequestHandler) Reject(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelRequestHandler) SetAsCompleted(w http.ResponseWriter, r *http.Request) error {
@@ -219,5 +219,5 @@ func (h *TravelRequestHandler) SetAsCompleted(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

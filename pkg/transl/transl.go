@@ -47,3 +47,12 @@ func (l *Localizable[T]) UnmarshalJSON(ctx context.Context, data []byte) error {
 
 	return nil
 }
+
+func (l *Localizable[T]) GetContentByLang(lang string) T {
+	content, exists := (*l)[lang]
+	if exists {
+		return content
+	} else {
+		return (*l)["en"]
+	}
+}

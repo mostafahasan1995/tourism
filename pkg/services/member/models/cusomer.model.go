@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 
 	"time"
@@ -9,16 +10,16 @@ import (
 )
 
 type CustomerDto struct {
-	Name                string            `bson:"name" json:"name"`
-	Nationality         string            `bson:"nationality" json:"nationality"`
-	Company             string            `bson:"company" json:"company"`
-	TripCoordinatorName string            `bson:"tripCoordinatorName" json:"tripCoordinatorName"`
-	About               string            `bson:"about" json:"about"`
-	Image               []types.FileField `bson:"image" json:"image"`
-	ClientContact       MemberContact     `bson:"clientContact" json:"clientContact"`
-	CoordinatorContact  MemberContact     `bson:"coordinatorContact" json:"coordinatorContact"`
-	SocialMedia         []SocialMedia     `bson:"socialMedia" json:"socialMedia"`
-	Security            MemberSecurity    `bson:"security" json:"security"`
+	Name                transl.Localizable[string] `bson:"name" json:"name"`
+	Nationality         string                     `bson:"nationality" json:"nationality"`
+	Company             transl.Localizable[string] `bson:"company" json:"company"`
+	TripCoordinatorName string                     `bson:"tripCoordinatorName" json:"tripCoordinatorName"`
+	About               transl.Localizable[string] `bson:"about" json:"about"`
+	Image               []types.FileField          `bson:"image" json:"image"`
+	ClientContact       MemberContact              `bson:"clientContact" json:"clientContact"`
+	CoordinatorContact  MemberContact              `bson:"coordinatorContact" json:"coordinatorContact"`
+	SocialMedia         []SocialMedia              `bson:"socialMedia" json:"socialMedia"`
+	Security            MemberSecurity             `bson:"security" json:"security"`
 }
 
 type SocialMedia struct {
@@ -46,9 +47,9 @@ type CustomerWithPagination struct {
 //
 
 type CustomerRegisterData struct {
-	ClientName  string            `bson:"clientName" json:"clientName"`
-	ClientPhone types.PhoneNumber `bson:"clientPhone" json:"clientPhone"`
-	ClientEmail string            `bson:"clientEmail" json:"clientEmail"`
-	Nationality string            `bson:"nationality" json:"nationality"`
-	Password    string            `bson:"password" json:"password"`
+	ClientName  transl.Localizable[string] `bson:"clientName" json:"clientName"`
+	ClientPhone types.PhoneNumber          `bson:"clientPhone" json:"clientPhone"`
+	ClientEmail string                     `bson:"clientEmail" json:"clientEmail"`
+	Nationality string                     `bson:"nationality" json:"nationality"`
+	Password    string                     `bson:"password" json:"password"`
 }

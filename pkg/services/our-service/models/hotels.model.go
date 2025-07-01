@@ -2,6 +2,7 @@ package models
 
 import (
 	// "larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -11,7 +12,7 @@ import (
 )
 
 type HotelsDto struct {
-	Name                          string                        `bson:"name" json:"name"`
+	Name                          transl.Localizable[string]    `bson:"name" json:"name"`
 	HotelType                     string                        `bson:"hotelType" json:"hotelType"`
 	Location                      string                        `bson:"location" json:"location"`
 	CheckInAndCheckOut            CheckInAndCheckOut            `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
@@ -19,9 +20,9 @@ type HotelsDto struct {
 	IsDisplayInPerfectStay        bool                          `bson:"isDisplayInPerfectStay" json:"isDisplayInPerfectStay"`
 	Ratings                       float64                       `bson:"ratings" json:"ratings"`
 	Image                         types.FileField               `bson:"image" json:"image"`
-	RoomAmenities                 []string                      `bson:"roomAmenities" json:"roomAmenities"`
+	RoomAmenities                 []transl.Localizable[string]  `bson:"roomAmenities" json:"roomAmenities"`
 	DistanceFromCityCenter        int                           `bson:"distanceFromCityCenter" json:"distanceFromCityCenter"`
-	NearbyAttractions             []string                      `bson:"nearbyAttractions" json:"nearbyAttractions"`
+	NearbyAttractions             []transl.Localizable[string]  `bson:"nearbyAttractions" json:"nearbyAttractions"`
 	ImagesGallery                 []types.FileField             `bson:"imagesGallery" json:"imagesGallery"`
 	OverviewPage                  OverviewPage                  `bson:"overviewPage" json:"overviewPage"`
 	RoomsAndSuitesPage            RoomsAndSuitesPage            `bson:"roomsAndSuitesPage" json:"roomsAndSuitesPage"`
@@ -94,30 +95,30 @@ type Social struct {
 }
 
 type OverviewPage struct {
-	OverviewText  string          `bson:"overviewText" json:"overviewText"`
-	WhyStayWithUs []string        `bson:"whyStayWithUs" json:"whyStayWithUs"`
-	QuickFacts    []string        `bson:"quickFacts" json:"quickFacts"`
-	Logo          types.FileField `bson:"logo" json:"logo"`
+	OverviewText  transl.Localizable[string]   `bson:"overviewText" json:"overviewText"`
+	WhyStayWithUs []transl.Localizable[string] `bson:"whyStayWithUs" json:"whyStayWithUs"`
+	QuickFacts    []transl.Localizable[string] `bson:"quickFacts" json:"quickFacts"`
+	Logo          types.FileField              `bson:"logo" json:"logo"`
 }
 
 type RoomsAndSuitesPage struct {
-	StartingText   string         `bson:"startingText" json:"startingText"`
-	Advantages     []string       `bson:"advantages" json:"advantages"`
-	RoomCategories []RoomCategory `bson:"roomCategories" json:"roomCategories"`
+	StartingText   transl.Localizable[string]   `bson:"startingText" json:"startingText"`
+	Advantages     []transl.Localizable[string] `bson:"advantages" json:"advantages"`
+	RoomCategories []RoomCategory               `bson:"roomCategories" json:"roomCategories"`
 }
 type RoomCategory struct {
-	RoomType          string            `bson:"roomType" json:"roomType"`
-	TotalRoom         int               `bson:"totalRoom" json:"totalRoom"`
-	RoomSurface       string            `bson:"roomSurface" json:"roomSurface"`
-	BedsCount         int               `bson:"bedsCount" json:"bedsCount"`
-	MaxOccupancy      int               `bson:"maxOccupancy" json:"maxOccupancy"`
-	ViewType          string            `bson:"viewType" json:"viewType"`
-	ActivePricingType string            `bson:"activePricingType" json:"activePricingType"`
-	RoomAmenities     []string          `bson:"roomAmenities" json:"roomAmenities"`
-	Features          []string          `bson:"features" json:"features"`
-	Images            []types.FileField `bson:"images" json:"images"`
-	Pricing           Pricing           `bson:"pricing" json:"pricing"`
-	SeasonalPricing   []SeasonPricing   `bson:"seasonalPricing" json:"seasonalPricing"`
+	RoomType          string                       `bson:"roomType" json:"roomType"`
+	TotalRoom         int                          `bson:"totalRoom" json:"totalRoom"`
+	RoomSurface       string                       `bson:"roomSurface" json:"roomSurface"`
+	BedsCount         int                          `bson:"bedsCount" json:"bedsCount"`
+	MaxOccupancy      int                          `bson:"maxOccupancy" json:"maxOccupancy"`
+	ViewType          string                       `bson:"viewType" json:"viewType"`
+	ActivePricingType string                       `bson:"activePricingType" json:"activePricingType"`
+	RoomAmenities     []string                     `bson:"roomAmenities" json:"roomAmenities"`
+	Features          []transl.Localizable[string] `bson:"features" json:"features"`
+	Images            []types.FileField            `bson:"images" json:"images"`
+	Pricing           Pricing                      `bson:"pricing" json:"pricing"`
+	SeasonalPricing   []SeasonPricing              `bson:"seasonalPricing" json:"seasonalPricing"`
 }
 
 type Pricing struct {
@@ -145,11 +146,11 @@ type Advantages struct {
 }
 
 type AmenitiesAndFacilitiesPage struct {
-	StartingText                string            `bson:"startingText" json:"startingText"`
-	LeisureAndRecreation        []AmenitiesDetail `bson:"leisureAndRecreation" json:"leisureAndRecreation"`
-	DiningAndCulinaryExperience []AmenitiesDetail `bson:"diningAndCulinaryExperience" json:"diningAndCulinaryExperience"`
-	BusinessAndEvents           []AmenitiesDetail `bson:"businessAndEvents" json:"businessAndEvents"`
-	ConvenienceAndServices      []string          `bson:"convenienceAndServices" json:"convenienceAndServices"`
+	StartingText                transl.Localizable[string]   `bson:"startingText" json:"startingText"`
+	LeisureAndRecreation        []AmenitiesDetail            `bson:"leisureAndRecreation" json:"leisureAndRecreation"`
+	DiningAndCulinaryExperience []AmenitiesDetail            `bson:"diningAndCulinaryExperience" json:"diningAndCulinaryExperience"`
+	BusinessAndEvents           []AmenitiesDetail            `bson:"businessAndEvents" json:"businessAndEvents"`
+	ConvenienceAndServices      []transl.Localizable[string] `bson:"convenienceAndServices" json:"convenienceAndServices"`
 }
 
 type AmenitiesAndFacilitiesPageV2 struct {
@@ -163,13 +164,13 @@ type AmenitiesAndFacilitiesPageV2 struct {
 }
 
 type AmenitiesDetail struct {
-	Title string          `bson:"title" json:"title"`
-	Body  string          `bson:"body" json:"body"`
-	Image types.FileField `bson:"image" json:"image"`
+	Title transl.Localizable[string] `bson:"title" json:"title"`
+	Body  transl.Localizable[string] `bson:"body" json:"body"`
+	Image types.FileField            `bson:"image" json:"image"`
 }
 
 type LocationNearbyAttractionsPage struct {
-	StartingText                   string                           `bson:"startingText" json:"startingText"`
+	StartingText                   transl.Localizable[string]       `bson:"startingText" json:"startingText"`
 	HotelAddress                   HotelAddress                     `bson:"hotelAddress" json:"hotelAddress"`
 	TopAttractionsNearby           []AttractionsNearby              `bson:"topAttractionsNearby" json:"topAttractionsNearby"`
 	TransportationAndAccessibility []TransportationAndAccessibility `bson:"transportationAndAccessibility" json:"transportationAndAccessibility"`
@@ -182,40 +183,40 @@ type TransportationAndAccessibility struct {
 }
 
 type HotelAddress struct {
-	Longitude   string `bson:"longitude" json:"longitude"`
-	Latitude    string `bson:"latitude" json:"latitude"`
-	FullAddress string `bson:"fullAddress" json:"fullAddress"`
+	Longitude   string                     `bson:"longitude" json:"longitude"`
+	Latitude    string                     `bson:"latitude" json:"latitude"`
+	FullAddress transl.Localizable[string] `bson:"fullAddress" json:"fullAddress"`
 }
 
 type AttractionsNearby struct {
-	Title       string          `bson:"title" json:"title"`
-	Body        string          `bson:"body" json:"body"`
-	Image       types.FileField `bson:"image" json:"image"`
-	Longitude   string          `bson:"longitude" json:"longitude"`
-	Latitude    string          `bson:"latitude" json:"latitude"`
-	FullAddress string          `bson:"fullAddress" json:"fullAddress"`
+	Title       transl.Localizable[string] `bson:"title" json:"title"`
+	Body        transl.Localizable[string] `bson:"body" json:"body"`
+	Image       types.FileField            `bson:"image" json:"image"`
+	Longitude   string                     `bson:"longitude" json:"longitude"`
+	Latitude    string                     `bson:"latitude" json:"latitude"`
+	FullAddress transl.Localizable[string] `bson:"fullAddress" json:"fullAddress"`
 }
 
 type ReviewsAndRatingsPage struct {
-	StartingText  string               `bson:"startingText" json:"startingText"`
-	HotelReviews  []HotelReviewDisplay `bson:"hotelReviews" json:"hotelReviews"`
-	ActiveProgram primitive.ObjectID   `bson:"activeProgram" json:"activeProgram"`
+	StartingText  transl.Localizable[string] `bson:"startingText" json:"startingText"`
+	HotelReviews  []HotelReviewDisplay       `bson:"hotelReviews" json:"hotelReviews"`
+	ActiveProgram primitive.ObjectID         `bson:"activeProgram" json:"activeProgram"`
 }
 
 type HotelReviewDisplay struct {
-	ReviewerImage types.FileField   `bson:"reviewerImage" json:"reviewerImage"`
-	ReviewerName  string            `bson:"reviewerName" json:"reviewerName"`
-	ReviewText    string            `bson:"reviewText" json:"reviewText"`
-	ImagesGallery []types.FileField `bson:"imagesGallery" json:"imagesGallery"`
+	ReviewerImage types.FileField            `bson:"reviewerImage" json:"reviewerImage"`
+	ReviewerName  transl.Localizable[string] `bson:"reviewerName" json:"reviewerName"`
+	ReviewText    transl.Localizable[string] `bson:"reviewText" json:"reviewText"`
+	ImagesGallery []types.FileField          `bson:"imagesGallery" json:"imagesGallery"`
 }
 
 type BookingAndPoliciesPage struct {
-	StartingText                        string   `bson:"startingText" json:"startingText"`
-	CheckInAndCheckOut                  []string `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
-	PaymentPolicies                     []string `bson:"paymentPolicies" json:"paymentPolicies"`
-	CancellationPolicy                  []string `bson:"cancellationPolicy" json:"cancellationPolicy"`
-	HotelRulesAndPolicies               []string `bson:"hotelRulesAndPolicies" json:"hotelRulesAndPolicies"`
-	TransportationAndAdditionalServices []string `bson:"transportationAndAdditionalServices" json:"transportationAndAdditionalServices"`
+	StartingText                        transl.Localizable[string] `bson:"startingText" json:"startingText"`
+	CheckInAndCheckOut                  []string                   `bson:"checkInAndCheckOut" json:"checkInAndCheckOut"`
+	PaymentPolicies                     []string                   `bson:"paymentPolicies" json:"paymentPolicies"`
+	CancellationPolicy                  []string                   `bson:"cancellationPolicy" json:"cancellationPolicy"`
+	HotelRulesAndPolicies               []string                   `bson:"hotelRulesAndPolicies" json:"hotelRulesAndPolicies"`
+	TransportationAndAdditionalServices []string                   `bson:"transportationAndAdditionalServices" json:"transportationAndAdditionalServices"`
 }
 type PoliciesPage struct {
 	CheckInCheckOut                  *map[string]any `bson:"checkInCheckOut,omitempty" json:"checkInCheckOut,omitempty"`

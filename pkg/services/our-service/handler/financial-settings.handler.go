@@ -39,14 +39,14 @@ func (h *FinancialSettingsHandler) Get(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FinancialSettingsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.FinancialSettingsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -55,5 +55,5 @@ func (h *FinancialSettingsHandler) Update(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
