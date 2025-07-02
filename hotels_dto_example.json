@@ -1,0 +1,426 @@
+{
+  "name": "Grand Larsa Palace Hotel",
+  "hotelType": "Luxury Resort",
+  "location": "Damascus, Syria",
+  "checkInAndCheckOut": {
+    "from": "2024-01-15T15:00:00Z",
+    "to": "2024-01-20T11:00:00Z"
+  },
+  "price": 250,
+  "isDisplayInPerfectStay": true,
+  "ratings": 4.5,
+  "image": {
+    "_id": "507f1f77bcf86cd799439011",
+    "originalName": "hotel-main.jpg",
+    "path": "/uploads/hotels/hotel-main.jpg",
+    "service": "hotels",
+    "expire": "2025-12-31T23:59:59Z",
+    "variants": ["thumbnail", "medium", "large"]
+  },
+  "roomAmenities": [
+    "Air Conditioning",
+    "Free WiFi",
+    "Mini Bar",
+    "Room Service",
+    "Flat Screen TV",
+    "Private Bathroom"
+  ],
+  "distanceFromCityCenter": 5,
+  "nearbyAttractions": [
+    "Umayyad Mosque",
+    "Old City of Damascus",
+    "National Museum",
+    "Azem Palace"
+  ],
+  "imagesGallery": [
+    {
+      "_id": "507f1f77bcf86cd799439012",
+      "originalName": "gallery1.jpg",
+      "path": "/uploads/hotels/gallery/gallery1.jpg",
+      "service": "hotels",
+      "expire": "2025-12-31T23:59:59Z",
+      "variants": ["thumbnail", "medium", "large"]
+    },
+    {
+      "_id": "507f1f77bcf86cd799439013",
+      "originalName": "gallery2.jpg",
+      "path": "/uploads/hotels/gallery/gallery2.jpg",
+      "service": "hotels",
+      "expire": "2025-12-31T23:59:59Z",
+      "variants": ["thumbnail", "medium", "large"]
+    }
+  ],
+  "overviewPage": {
+    "overviewText": "Experience luxury and comfort at Grand Larsa Palace Hotel, located in the heart of Damascus. Our hotel offers exceptional service and world-class amenities.",
+    "whyStayWithUs": [
+      "24/7 concierge service",
+      "Prime location near historic sites",
+      "Award-winning spa and wellness center",
+      "Multiple dining options",
+      "Business center facilities"
+    ],
+    "quickFacts": [
+      "Opened in 2020",
+      "150 rooms and suites",
+      "3 restaurants",
+      "Outdoor pool",
+      "Fitness center"
+    ],
+    "logo": {
+      "_id": "507f1f77bcf86cd799439014",
+      "originalName": "hotel-logo.png",
+      "path": "/uploads/hotels/logos/hotel-logo.png",
+      "service": "hotels",
+      "expire": "2025-12-31T23:59:59Z",
+      "variants": ["small", "medium", "large"]
+    }
+  },
+  "roomsAndSuitesPage": {
+    "startingText": "Choose from our carefully designed rooms and suites, each offering comfort and elegance.",
+    "advantages": [
+      "Spacious layouts",
+      "Modern amenities",
+      "City or garden views",
+      "Premium bedding"
+    ],
+    "roomCategories": [
+      {
+        "roomType": "Deluxe Room",
+        "totalRoom": 50,
+        "roomSurface": "35 sqm",
+        "bedsCount": 1,
+        "maxOccupancy": 2,
+        "viewType": "City View",
+        "activePricingType": "standard",
+        "roomAmenities": [
+          "King Size Bed",
+          "Work Desk",
+          "Mini Bar",
+          "Safe"
+        ],
+        "features": [
+          "Marble Bathroom",
+          "High-speed Internet",
+          "Climate Control",
+          "Blackout Curtains"
+        ],
+        "images": [
+          {
+            "_id": "507f1f77bcf86cd799439015",
+            "originalName": "deluxe-room1.jpg",
+            "path": "/uploads/hotels/rooms/deluxe-room1.jpg",
+            "service": "hotels",
+            "expire": "2025-12-31T23:59:59Z",
+            "variants": ["thumbnail", "medium", "large"]
+          }
+        ],
+        "pricing": {
+          "nightlyRateBase": 200,
+          "nightlyRateBaseType": "per night",
+          "extraPersonCharge": 50,
+          "extraPersonChargeType": "per person per night",
+          "isIncludeBreakFast": true,
+          "currencyType": "USD"
+        },
+        "seasonalPricing": [
+          {
+            "nightlyRateBase": 300,
+            "nightlyRateBaseType": "per night",
+            "extraPersonCharge": 75,
+            "extraPersonChargeType": "per person per night",
+            "isIncludeBreakFast": true,
+            "seasonName": "Peak Season",
+            "currencyType": "USD"
+          }
+        ]
+      }
+    ]
+  },
+  "amenitiesAndFacilitiesPage": {
+    "startingText": "Discover our extensive range of amenities and facilities designed for your comfort and enjoyment.",
+    "leisureAndRecreation": [
+      {
+        "title": "Outdoor Swimming Pool",
+        "body": "Relax by our temperature-controlled outdoor pool with panoramic city views.",
+        "image": {
+          "_id": "507f1f77bcf86cd799439016",
+          "originalName": "pool.jpg",
+          "path": "/uploads/hotels/amenities/pool.jpg",
+          "service": "hotels",
+          "expire": "2025-12-31T23:59:59Z",
+          "variants": ["thumbnail", "medium", "large"]
+        }
+      }
+    ],
+    "diningAndCulinaryExperience": [
+      {
+        "title": "Al Sham Restaurant",
+        "body": "Experience authentic Syrian cuisine in our signature restaurant.",
+        "image": {
+          "_id": "507f1f77bcf86cd799439017",
+          "originalName": "restaurant.jpg",
+          "path": "/uploads/hotels/amenities/restaurant.jpg",
+          "service": "hotels",
+          "expire": "2025-12-31T23:59:59Z",
+          "variants": ["thumbnail", "medium", "large"]
+        }
+      }
+    ],
+    "businessAndEvents": [
+      {
+        "title": "Conference Center",
+        "body": "State-of-the-art meeting facilities for business events and conferences.",
+        "image": {
+          "_id": "507f1f77bcf86cd799439018",
+          "originalName": "conference.jpg",
+          "path": "/uploads/hotels/amenities/conference.jpg",
+          "service": "hotels",
+          "expire": "2025-12-31T23:59:59Z",
+          "variants": ["thumbnail", "medium", "large"]
+        }
+      }
+    ],
+    "convenienceAndServices": [
+      "24-hour room service",
+      "Laundry and dry cleaning",
+      "Airport shuttle",
+      "Currency exchange",
+      "Luggage storage"
+    ]
+  },
+  "amenitiesAndFacilitiesPageV2": {
+    "restaurantsCafes": [
+      "Al Sham Restaurant - Syrian Cuisine",
+      "Rooftop Cafe - International Menu",
+      "Lobby Lounge - Light Snacks"
+    ],
+    "poolsBeaches": [
+      "Outdoor Swimming Pool",
+      "Children's Pool",
+      "Pool Bar"
+    ],
+    "spaGym": [
+      "Full-service Spa",
+      "Fitness Center",
+      "Sauna and Steam Room",
+      "Massage Services"
+    ],
+    "hotelServices": [
+      "24-hour Front Desk",
+      "Concierge Service",
+      "Room Service",
+      "Housekeeping"
+    ],
+    "businessFacilities": [
+      "Business Center",
+      "Meeting Rooms",
+      "Conference Facilities",
+      "High-speed Internet"
+    ],
+    "kidsFacilities": [
+      "Kids' Club",
+      "Playground",
+      "Babysitting Service",
+      "Children's Menu"
+    ],
+    "recreationalActivities": [
+      "Cultural Tours",
+      "City Excursions",
+      "Cooking Classes",
+      "Shopping Tours"
+    ]
+  },
+  "locationNearbyAttractionsPage": {
+    "startingText": "Perfectly located to explore Damascus's rich history and vibrant culture.",
+    "hotelAddress": {
+      "longitude": "36.2765",
+      "latitude": "33.5138",
+      "fullAddress": "123 Al Thawra Street, Damascus, Syria"
+    },
+    "topAttractionsNearby": [
+      {
+        "title": "Umayyad Mosque",
+        "body": "One of the largest and oldest mosques in the world, a masterpiece of Islamic architecture.",
+        "image": {
+          "_id": "507f1f77bcf86cd799439019",
+          "originalName": "umayyad-mosque.jpg",
+          "path": "/uploads/hotels/attractions/umayyad-mosque.jpg",
+          "service": "hotels",
+          "expire": "2025-12-31T23:59:59Z",
+          "variants": ["thumbnail", "medium", "large"]
+        },
+        "longitude": "36.3067",
+        "latitude": "33.5118",
+        "fullAddress": "Umayyad Mosque, Old City, Damascus, Syria"
+      }
+    ],
+    "transportationAndAccessibility": [
+      {
+        "title": "Airport Shuttle",
+        "description": "Complimentary shuttle service to and from Damascus International Airport",
+        "availability": true
+      },
+      {
+        "title": "Public Transportation",
+        "description": "Easy access to metro and bus stations within walking distance",
+        "availability": true
+      }
+    ]
+  },
+  "reviewsAndRatingsPage": {
+    "startingText": "Read what our guests have to say about their exceptional experiences.",
+    "hotelReviews": [
+      {
+        "reviewerImage": {
+          "_id": "507f1f77bcf86cd79943901a",
+          "originalName": "reviewer1.jpg",
+          "path": "/uploads/users/avatars/reviewer1.jpg",
+          "service": "users",
+          "expire": "2025-12-31T23:59:59Z",
+          "variants": ["small", "medium", "large"]
+        },
+        "reviewerName": "Ahmed Hassan",
+        "reviewText": "Exceptional service and beautiful rooms. The location is perfect for exploring Damascus.",
+        "imagesGallery": [
+          {
+            "_id": "507f1f77bcf86cd79943901b",
+            "originalName": "review-img1.jpg",
+            "path": "/uploads/reviews/review-img1.jpg",
+            "service": "reviews",
+            "expire": "2025-12-31T23:59:59Z",
+            "variants": ["thumbnail", "medium", "large"]
+          }
+        ]
+      }
+    ],
+    "activeProgram": "507f1f77bcf86cd799439011"
+  },
+  "bookingAndPoliciesPage": {
+    "startingText": "Please review our booking terms and hotel policies for a smooth stay.",
+    "checkInAndCheckOut": [
+      "Check-in: 3:00 PM",
+      "Check-out: 11:00 AM",
+      "Early check-in subject to availability"
+    ],
+    "paymentPolicies": [
+      "Major credit cards accepted",
+      "Payment required at check-in",
+      "Currency: USD, EUR, SYP accepted"
+    ],
+    "cancellationPolicy": [
+      "Free cancellation up to 24 hours before arrival",
+      "Late cancellation fee: 1 night's stay",
+      "No-show fee: Full booking amount"
+    ],
+    "hotelRulesAndPolicies": [
+      "No smoking in rooms",
+      "Pets allowed with prior notice",
+      "Quiet hours: 10 PM - 7 AM"
+    ],
+    "transportationAndAdditionalServices": [
+      "Airport transfer available",
+      "Car rental service",
+      "Tour arrangements"
+    ]
+  },
+  "positionOnMap": "33.5138,36.2765",
+  "contacts": {
+    "phone": {
+      "pre": "+963",
+      "content": "11-2234567"
+    },
+    "email": "info@grandlarsapalace.com",
+    "web": "https://www.grandlarsapalace.com",
+    "social": [
+      {
+        "key": "facebook",
+        "value": "https://facebook.com/grandlarsapalace"
+      },
+      {
+        "key": "instagram",
+        "value": "https://instagram.com/grandlarsapalace"
+      }
+    ]
+  },
+  "closeReservations": [
+    {
+      "startDate": "2024-12-24T00:00:00Z",
+      "endDate": "2024-12-26T23:59:59Z"
+    }
+  ],
+  "ratingObjects": [
+    {
+      "username": "john_traveler",
+      "userId": "507f1f77bcf86cd799439012",
+      "userImg": {
+        "_id": "507f1f77bcf86cd79943901c",
+        "originalName": "user1.jpg",
+        "path": "/uploads/users/avatars/user1.jpg",
+        "service": "users",
+        "expire": "2025-12-31T23:59:59Z",
+        "variants": ["small", "medium", "large"]
+      },
+      "value": 4.5,
+      "text": "Amazing hotel with great service and beautiful rooms!",
+      "status": "approved",
+      "date": "2024-01-10T14:30:00Z",
+      "replies": [
+        {
+          "text": "Thank you for your wonderful review! We look forward to welcoming you back.",
+          "date": "2024-01-11T09:00:00Z"
+        }
+      ]
+    }
+  ],
+  "offerAndDiscount": [
+    {
+      "name": "Early Bird Special",
+      "code": "EARLY2024",
+      "startDate": "2024-01-01T00:00:00Z",
+      "endDate": "2024-03-31T23:59:59Z",
+      "description": "Book 30 days in advance and save 20%"
+    }
+  ],
+  "policiesPage": {
+    "checkInCheckOut": {
+      "en": {
+        "checkIn": "3:00 PM",
+        "checkOut": "11:00 AM",
+        "earlyCheckIn": "Subject to availability"
+      },
+      "ar": {
+        "checkIn": "3:00 مساءً",
+        "checkOut": "11:00 صباحاً",
+        "earlyCheckIn": "حسب التوفر"
+      }
+    },
+    "paymentPolicies": {
+      "en": {
+        "acceptedCards": "Visa, MasterCard, American Express",
+        "currency": "USD, EUR, SYP",
+        "paymentTime": "At check-in"
+      }
+    },
+    "cancellationPolicy": {
+      "en": {
+        "freeCancellation": "24 hours before arrival",
+        "lateFee": "1 night charge",
+        "noShowFee": "Full booking amount"
+      }
+    },
+    "hotelRulesPolicies": {
+      "en": {
+        "smoking": "No smoking in rooms",
+        "pets": "Allowed with prior notice",
+        "quietHours": "10 PM - 7 AM"
+      }
+    },
+    "transportationAdditionalServices": {
+      "en": {
+        "airportTransfer": "Available on request",
+        "carRental": "Available at front desk",
+        "tours": "Arranged through concierge"
+      }
+    }
+  }
+} 

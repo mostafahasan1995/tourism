@@ -24,9 +24,10 @@ type TravelRequestDto struct {
 	//
 	ServiceType enums.ServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=delegation custom-plan business-man vip-car flight-request partner-request hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
 	//request
-	Delegation  *Delegation  `bson:"delegation,omitempty" json:"delegation,omitempty" validate:"required_if=ServiceType delegation"`
-	BusinessMan *BusinessMan `bson:"businessMan,omitempty" json:"businessMan,omitempty" validate:"required_if=ServiceType business-man"`
-	CustomPlan  *CustomPlan  `bson:"customPlan,omitempty" json:"customPlan,omitempty" validate:"required_if=ServiceType custom-plan"`
+	Delegation   *Delegation   `bson:"delegation,omitempty" json:"delegation,omitempty" validate:"required_if=ServiceType delegation"`
+	BusinessMan  *BusinessMan  `bson:"businessMan,omitempty" json:"businessMan,omitempty" validate:"required_if=ServiceType business-man"`
+	CustomPlan   *CustomPlan   `bson:"customPlan,omitempty" json:"customPlan,omitempty" validate:"required_if=ServiceType custom-plan"`
+	HotelBooking *HotelBooking `bson:"hotelBooking,omitempty" json:"hotelBooking,omitempty" validate:"required_if=ServiceType hotel-booking"`
 	//
 	VipCar              *VipCar              `bson:"vipCar,omitempty" json:"vipCar,omitempty" validate:"required_if=ServiceType vip-car"`
 	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty" validate:"required_if=ServiceType flight-request"`

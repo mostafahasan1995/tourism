@@ -10,6 +10,7 @@ type CustomProgram struct {
 	Delegation          Delegation                 `bson:"delegation,omitempty" json:"delegation,omitempty"`
 	BusinessMan         BusinessMan                `bson:"businessMan,omitempty" json:"businessMan,omitempty"`
 	CustomPlan          CustomPlan                 `bson:"customPlan,omitempty" json:"customPlan,omitempty"`
+	HotelBooking        HotelBooking               `bson:"hotelBooking,omitempty" json:"hotelBooking,omitempty"`
 	VipCar              ProgramVipCar              `bson:"vipCar,omitempty" json:"vipCar,omitempty"`
 	FlightTicketRequest ProgramFlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty"`
 	PartnerRequest      PartnerRequest             `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty"`

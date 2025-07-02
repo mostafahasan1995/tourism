@@ -103,6 +103,11 @@ type BusinessMan struct {
 	CoordinatorEmail    string            `bson:"coordinatorEmail" json:"coordinatorEmail"`
 }
 
+type HotelBooking struct {
+	HotelId   primitive.ObjectID `bson:"hotelId" json:"hotelId"`
+	HotelName string             `bson:"hotelName" json:"hotelName"`
+}
+
 type VipCar struct {
 	Destinations []VipCarDest `bson:"destinations" json:"destinations"`
 }
