@@ -4,7 +4,6 @@ import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/picklist"
-	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
@@ -50,35 +49,31 @@ func (l *CarsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 func (l *CarsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	query := r.URL.Query().Get("query")
+
 	result, err := l.carssvcs.GetAll(ctx, query)
 	if err != nil {
 		return err
 	}
-	errRes := helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
-	if errRes != nil {
-		return errRes
-	}
-	return nil
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+
 }
 
 func (l *CarsHandler) GetPaginated(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
-	filterParam := r.URL.Query().Get("query")
-	var carFilter filter.CarsFilter
-	if filterParam != "" {
-		err := json.Unmarshal([]byte(filterParam), &carFilter)
-		if err != nil {
-			return helpers.InvalidJSON()
-		}
-	}
-	result, err := l.carssvcs.GetPaginated(ctx, carFilter)
+	query := r.URL.Query().Get("query")
+
+	skip, limit, err := util.Paginate(r)
 	if err != nil {
 		return err
 	}
-	if err := helpers.WriteJsonCtx(ctx, w, http.StatusOK, result); err != nil {
+
+	result, err := l.carssvcs.GetPaginated(ctx, skip, limit, query)
+	if err != nil {
 		return err
 	}
-	return nil
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *CarsHandler) Add(w http.ResponseWriter, r *http.Request) error {

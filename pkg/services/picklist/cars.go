@@ -7,7 +7,9 @@ import (
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/services/picklist/repo"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"time"
 
 	"github.com/samber/do"
@@ -19,7 +21,7 @@ import (
 type CarsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Cars, error)
 	GetAll(ctx context.Context, query any) ([]models.Cars, error)
-	GetPaginated(ctx context.Context, query any) (*models.CarsPagination, error)
+	GetPaginated(ctx context.Context, skip, limit int64, query any) (*models.CarsPagination, error)
 	Add(ctx context.Context, data *models.CarsDto) (*models.Cars, error)
 	Update(ctx context.Context, id string, data *models.CarsDto) (*models.Cars, error)
 	Delete(ctx context.Context, id string) error
@@ -66,13 +68,47 @@ func (c *carsSvcs) GetAll(ctx context.Context, query any) ([]models.Cars, error)
 	return result, nil
 }
 
-func (c *carsSvcs) GetPaginated(ctx context.Context, query any) (*models.CarsPagination, error) {
+func (c *carsSvcs) GetPaginated(ctx context.Context, skip, limit int64, query any) (*models.CarsPagination, error) {
+	match := bson.M{"trash": false}
+
 	filters, err := helpers.ParseFilters[filter.CarsFilter](query)
 	if err != nil {
 		return nil, errors.New("invalid query")
 	}
 
-	return c.repo.GetAll(ctx, *filters)
+	pipeline := filters.BuildPipeline(match)
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := c.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Cars
+	errAg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.CarsPagination{
+		Cars:       result,
+		Pagination: pagination,
+	}, nil
 }
 
 func (c *carsSvcs) Add(ctx context.Context, data *models.CarsDto) (*models.Cars, error) {

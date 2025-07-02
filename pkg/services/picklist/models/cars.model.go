@@ -6,7 +6,6 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -28,6 +27,6 @@ type Cars struct {
 }
 
 type CarsPagination struct {
-	Cars       []Cars            `bson:"cars" json:"cars"`
-	Pagination common.Pagination `bson:"pagination" json:"pagination"`
+	Cars       []Cars           `bson:"cars" json:"cars"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
