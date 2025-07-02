@@ -15,6 +15,8 @@ type CarsDto struct {
 	Images  []types.FileField `bson:"images" json:"images"`
 }
 
+//car type
+
 type Cars struct {
 	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	CarsDto   `bson:",inline"`
