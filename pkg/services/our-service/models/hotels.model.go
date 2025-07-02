@@ -36,6 +36,8 @@ type HotelsDto struct {
 	RatingObjects                 []RatingObject                `bson:"ratingObjects" json:"ratingObjects"`
 	OfferAndDiscount              []OfferAndDiscount            `bson:"offerAndDiscount" json:"offerAndDiscount"`
 	PoliciesPage                  PoliciesPage                  `bson:"policiesPage" json:"policiesPage"`
+	Owner                         primitive.ObjectID            `bson:"owner" json:"owner"`
+	Country                       string                        `bson:"country" json:"country"`
 }
 
 // CalculateAverageRating calculates the average rating from RatingObjects
