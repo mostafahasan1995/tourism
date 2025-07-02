@@ -45,7 +45,7 @@ func (d *destinationSvcs) GetOne(ctx context.Context, id string) (*models.Destin
 }
 
 func (d *destinationSvcs) GetAll(ctx context.Context, query any) ([]models.Destination, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	filters, err := helpers.ParseFilters[filter.DestinationFilter](query)
 	if err != nil {
