@@ -38,3 +38,8 @@ type PhoneNumber struct {
 	Pre     string `bson:"pre" json:"pre"`
 	Content string `bson:"content" json:"content"`
 }
+
+type CapabilityCheck struct {
+	Capability string
+	IsAllowed  bool
+}

@@ -15,6 +15,7 @@ const (
 	_ CtxKey = iota
 	ReqAppCfg
 	ReqUser
+	ReqCapabilityCheck
 )
 
 // add AppCfg sruct to ctx for use in repos- usually in handlers
@@ -48,4 +49,8 @@ func GetReqAppCfg(ctx context.Context) (*types.AppCfg, error) {
 // add user to ctx- usually in middleware
 func SetReqUser(ctx context.Context, user *types.User) context.Context {
 	return context.WithValue(ctx, ReqUser, user)
+}
+
+func SetCapabilityCheck(ctx context.Context, data *types.CapabilityCheck) context.Context {
+	return context.WithValue(ctx, ReqCapabilityCheck, data)
 }
