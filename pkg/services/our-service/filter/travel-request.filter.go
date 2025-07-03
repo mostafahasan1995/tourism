@@ -40,6 +40,7 @@ type TravelReqFilters struct {
 	CustomerName *string             `json:"customerName"`
 	Status       *string             `json:"status"`
 	CustomerId   *primitive.ObjectID `json:"customerId"`
+	AgentId      *primitive.ObjectID `json:"agentId"`
 	ProgramId    *primitive.ObjectID `json:"programId"`
 	ProgramName  *string             `json:"programName"`
 	Date         *time.Time          `json:"date"`
@@ -81,34 +82,31 @@ func (f TravelReqFilters) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	if f.ProgramId != nil {
-		if f.ProgramId.IsZero() {
-			o := bson.M{
-				"$or": bson.A{
-					bson.M{"program": bson.M{"$exists": false}},
-					bson.M{"program": primitive.NilObjectID},
-				},
-			}
-			ands = append(ands, o)
-		} else {
-			m["program"] = *f.ProgramId
+		m["program"] = *f.ProgramId
+	}
+
+	if f.AgentId != nil {
+		m["$or"] = bson.A{
+			bson.M{"departureAgent": *f.AgentId},
+			bson.M{"tripCoordinator": *f.AgentId},
 		}
 	}
 
 	// New filter fields
-	if f.ProgramName != nil {
-		pattern := fmt.Sprintf(".*%s.*", *f.ProgramName)
-		re, _ := regexp.Compile(pattern)
-		programNameFilter := bson.M{
-			"$expr": bson.M{
-				"$regexMatch": bson.M{
-					"input":   "$programData.title",
-					"regex":   re.String(),
-					"options": "i",
-				},
-			},
-		}
-		ands = append(ands, programNameFilter)
-	}
+	// if f.ProgramName != nil {
+	// 	pattern := fmt.Sprintf(".*%s.*", *f.ProgramName)
+	// 	re, _ := regexp.Compile(pattern)
+	// 	programNameFilter := bson.M{
+	// 		"$expr": bson.M{
+	// 			"$regexMatch": bson.M{
+	// 				"input":   "$programData.title",
+	// 				"regex":   re.String(),
+	// 				"options": "i",
+	// 			},
+	// 		},
+	// 	}
+	// 	ands = append(ands, programNameFilter)
+	// }
 
 	if f.Date != nil {
 		m["date"] = *f.Date

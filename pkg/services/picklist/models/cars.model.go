@@ -3,6 +3,7 @@ package models
 import (
 	// "larsa-tourism-microservices/pkg/types"
 
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 )
 
 type CarsDto struct {
-	CarType string            `bson:"carType" json:"carType"`
-	Images  []types.FileField `bson:"images" json:"images"`
+	CarType transl.Localizable[string] `bson:"carType" json:"carType"`
+	Images  []types.FileField          `bson:"images" json:"images"`
 }
 
 //car type

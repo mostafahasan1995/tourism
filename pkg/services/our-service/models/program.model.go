@@ -64,10 +64,10 @@ type ProgramDto struct {
 
 type ProgramRes struct {
 	Program       `bson:",inline"`
-	UpdatedByName string `bson:"updatedByName" json:"updatedByName"`
-	CustomerName  string `bson:"customerName" json:"customerName"`
-	PackageName   string `bson:"packageName" json:"packageName"`
-	Duration      int    `bson:"duration" json:"duration"`
+	UpdatedByName string                     `bson:"updatedByName" json:"updatedByName"`
+	CustomerName  transl.Localizable[string] `bson:"customerName" json:"customerName"`
+	PackageName   transl.Localizable[string] `bson:"packageName" json:"packageName"`
+	Duration      int                        `bson:"duration" json:"duration"`
 }
 
 func (p *ProgramDto) Validate(v *validator.Validate) error {

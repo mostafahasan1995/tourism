@@ -114,7 +114,7 @@ func (t *travelrequestsvcs) GetOne(ctx context.Context, id string) (*models.Trav
 }
 
 func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.TravelRequestPagination, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
 
@@ -160,8 +160,21 @@ func (t *travelrequestsvcs) Get(ctx context.Context, skip, limit int64, query an
 	}, nil
 }
 
+// need review
+func (t *travelrequestsvcs) GetAgentRequests(ctx context.Context, agentId primitive.ObjectID, skip, limit int64, query any) (*models.TravelRequestPagination, error) {
+	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+	if err != nil {
+		return nil, errors.New("invalid query")
+	}
+
+	f.AgentId = &agentId
+
+	return t.Get(ctx, skip, limit, f)
+
+}
+
 func (t *travelrequestsvcs) GetAll(ctx context.Context, query any) ([]models.TravelRequestRes, error) {
-	match := bson.M{}
+	match := bson.M{"trash": false}
 
 	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
 	if err != nil {

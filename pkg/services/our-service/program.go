@@ -56,20 +56,20 @@ var packageLookup = []bson.M{
 		"from":         "tourismPackages",
 		"localField":   "package",
 		"foreignField": "_id",
-		"as":           "packageObj",
+		"as":           "package",
 	}},
 	{"$unwind": bson.M{
-		"path":                       "$packageObj",
+		"path":                       "$package",
 		"preserveNullAndEmptyArrays": true,
 	}},
 	{
 		"$set": bson.M{
-			"packageName": "$packageObj.name",
+			"packageName": "$package.name",
 		},
 	},
 	{
 		"$project": bson.M{
-			"packageObj": 0,
+			"package": 0,
 		},
 	},
 }
@@ -79,20 +79,20 @@ var customerLookup = []bson.M{
 		"from":         "tourismCustomers",
 		"localField":   "customerId",
 		"foreignField": "_id",
-		"as":           "customerObj",
+		"as":           "customer",
 	}},
 	{"$unwind": bson.M{
-		"path":                       "$customerObj",
+		"path":                       "$customer",
 		"preserveNullAndEmptyArrays": true,
 	}},
 	{
 		"$set": bson.M{
-			"customerName": "$customerObj.name",
+			"customerName": "$customer.name",
 		},
 	},
 	{
 		"$project": bson.M{
-			"customerObj": 0,
+			"customer": 0,
 		},
 	},
 }
