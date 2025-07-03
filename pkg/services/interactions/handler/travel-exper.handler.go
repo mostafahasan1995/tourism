@@ -51,7 +51,7 @@ func (h *TravelExperHandler) GetTravelerStory(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) GetTravelerStories(w http.ResponseWriter, r *http.Request) error {
@@ -69,14 +69,14 @@ func (h *TravelExperHandler) GetTravelerStories(w http.ResponseWriter, r *http.R
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) AddTravelerStory(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.TravelerStoryDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -85,7 +85,7 @@ func (h *TravelExperHandler) AddTravelerStory(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) SetTravelerStoryStatus(w http.ResponseWriter, r *http.Request) error {
@@ -93,7 +93,7 @@ func (h *TravelExperHandler) SetTravelerStoryStatus(w http.ResponseWriter, r *ht
 	id := chi.URLParam(r, "id") // story id
 
 	var data models.TravelerStoryStatusDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -102,7 +102,7 @@ func (h *TravelExperHandler) SetTravelerStoryStatus(w http.ResponseWriter, r *ht
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) SendFeedback(w http.ResponseWriter, r *http.Request) error {
@@ -110,7 +110,7 @@ func (h *TravelExperHandler) SendFeedback(w http.ResponseWriter, r *http.Request
 	id := chi.URLParam(r, "id") // story id
 
 	var data models.TravelerStoryFeedback
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -119,7 +119,7 @@ func (h *TravelExperHandler) SendFeedback(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) UpdateTravelerStory(w http.ResponseWriter, r *http.Request) error {
@@ -127,7 +127,7 @@ func (h *TravelExperHandler) UpdateTravelerStory(w http.ResponseWriter, r *http.
 	id := chi.URLParam(r, "id") // story id
 
 	var data models.TravelerStoryDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -136,7 +136,7 @@ func (h *TravelExperHandler) UpdateTravelerStory(w http.ResponseWriter, r *http.
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) DeleteTravelerStory(w http.ResponseWriter, r *http.Request) error {
@@ -148,7 +148,7 @@ func (h *TravelExperHandler) DeleteTravelerStory(w http.ResponseWriter, r *http.
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }
 
 func (h *TravelExperHandler) RestoreTravelerStory(w http.ResponseWriter, r *http.Request) error {
@@ -160,7 +160,7 @@ func (h *TravelExperHandler) RestoreTravelerStory(w http.ResponseWriter, r *http
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }
 
 //client
@@ -175,7 +175,7 @@ func (h *TravelExperHandler) GetClientStory(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) GetClientStories(w http.ResponseWriter, r *http.Request) error {
@@ -193,14 +193,14 @@ func (h *TravelExperHandler) GetClientStories(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) AddClientStory(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.ClientStoryDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -209,7 +209,7 @@ func (h *TravelExperHandler) AddClientStory(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) UpdateClientStory(w http.ResponseWriter, r *http.Request) error {
@@ -217,7 +217,7 @@ func (h *TravelExperHandler) UpdateClientStory(w http.ResponseWriter, r *http.Re
 	id := chi.URLParam(r, "id") // story id
 
 	var data models.ClientStoryDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -226,7 +226,7 @@ func (h *TravelExperHandler) UpdateClientStory(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TravelExperHandler) DeleteClientStory(w http.ResponseWriter, r *http.Request) error {
@@ -238,5 +238,5 @@ func (h *TravelExperHandler) DeleteClientStory(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }

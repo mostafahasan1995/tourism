@@ -47,7 +47,7 @@ func (l *PackageHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 func (l *PackageHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
@@ -59,14 +59,14 @@ func (l *PackageHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		return err
 
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *PackageHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.PackageDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -75,7 +75,7 @@ func (l *PackageHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *PackageHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -84,7 +84,7 @@ func (l *PackageHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.PackageDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -93,7 +93,7 @@ func (l *PackageHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *PackageHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -105,5 +105,5 @@ func (l *PackageHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }

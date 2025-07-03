@@ -57,7 +57,7 @@ func (h *AgentHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -75,7 +75,7 @@ func (h *AgentHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -88,14 +88,14 @@ func (h *AgentHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.AgentDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -104,7 +104,7 @@ func (h *AgentHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -113,7 +113,7 @@ func (h *AgentHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	agentId := chi.URLParam(r, "id")
 
 	var data models.AgentDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -122,7 +122,7 @@ func (h *AgentHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
@@ -131,7 +131,7 @@ func (h *AgentHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) erro
 	agentId := chi.URLParam(r, "id")
 
 	var data models.UpdateStatusDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -144,7 +144,7 @@ func (h *AgentHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -156,7 +156,7 @@ func (h *AgentHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }
 
 // agent join
@@ -171,7 +171,7 @@ func (h *AgentHandler) GetOneAgentJoin(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) GetJoinRequests(w http.ResponseWriter, r *http.Request) error {
@@ -189,14 +189,14 @@ func (h *AgentHandler) GetJoinRequests(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) Join(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.AgentJoinDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -205,7 +205,7 @@ func (h *AgentHandler) Join(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) ConvertToAgent(w http.ResponseWriter, r *http.Request) error {
@@ -214,7 +214,7 @@ func (h *AgentHandler) ConvertToAgent(w http.ResponseWriter, r *http.Request) er
 	agentId := chi.URLParam(r, "id") // agent join id
 
 	var data models.AgentJoinDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -223,7 +223,7 @@ func (h *AgentHandler) ConvertToAgent(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *AgentHandler) RejectJoin(w http.ResponseWriter, r *http.Request) error {
@@ -235,7 +235,7 @@ func (h *AgentHandler) RejectJoin(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }
 
 func (h *AgentHandler) SetAsPending(w http.ResponseWriter, r *http.Request) error {
@@ -247,7 +247,7 @@ func (h *AgentHandler) SetAsPending(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }
 
 // test
@@ -261,5 +261,5 @@ func (h *AgentHandler) GetDestinationAgents(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

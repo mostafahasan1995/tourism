@@ -62,7 +62,7 @@ func (h *InquiryHandler) Get(w http.ResponseWriter, r *http.Request) error {
 
 	// Parse filter parameters
 	var filterQuery filter.InquiryFilter
-	if err := json.NewDecoder(r.Body).Decode(&filterQuery); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &filterQuery); err != nil {
 		// If no body or invalid JSON, use query parameters
 		filterQuery = filter.InquiryFilter{
 			Page: 1,
@@ -92,7 +92,7 @@ func (h *InquiryHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -104,7 +104,7 @@ func (h *InquiryHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) GetByHotelId(w http.ResponseWriter, r *http.Request) error {
@@ -132,14 +132,14 @@ func (h *InquiryHandler) GetByHotelId(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	var data models.InquiryDto
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -152,7 +152,7 @@ func (h *InquiryHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *InquiryHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -160,7 +160,7 @@ func (h *InquiryHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.InquiryDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -173,7 +173,7 @@ func (h *InquiryHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -181,7 +181,7 @@ func (h *InquiryHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -190,7 +190,7 @@ func (h *InquiryHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -205,7 +205,7 @@ func (h *InquiryHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "Inquiry deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *InquiryHandler) AddReply(w http.ResponseWriter, r *http.Request) error {
@@ -213,7 +213,7 @@ func (h *InquiryHandler) AddReply(w http.ResponseWriter, r *http.Request) error 
 	id := chi.URLParam(r, "id")
 
 	var data models.AddInquiryReplyDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -226,7 +226,7 @@ func (h *InquiryHandler) AddReply(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
@@ -234,7 +234,7 @@ func (h *InquiryHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 	id := chi.URLParam(r, "id")
 
 	var data models.UpdateInquiryStatusDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -247,7 +247,7 @@ func (h *InquiryHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) error {
@@ -255,7 +255,7 @@ func (h *InquiryHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) erro
 	id := chi.URLParam(r, "id")
 
 	var data models.MarkAsReadDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -264,7 +264,7 @@ func (h *InquiryHandler) MarkAsRead(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) GetStats(w http.ResponseWriter, r *http.Request) error {
@@ -275,7 +275,7 @@ func (h *InquiryHandler) GetStats(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) GetHotelStats(w http.ResponseWriter, r *http.Request) error {
@@ -292,7 +292,7 @@ func (h *InquiryHandler) GetHotelStats(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InquiryHandler) GetUnreadCount(w http.ResponseWriter, r *http.Request) error {
@@ -315,7 +315,7 @@ func (h *InquiryHandler) GetUnreadCount(w http.ResponseWriter, r *http.Request) 
 	response := map[string]int64{
 		"unreadCount": count,
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 // func (h *InquiryHandler) BulkUpdateStatus(w http.ResponseWriter, r *http.Request) error {

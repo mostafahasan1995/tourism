@@ -3,6 +3,7 @@ package models
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -38,24 +39,24 @@ type Program struct {
 }
 
 type ProgramDto struct {
-	Title       string                   `bson:"title" json:"title" validate:"required"`                                                                                      // program title
-	ServiceType enums.ProgramServiceType `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
-	TravelReqId primitive.ObjectID       `bson:"travelReqId" json:"travelReqId" `
-	CustomerId  *primitive.ObjectID      `bson:"customerId" json:"customerId"`
-	AgentId     primitive.ObjectID       `bson:"agentId" json:"agentId"`
-	Status      string                   `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
-	Package     primitive.ObjectID       `bson:"package" json:"package" `
-	ProgramType enums.ProgramType        `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
-	TravelType  enums.TravelType         `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism"`
+	Title       transl.Localizable[string] `bson:"title" json:"title" validate:"required"`                                                                                      // program title
+	ServiceType enums.ProgramServiceType   `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	TravelReqId primitive.ObjectID         `bson:"travelReqId" json:"travelReqId" `
+	CustomerId  *primitive.ObjectID        `bson:"customerId" json:"customerId"`
+	AgentId     primitive.ObjectID         `bson:"agentId" json:"agentId"`
+	Status      string                     `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
+	Package     primitive.ObjectID         `bson:"package" json:"package" `
+	ProgramType enums.ProgramType          `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	TravelType  enums.TravelType           `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism"`
 	//
-	Source      string          `bson:"source" json:"source"`
-	Company     string          `bson:"company" json:"company"`         // todo: maybe we need id here
-	Coordinator string          `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
-	Purpose     string          `bson:"purpose" json:"purpose"`
-	StartDate   time.Time       `bson:"startDate" json:"startDate" validate:"required"`
-	EndDate     time.Time       `bson:"endDate" json:"endDate" validate:"required"`
-	GroupSize   enums.GroupSize `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large"` //see group size values above
-	CoverImage  types.FileField `bson:"coverImage" json:"coverImage"`
+	Source      transl.Localizable[string] `bson:"source" json:"source"`
+	Company     transl.Localizable[string] `bson:"company" json:"company"`         // todo: maybe we need id here
+	Coordinator string                     `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
+	Purpose     string                     `bson:"purpose" json:"purpose"`
+	StartDate   time.Time                  `bson:"startDate" json:"startDate" validate:"required"`
+	EndDate     time.Time                  `bson:"endDate" json:"endDate" validate:"required"`
+	GroupSize   enums.GroupSize            `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large"` //see group size values above
+	CoverImage  types.FileField            `bson:"coverImage" json:"coverImage"`
 	//
 	GeneralType *GeneralProgram `bson:"generalType" json:"generalType" validate:"required_if=ProgramType general"`
 	CustomType  *CustomProgram  `bson:"customType" json:"customType" validate:"required_if=ProgramType custom"`

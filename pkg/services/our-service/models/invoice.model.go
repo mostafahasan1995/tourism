@@ -4,6 +4,7 @@ import (
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -12,15 +13,15 @@ import (
 )
 
 type InvoiceDto struct {
-	DateOfIssue time.Time           `bson:"dateOfIssue" json:"dateOfIssue" validate:"required"`
-	Customer    InvoiceContact      `bson:"customer" json:"customer" validate:"required,dive"`
-	Company     InvoiceContact      `bson:"company" json:"company" validate:"required,dive"`
-	ProgramName string              `bson:"programName" json:"programName" validate:"required"`
-	TravelStart time.Time           `bson:"travelStart" json:"travelStart" validate:"required"`
-	TravelEnd   time.Time           `bson:"travelEnd" json:"travelEnd" validate:"required"`
-	Services    []InvoiceService    `bson:"services" json:"services"`
-	Adjustments []InvoiceAdjustment `bson:"adjustments" json:"adjustments"`
-	Note        string              `bson:"note" json:"note"`
+	DateOfIssue time.Time                  `bson:"dateOfIssue" json:"dateOfIssue" validate:"required"`
+	Customer    InvoiceContact             `bson:"customer" json:"customer" validate:"required,dive"`
+	Company     InvoiceContact             `bson:"company" json:"company" validate:"required,dive"`
+	ProgramName transl.Localizable[string] `bson:"programName" json:"programName" validate:"required"`
+	TravelStart time.Time                  `bson:"travelStart" json:"travelStart" validate:"required"`
+	TravelEnd   time.Time                  `bson:"travelEnd" json:"travelEnd" validate:"required"`
+	Services    []InvoiceService           `bson:"services" json:"services"`
+	Adjustments []InvoiceAdjustment        `bson:"adjustments" json:"adjustments"`
+	Note        string                     `bson:"note" json:"note"`
 }
 
 type InvoiceAdjustment struct {
@@ -32,11 +33,11 @@ type InvoiceAdjustment struct {
 }
 
 type InvoiceContact struct {
-	Name    string            `bson:"name" json:"name" validate:"required"`
-	Address string            `bson:"address" json:"address" validate:"required"`
-	Phone   types.PhoneNumber `bson:"phone" json:"phone" validate:"required"`
-	Email   string            `bson:"email" json:"email" validate:"required"`
-	Website string            `bson:"website" json:"website"`
+	Name    transl.Localizable[string] `bson:"name" json:"name" validate:"required"`
+	Address string                     `bson:"address" json:"address" validate:"required"`
+	Phone   types.PhoneNumber          `bson:"phone" json:"phone" validate:"required"`
+	Email   string                     `bson:"email" json:"email" validate:"required"`
+	Website string                     `bson:"website" json:"website"`
 }
 
 type InvoiceService struct {

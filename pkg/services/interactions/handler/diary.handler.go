@@ -1,94 +1,80 @@
 package handler
 
-import (
-	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/middleware"
-	"larsa-tourism-microservices/pkg/services/interactions"
-	"larsa-tourism-microservices/pkg/services/interactions/models"
-	"larsa-tourism-microservices/pkg/util"
-	"net/http"
+// type DiaryHandler struct {
+// 	diarysvcs interactions.DiarySvcs
+// }
 
-	"github.com/goccy/go-json"
+// func NewDiaryHandler(i *do.Injector, r *chi.Mux) {
 
-	"github.com/go-chi/chi/v5"
-	"github.com/samber/do"
-)
+// 	h := &DiaryHandler{
+// 		diarysvcs: do.MustInvoke[interactions.DiarySvcs](i),
+// 	}
 
-type DiaryHandler struct {
-	diarysvcs interactions.DiarySvcs
-}
+// 	r.Route("/diaries", func(r chi.Router) {
+// 		r.Get("/all", helpers.Make(h.GetAll))
+// 		r.Get("/", helpers.Make(h.Get))
+// 		r.Get("/{id}", helpers.Make(h.GetOne))
+// 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+// 	})
 
-func NewDiaryHandler(i *do.Injector, r *chi.Mux) {
+// }
 
-	h := &DiaryHandler{
-		diarysvcs: do.MustInvoke[interactions.DiarySvcs](i),
-	}
+// func (h *DiaryHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+// 	ctx, _ := util.AddCtxAppCfg(r)
 
-	r.Route("/diaries", func(r chi.Router) {
-		r.Get("/all", helpers.Make(h.GetAll))
-		r.Get("/", helpers.Make(h.Get))
-		r.Get("/{id}", helpers.Make(h.GetOne))
-		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
-	})
+// 	query := r.URL.Query().Get("query")
 
-}
+// 	result, err := h.diarysvcs.GetAll(ctx, query)
+// 	if err != nil {
+// 		return err
+// 	}
 
-func (h *DiaryHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
+// 	return helpers.WriteJson(w, http.StatusOK, result)
+// }
 
-	query := r.URL.Query().Get("query")
+// func (h *DiaryHandler) Get(w http.ResponseWriter, r *http.Request) error {
+// 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.diarysvcs.GetAll(ctx, query)
-	if err != nil {
-		return err
-	}
+// 	skip, limit, errGetPaginate := util.Paginate(r)
+// 	if errGetPaginate != nil {
+// 		return errGetPaginate
+// 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
-}
+// 	query := r.URL.Query().Get("query")
 
-func (h *DiaryHandler) Get(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
+// 	result, err := h.diarysvcs.Get(ctx, skip, limit, query)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	skip, limit, errGetPaginate := util.Paginate(r)
-	if errGetPaginate != nil {
-		return errGetPaginate
-	}
+// 	return helpers.WriteJson(w, http.StatusOK, result)
+// }
 
-	query := r.URL.Query().Get("query")
+// func (h *DiaryHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+// 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.diarysvcs.Get(ctx, skip, limit, query)
-	if err != nil {
-		return err
-	}
+// 	id := chi.URLParam(r, "id")
 
-	return helpers.WriteJson(w, http.StatusOK, result)
-}
+// 	result, err := h.diarysvcs.GetOne(ctx, id)
+// 	if err != nil {
+// 		return err
+// 	}
 
-func (h *DiaryHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
+// 	return helpers.WriteJson(w, http.StatusOK, result)
+// }
 
-	id := chi.URLParam(r, "id")
+// func (h *DiaryHandler) Add(w http.ResponseWriter, r *http.Request) error {
+// 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.diarysvcs.GetOne(ctx, id)
-	if err != nil {
-		return err
-	}
+// 	var data models.DiaryDto
+// 	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+// 		return helpers.InvalidJSON()
+// 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
-}
+// 	result, err := h.diarysvcs.Add(ctx, &data)
+// 	if err != nil {
+// 		return err
+// 	}
 
-func (h *DiaryHandler) Add(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
-
-	var data models.DiaryDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
-		return helpers.InvalidJSON()
-	}
-
-	result, err := h.diarysvcs.Add(ctx, &data)
-	if err != nil {
-		return err
-	}
-
-	return helpers.WriteJson(w, http.StatusOK, result)
-}
+// 	return helpers.WriteJson(w, http.StatusOK, result)
+// }

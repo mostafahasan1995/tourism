@@ -42,7 +42,7 @@ func (h *ActivitiesHandler) GetOne(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ActivitiesHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -55,14 +55,14 @@ func (h *ActivitiesHandler) GetAll(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ActivitiesHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.ActivitiesDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -71,7 +71,7 @@ func (h *ActivitiesHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ActivitiesHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -80,7 +80,7 @@ func (h *ActivitiesHandler) Update(w http.ResponseWriter, r *http.Request) error
 	activitiesId := chi.URLParam(r, "id")
 
 	var data models.ActivitiesDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -89,7 +89,7 @@ func (h *ActivitiesHandler) Update(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ActivitiesHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -101,5 +101,5 @@ func (h *ActivitiesHandler) Delete(w http.ResponseWriter, r *http.Request) error
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }

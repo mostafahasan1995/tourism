@@ -34,5 +34,5 @@ func (h *MessagingHandler) GetAll(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

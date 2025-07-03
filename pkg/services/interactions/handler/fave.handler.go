@@ -52,7 +52,7 @@ func (h *FaveHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.FaveDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -61,7 +61,7 @@ func (h *FaveHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaveHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -74,7 +74,7 @@ func (h *FaveHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]string{
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{
 		"message": "Favorite deleted successfully",
 	})
 }
@@ -89,7 +89,7 @@ func (h *FaveHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *FaveHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -107,7 +107,7 @@ func (h *FaveHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 
 }
 
@@ -115,7 +115,7 @@ func (h *FaveHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.FaveDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -124,5 +124,5 @@ func (h *FaveHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

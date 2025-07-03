@@ -48,7 +48,7 @@ func (h *TrustedPartnersHandler) GetOne(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 func (h *TrustedPartnersHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
@@ -92,7 +92,7 @@ func (h *TrustedPartnersHandler) Get(w http.ResponseWriter, r *http.Request) err
 	response.Pagination.PerPage = limit
 	response.Pagination.TotalPages = totalPages
 
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *TrustedPartnersHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -102,14 +102,14 @@ func (h *TrustedPartnersHandler) GetAll(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TrustedPartnersHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.TrustedPartnerDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -122,14 +122,14 @@ func (h *TrustedPartnersHandler) Add(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *TrustedPartnersHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.TrustedPartnerDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -143,7 +143,7 @@ func (h *TrustedPartnersHandler) Update(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TrustedPartnersHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -151,7 +151,7 @@ func (h *TrustedPartnersHandler) Patch(w http.ResponseWriter, r *http.Request) e
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -160,7 +160,7 @@ func (h *TrustedPartnersHandler) Patch(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *TrustedPartnersHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -172,7 +172,7 @@ func (h *TrustedPartnersHandler) Delete(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]string{
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{
 		"message": "Partner deleted successfully",
 	})
 }

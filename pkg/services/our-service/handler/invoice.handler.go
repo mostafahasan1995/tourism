@@ -54,7 +54,7 @@ func (h *InvoiceHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -67,14 +67,14 @@ func (h *InvoiceHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.InvoiceDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -83,7 +83,7 @@ func (h *InvoiceHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -92,7 +92,7 @@ func (h *InvoiceHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.InvoiceDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -101,7 +101,7 @@ func (h *InvoiceHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) AddPayment(w http.ResponseWriter, r *http.Request) error {
@@ -110,7 +110,7 @@ func (h *InvoiceHandler) AddPayment(w http.ResponseWriter, r *http.Request) erro
 	invoiceId := chi.URLParam(r, "id")
 
 	var data models.PaymentDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -123,7 +123,7 @@ func (h *InvoiceHandler) AddPayment(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) error {
@@ -133,7 +133,7 @@ func (h *InvoiceHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) e
 	paymentId := chi.URLParam(r, "paymentId")
 
 	var data models.PaymentDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -146,7 +146,7 @@ func (h *InvoiceHandler) UpdatePayment(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) DeletePayment(w http.ResponseWriter, r *http.Request) error {
@@ -160,7 +160,7 @@ func (h *InvoiceHandler) DeletePayment(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) PayOrder(w http.ResponseWriter, r *http.Request) error {
@@ -169,7 +169,7 @@ func (h *InvoiceHandler) PayOrder(w http.ResponseWriter, r *http.Request) error 
 	invoiceId := chi.URLParam(r, "id")
 
 	var data models.PayOrder
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -178,14 +178,14 @@ func (h *InvoiceHandler) PayOrder(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *InvoiceHandler) SendInvoice(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.SendInvoiceDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return err
 	}
 
@@ -193,5 +193,5 @@ func (h *InvoiceHandler) SendInvoice(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, "ok")
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
 }

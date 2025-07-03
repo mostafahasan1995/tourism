@@ -45,14 +45,14 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 	switch member := data.(type) {
 	case *models.Agent:
 		user = map[string]any{
-			"firstName": member.Name,
+			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
 		password = member.Security.NewPassword
 	case *models.Customer:
 		user = map[string]any{
-			"firstName": member.Name,
+			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
@@ -107,14 +107,14 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, password string,
 	switch member := data.(type) {
 	case *models.Agent:
 		user = map[string]any{
-			"firstName": member.Name,
+			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
 		id = member.Id.Hex()
 	case *models.Customer:
 		user = map[string]any{
-			"firstName": member.Name,
+			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
@@ -194,7 +194,7 @@ func (m *memberAuthSvcs) GetInvitationEmail(ctx context.Context, password string
 	switch member := data.(type) {
 	case *models.Agent:
 		invitationTplData = &messagingtpls.InvetationTplData{
-			MemberName:   member.Name,
+			MemberName:   member.Name.GetContentByLang("en"),
 			CompanyName:  businessName,
 			PlatformName: platformName,
 			Email:        member.Security.Email,
@@ -205,7 +205,7 @@ func (m *memberAuthSvcs) GetInvitationEmail(ctx context.Context, password string
 		email = member.Security.Email
 	case *models.Customer:
 		invitationTplData = &messagingtpls.InvetationTplData{
-			MemberName:   member.Name,
+			MemberName:   member.Name.GetContentByLang("en"),
 			CompanyName:  businessName,
 			PlatformName: platformName,
 			Email:        member.Security.Email,
@@ -273,7 +273,7 @@ func (m *memberAuthSvcs) GetAccountUpdatedEmail(ctx context.Context, password st
 	switch member := data.(type) {
 	case *models.Agent:
 		accountUpdatedTplData = &messagingtpls.AccountUpdatedTplData{
-			MemberName:   member.Name,
+			MemberName:   member.Name.GetContentByLang("en"),
 			CompanyName:  businessName,
 			PlatformName: platformName,
 			Email:        member.Security.Email,
@@ -284,7 +284,7 @@ func (m *memberAuthSvcs) GetAccountUpdatedEmail(ctx context.Context, password st
 		email = member.Security.Email
 	case *models.Customer:
 		accountUpdatedTplData = &messagingtpls.AccountUpdatedTplData{
-			MemberName:   member.Name,
+			MemberName:   member.Name.GetContentByLang("en"),
 			CompanyName:  businessName,
 			PlatformName: platformName,
 			Email:        member.Security.Email,

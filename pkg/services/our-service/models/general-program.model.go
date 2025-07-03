@@ -1,6 +1,7 @@
 package models
 
 import (
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -27,10 +28,10 @@ type Includes struct {
 }
 
 type DailyItinerary struct {
-	Title      string               `bson:"title" json:"title"`
-	Actions    []primitive.ObjectID `bson:"actions" json:"actions"`
-	NewActions []string             `bson:"newActions" json:"newActions"`
-	Images     []types.FileField    `bson:"images" json:"images"`
+	Title      transl.Localizable[string]   `bson:"title" json:"title"`
+	Actions    []primitive.ObjectID         `bson:"actions" json:"actions"`
+	NewActions []transl.Localizable[string] `bson:"newActions" json:"newActions"`
+	Images     []types.FileField            `bson:"images" json:"images"`
 }
 
 type GPPricing struct {

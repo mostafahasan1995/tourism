@@ -1,134 +1,116 @@
 package interactions
 
-import (
-	"context"
-	"errors"
-	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/services/interactions/filter"
-	"larsa-tourism-microservices/pkg/services/interactions/models"
-	"larsa-tourism-microservices/pkg/services/interactions/repo"
-	"larsa-tourism-microservices/pkg/types"
-	"larsa-tourism-microservices/pkg/util"
-	"math"
-	"time"
+// type DiarySvcs interface {
+// 	GetOne(ctx context.Context, id string) (*models.Diary, error)
+// 	GetAll(ctx context.Context, query string) ([]models.Diary, error)
+// 	Get(ctx context.Context, skip, limit int64, query string) (*models.DiaryWithPagination, error)
+// 	Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error)
+// }
 
-	"github.com/samber/do"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-)
+// type diarysvcs struct {
+// 	repo repo.DiaryRepo
+// }
 
-type DiarySvcs interface {
-	GetOne(ctx context.Context, id string) (*models.Diary, error)
-	GetAll(ctx context.Context, query string) ([]models.Diary, error)
-	Get(ctx context.Context, skip, limit int64, query string) (*models.DiaryWithPagination, error)
-	Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error)
-}
+// func NewDiarySvcs(i *do.Injector) (DiarySvcs, error) {
+// 	return &diarysvcs{
+// 		repo: do.MustInvoke[repo.DiaryRepo](i),
+// 	}, nil
+// }
 
-type diarysvcs struct {
-	repo repo.DiaryRepo
-}
+// func (d *diarysvcs) GetOne(ctx context.Context, id string) (*models.Diary, error) {
+// 	_id, err := primitive.ObjectIDFromHex(id)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-func NewDiarySvcs(i *do.Injector) (DiarySvcs, error) {
-	return &diarysvcs{
-		repo: do.MustInvoke[repo.DiaryRepo](i),
-	}, nil
-}
+// 	return d.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+// }
 
-func (d *diarysvcs) GetOne(ctx context.Context, id string) (*models.Diary, error) {
-	_id, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
+// func (d *diarysvcs) GetAll(ctx context.Context, query string) ([]models.Diary, error) {
+// 	match := bson.M{"trash": false}
 
-	return d.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
-}
+// 	f, err := helpers.ParseFilters[filter.DiaryFilter](query)
+// 	if err != nil {
+// 		return nil, errors.New("invalid query")
+// 	}
 
-func (d *diarysvcs) GetAll(ctx context.Context, query string) ([]models.Diary, error) {
-	match := bson.M{"trash": false}
+// 	pipeline := f.BuildPipeline(match)
 
-	f, err := helpers.ParseFilters[filter.DiaryFilter](query)
-	if err != nil {
-		return nil, errors.New("invalid query")
-	}
+// 	var result []models.Diary
+// 	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+// 		if err := cur.All(ctx, &result); err != nil {
+// 			return err
+// 		}
+// 		return nil
+// 	})
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	pipeline := f.BuildPipeline(match)
+// 	return result, nil
+// }
 
-	var result []models.Diary
-	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		if err := cur.All(ctx, &result); err != nil {
-			return err
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
+// func (d *diarysvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.DiaryWithPagination, error) {
+// 	match := bson.M{"trash": false}
 
-	return result, nil
-}
+// 	f, err := helpers.ParseFilters[filter.DiaryFilter](query)
+// 	if err != nil {
+// 		return nil, errors.New("invalid query")
+// 	}
 
-func (d *diarysvcs) Get(ctx context.Context, skip, limit int64, query string) (*models.DiaryWithPagination, error) {
-	match := bson.M{"trash": false}
+// 	pipeline := f.BuildPipeline(match)
 
-	f, err := helpers.ParseFilters[filter.DiaryFilter](query)
-	if err != nil {
-		return nil, errors.New("invalid query")
-	}
+// 	countPipeline := make([]bson.M, len(pipeline))
+// 	copy(countPipeline, pipeline)
 
-	pipeline := f.BuildPipeline(match)
+// 	count, err := d.repo.Count(ctx, countPipeline)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	countPipeline := make([]bson.M, len(pipeline))
-	copy(countPipeline, pipeline)
+// 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+// 	pipeline = append(pipeline, bson.M{"$skip": skip})
+// 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	count, err := d.repo.Count(ctx, countPipeline)
-	if err != nil {
-		return nil, err
-	}
+// 	var result []models.Diary
+// 	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+// 		if err := cur.All(ctx, &result); err != nil {
+// 			return err
+// 		}
+// 		return nil
+// 	})
+// 	if errAg != nil {
+// 		return nil, errAg
+// 	}
 
-	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
-	pipeline = append(pipeline, bson.M{"$skip": skip})
-	pipeline = append(pipeline, bson.M{"$limit": limit})
+// 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+// 	pagination := types.Pagination{
+// 		TotalPages: totalPages,
+// 		PerPage:    limit,
+// 		TotalCount: count,
+// 	}
 
-	var result []models.Diary
-	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		if err := cur.All(ctx, &result); err != nil {
-			return err
-		}
-		return nil
-	})
-	if errAg != nil {
-		return nil, errAg
-	}
+// 	return &models.DiaryWithPagination{
+// 		Diaries:    result,
+// 		Pagination: pagination,
+// 	}, nil
+// }
 
-	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
-	pagination := types.Pagination{
-		TotalPages: totalPages,
-		PerPage:    limit,
-		TotalCount: count,
-	}
+// func (d *diarysvcs) Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error) {
+// 	cfg, err := util.GetReqAppCfg(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	diary := &models.Diary{
+// 		Id:        primitive.NewObjectID(),
+// 		DiaryDto:  *data,
+// 		CreatedAt: time.Now(),
+// 		CreatedBy: cfg.User.Id,
+// 	}
 
-	return &models.DiaryWithPagination{
-		Diaries:    result,
-		Pagination: pagination,
-	}, nil
-}
+// 	if err := d.repo.Add(ctx, diary); err != nil {
+// 		return nil, err
+// 	}
 
-func (d *diarysvcs) Add(ctx context.Context, data *models.DiaryDto) (*models.Diary, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
-	diary := &models.Diary{
-		Id:        primitive.NewObjectID(),
-		DiaryDto:  *data,
-		CreatedAt: time.Now(),
-		CreatedBy: cfg.User.Id,
-	}
-
-	if err := d.repo.Add(ctx, diary); err != nil {
-		return nil, err
-	}
-
-	return diary, nil
-}
+// 	return diary, nil
+// }

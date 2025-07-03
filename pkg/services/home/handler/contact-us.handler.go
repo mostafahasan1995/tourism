@@ -88,17 +88,13 @@ func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/contactUs", func(r chi.Router) {
-
 		r.Get("/{id}", helpers.Make(h.GetOne))
-
 		r.Get("/", helpers.Make(h.GetAll))
 		r.Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Post("/many", helpers.Make(h.AddMany))
-
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
-
 	})
 
 }
@@ -114,7 +110,7 @@ func (l *ContactUsHandler) GetOne(w http.ResponseWriter, r *http.Request) error 
 		return err
 
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *ContactUsHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -157,7 +153,7 @@ func (l *ContactUsHandler) GetAll(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (l *ContactUsHandler) Add(w http.ResponseWriter, r *http.Request) error {
@@ -165,7 +161,7 @@ func (l *ContactUsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 
 	// First decode into a generic map to capture all fields
 	var rawData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &rawData); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -182,7 +178,7 @@ func (l *ContactUsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "Contact form submitted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (l *ContactUsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -202,7 +198,7 @@ func (l *ContactUsHandler) Update(w http.ResponseWriter, r *http.Request) error 
 
 	// First decode into a generic map to capture all fields
 	var rawData map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&rawData); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &rawData); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -218,12 +214,13 @@ func (l *ContactUsHandler) Update(w http.ResponseWriter, r *http.Request) error 
 	w.WriteHeader(http.StatusOK)
 	return nil
 }
+
 func (l *ContactUsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	// Decode the raw data for partial updates
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -237,14 +234,14 @@ func (l *ContactUsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "Contact updated successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (l *ContactUsHandler) AddMany(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data []models.ContactUsDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 

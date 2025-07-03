@@ -65,7 +65,7 @@ func (h *ExhibitorProfileHandler) Get(w http.ResponseWriter, r *http.Request) er
 
 	// Parse filter parameters
 	var filterQuery filter.ExhibitorProfileFilter
-	if err := json.NewDecoder(r.Body).Decode(&filterQuery); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &filterQuery); err != nil {
 		// If no body or invalid JSON, use query parameters
 		filterQuery = filter.ExhibitorProfileFilter{
 			Page: 1,
@@ -79,7 +79,7 @@ func (h *ExhibitorProfileHandler) Get(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -91,7 +91,7 @@ func (h *ExhibitorProfileHandler) GetOne(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) GetByHotelId(w http.ResponseWriter, r *http.Request) error {
@@ -103,14 +103,14 @@ func (h *ExhibitorProfileHandler) GetByHotelId(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	var data models.ExhibitorProfileDto
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -123,7 +123,7 @@ func (h *ExhibitorProfileHandler) Add(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ExhibitorProfileHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -131,7 +131,7 @@ func (h *ExhibitorProfileHandler) Update(w http.ResponseWriter, r *http.Request)
 	id := chi.URLParam(r, "id")
 
 	var data models.ExhibitorProfileDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -144,7 +144,7 @@ func (h *ExhibitorProfileHandler) Update(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -152,7 +152,7 @@ func (h *ExhibitorProfileHandler) Patch(w http.ResponseWriter, r *http.Request) 
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -161,7 +161,7 @@ func (h *ExhibitorProfileHandler) Patch(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -176,7 +176,7 @@ func (h *ExhibitorProfileHandler) Delete(w http.ResponseWriter, r *http.Request)
 	response := map[string]string{
 		"message": "Exhibitor profile deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *ExhibitorProfileHandler) AddDynamicSection(w http.ResponseWriter, r *http.Request) error {
@@ -184,7 +184,7 @@ func (h *ExhibitorProfileHandler) AddDynamicSection(w http.ResponseWriter, r *ht
 	id := chi.URLParam(r, "id")
 
 	var data models.AddDynamicSectionDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -197,7 +197,7 @@ func (h *ExhibitorProfileHandler) AddDynamicSection(w http.ResponseWriter, r *ht
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) UpdateDynamicSection(w http.ResponseWriter, r *http.Request) error {
@@ -206,7 +206,7 @@ func (h *ExhibitorProfileHandler) UpdateDynamicSection(w http.ResponseWriter, r 
 	sectionId := chi.URLParam(r, "sectionId")
 
 	var data models.UpdateDynamicSectionDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -215,7 +215,7 @@ func (h *ExhibitorProfileHandler) UpdateDynamicSection(w http.ResponseWriter, r 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) DeleteDynamicSection(w http.ResponseWriter, r *http.Request) error {
@@ -228,7 +228,7 @@ func (h *ExhibitorProfileHandler) DeleteDynamicSection(w http.ResponseWriter, r 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) ReorderDynamicSections(w http.ResponseWriter, r *http.Request) error {
@@ -236,7 +236,7 @@ func (h *ExhibitorProfileHandler) ReorderDynamicSections(w http.ResponseWriter, 
 	id := chi.URLParam(r, "id")
 
 	var sectionOrders map[string]int
-	if err := json.NewDecoder(r.Body).Decode(&sectionOrders); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &sectionOrders); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -245,7 +245,7 @@ func (h *ExhibitorProfileHandler) ReorderDynamicSections(w http.ResponseWriter, 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) UpdateFacility(w http.ResponseWriter, r *http.Request) error {
@@ -253,7 +253,7 @@ func (h *ExhibitorProfileHandler) UpdateFacility(w http.ResponseWriter, r *http.
 	id := chi.URLParam(r, "id")
 
 	var data models.FacilityUpdateDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -266,7 +266,7 @@ func (h *ExhibitorProfileHandler) UpdateFacility(w http.ResponseWriter, r *http.
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) UpdateHeroSection(w http.ResponseWriter, r *http.Request) error {
@@ -274,7 +274,7 @@ func (h *ExhibitorProfileHandler) UpdateHeroSection(w http.ResponseWriter, r *ht
 	id := chi.URLParam(r, "id")
 
 	var data models.HeroSection
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -283,7 +283,7 @@ func (h *ExhibitorProfileHandler) UpdateHeroSection(w http.ResponseWriter, r *ht
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) Publish(w http.ResponseWriter, r *http.Request) error {
@@ -295,7 +295,7 @@ func (h *ExhibitorProfileHandler) Publish(w http.ResponseWriter, r *http.Request
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) Unpublish(w http.ResponseWriter, r *http.Request) error {
@@ -307,7 +307,7 @@ func (h *ExhibitorProfileHandler) Unpublish(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) ToggleActive(w http.ResponseWriter, r *http.Request) error {
@@ -319,14 +319,14 @@ func (h *ExhibitorProfileHandler) ToggleActive(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) AddExhibitorRequest(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	var data models.ExhibitorRequestDto
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -339,7 +339,7 @@ func (h *ExhibitorProfileHandler) AddExhibitorRequest(w http.ResponseWriter, r *
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ExhibitorProfileHandler) GetExhibitorRequests(w http.ResponseWriter, r *http.Request) error {
@@ -361,7 +361,7 @@ func (h *ExhibitorProfileHandler) GetExhibitorRequests(w http.ResponseWriter, r 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitorProfileHandler) UpdateExhibitorRequestStatus(w http.ResponseWriter, r *http.Request) error {
@@ -372,7 +372,7 @@ func (h *ExhibitorProfileHandler) UpdateExhibitorRequestStatus(w http.ResponseWr
 		Status string `json:"status" validate:"required,oneof=Pending Replied Closed"`
 	}
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -385,5 +385,5 @@ func (h *ExhibitorProfileHandler) UpdateExhibitorRequestStatus(w http.ResponseWr
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

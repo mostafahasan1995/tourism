@@ -4,6 +4,7 @@ import (
 	"larsa-tourism-microservices/pkg/helpers"
 	membermodels "larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -137,12 +138,12 @@ type CustomerTravelRequestPagination struct {
 // agnet transactions
 
 type AgentTransaction struct {
-	TravelRequestId primitive.ObjectID `bson:"travelRequestId" json:"travelRequestId"`
-	InvoiceId       primitive.ObjectID `bson:"invoiceId" json:"invoiceId"`
-	Date            time.Time          `bson:"date" json:"date"`
-	OrderId         string             `bson:"orderId" json:"orderId"`
-	CustomerName    string             `bson:"customerName" json:"customerName"`
-	Commission      float64            `bson:"commission" json:"commission"`
+	TravelRequestId primitive.ObjectID         `bson:"travelRequestId" json:"travelRequestId"`
+	InvoiceId       primitive.ObjectID         `bson:"invoiceId" json:"invoiceId"`
+	Date            time.Time                  `bson:"date" json:"date"`
+	OrderId         string                     `bson:"orderId" json:"orderId"`
+	CustomerName    transl.Localizable[string] `bson:"customerName" json:"customerName"`
+	Commission      float64                    `bson:"commission" json:"commission"`
 }
 
 type AgentTransactionPagination struct {

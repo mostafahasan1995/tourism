@@ -2,6 +2,7 @@ package models
 
 import (
 	picklistmodels "larsa-tourism-microservices/pkg/services/picklist/models"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -9,21 +10,21 @@ import (
 )
 
 type TravelerStoryDto struct {
-	Name         string               `bson:"name" json:"name"`
-	Destinations []primitive.ObjectID `bson:"destinations" json:"destinations"`
-	DiaryTitle   string               `bson:"diaryTitle" json:"diaryTitle"`
-	TripType     string               `bson:"tripType" json:"tripType"`
-	Bio          string               `bson:"bio" json:"bio"`
-	CoverImage   types.FileField      `bson:"coverImage" json:"coverImage"`
-	Status       string               `bson:"status" json:"status"`
-	ZoneName     string               `bson:"zoneName" json:"zoneName"`
-	Description  string               `bson:"description" json:"description"`
-	TravelImages []types.FileField    `bson:"travelImages" json:"travelImages"`
-	TravelVideos []types.FileField    `bson:"travelVideos" json:"travelVideos"`
-	VideoUrl     string               `bson:"videoUrl" json:"videoUrl"`
-	Activities   []primitive.ObjectID `bson:"activities" json:"activities"`
-	Tips         string               `bson:"tips" json:"tips"`
-	TipsImage    []types.FileField    `bson:"tipsImage" json:"tipsImage"`
+	Name         transl.Localizable[string] `bson:"name" json:"name"`
+	Destinations []primitive.ObjectID       `bson:"destinations" json:"destinations"`
+	DiaryTitle   transl.Localizable[string] `bson:"diaryTitle" json:"diaryTitle"`
+	TripType     string                     `bson:"tripType" json:"tripType"`
+	Bio          transl.Localizable[string] `bson:"bio" json:"bio"`
+	CoverImage   types.FileField            `bson:"coverImage" json:"coverImage"`
+	Status       string                     `bson:"status" json:"status"`
+	ZoneName     string                     `bson:"zoneName" json:"zoneName"`
+	Description  transl.Localizable[string] `bson:"description" json:"description"`
+	TravelImages []types.FileField          `bson:"travelImages" json:"travelImages"`
+	TravelVideos []types.FileField          `bson:"travelVideos" json:"travelVideos"`
+	VideoUrl     string                     `bson:"videoUrl" json:"videoUrl"`
+	Activities   []primitive.ObjectID       `bson:"activities" json:"activities"`
+	Tips         transl.Localizable[string] `bson:"tips" json:"tips"`
+	TipsImage    []types.FileField          `bson:"tipsImage" json:"tipsImage"`
 }
 
 type TravelerStory struct {

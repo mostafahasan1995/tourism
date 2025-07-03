@@ -47,7 +47,7 @@ func (h *CustomerPersonaHandler) GetOne(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *CustomerPersonaHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -93,7 +93,7 @@ func (h *CustomerPersonaHandler) Get(w http.ResponseWriter, r *http.Request) err
 	response.Pagination.PerPage = limit
 	response.Pagination.TotalPages = totalPages
 
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *CustomerPersonaHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
@@ -103,14 +103,14 @@ func (h *CustomerPersonaHandler) GetAll(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *CustomerPersonaHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.CustomerPersonaDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -123,14 +123,14 @@ func (h *CustomerPersonaHandler) Add(w http.ResponseWriter, r *http.Request) err
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *CustomerPersonaHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.CustomerPersonaDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -144,7 +144,7 @@ func (h *CustomerPersonaHandler) Update(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *CustomerPersonaHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -152,7 +152,7 @@ func (h *CustomerPersonaHandler) Patch(w http.ResponseWriter, r *http.Request) e
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -161,7 +161,7 @@ func (h *CustomerPersonaHandler) Patch(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *CustomerPersonaHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -173,7 +173,7 @@ func (h *CustomerPersonaHandler) Delete(w http.ResponseWriter, r *http.Request) 
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, map[string]string{
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{
 		"message": "Customer persona deleted successfully",
 	})
 }

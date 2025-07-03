@@ -61,7 +61,7 @@ func (h *ReviewsHandler) GetAllApproved(w http.ResponseWriter, r *http.Request) 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetAllWithoutPagination(w http.ResponseWriter, r *http.Request) error {
@@ -74,7 +74,7 @@ func (h *ReviewsHandler) GetAllWithoutPagination(w http.ResponseWriter, r *http.
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetAllWithPagination(w http.ResponseWriter, r *http.Request) error {
@@ -92,7 +92,7 @@ func (h *ReviewsHandler) GetAllWithPagination(w http.ResponseWriter, r *http.Req
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) Get(w http.ResponseWriter, r *http.Request) error {
@@ -110,7 +110,7 @@ func (h *ReviewsHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -121,7 +121,7 @@ func (h *ReviewsHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetEntityReviews(w http.ResponseWriter, r *http.Request) error {
@@ -144,14 +144,14 @@ func (h *ReviewsHandler) GetEntityReviews(w http.ResponseWriter, r *http.Request
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	var data models.ReviewDto
 
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -171,7 +171,7 @@ func (h *ReviewsHandler) Add(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ReviewsHandler) AddEntityReview(w http.ResponseWriter, r *http.Request) error {
@@ -180,7 +180,7 @@ func (h *ReviewsHandler) AddEntityReview(w http.ResponseWriter, r *http.Request)
 	refId := chi.URLParam(r, "refId")
 
 	var data models.ReviewDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -213,7 +213,7 @@ func (h *ReviewsHandler) AddEntityReview(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ReviewsHandler) Update(w http.ResponseWriter, r *http.Request) error {
@@ -221,7 +221,7 @@ func (h *ReviewsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var data models.ReviewDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -234,7 +234,7 @@ func (h *ReviewsHandler) Update(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
@@ -242,7 +242,7 @@ func (h *ReviewsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 	id := chi.URLParam(r, "id")
 
 	var updates map[string]interface{}
-	if err := json.NewDecoder(r.Body).Decode(&updates); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -251,7 +251,7 @@ func (h *ReviewsHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
@@ -266,7 +266,7 @@ func (h *ReviewsHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	response := map[string]string{
 		"message": "Review deleted successfully",
 	}
-	return helpers.WriteJson(w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *ReviewsHandler) AddReply(w http.ResponseWriter, r *http.Request) error {
@@ -274,7 +274,7 @@ func (h *ReviewsHandler) AddReply(w http.ResponseWriter, r *http.Request) error 
 	id := chi.URLParam(r, "id")
 
 	var reply models.ReviewReply
-	if err := json.NewDecoder(r.Body).Decode(&reply); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &reply); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -290,7 +290,7 @@ func (h *ReviewsHandler) AddReply(w http.ResponseWriter, r *http.Request) error 
 	response := map[string]string{
 		"message": "Reply added successfully",
 	}
-	return helpers.WriteJson(w, http.StatusCreated, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, response)
 }
 
 func (h *ReviewsHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
@@ -298,7 +298,7 @@ func (h *ReviewsHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 	id := chi.URLParam(r, "id")
 
 	var statusUpdate models.ReviewStatusDto
-	if err := json.NewDecoder(r.Body).Decode(&statusUpdate); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &statusUpdate); err != nil {
 		return helpers.InvalidJSON()
 	}
 
@@ -307,7 +307,7 @@ func (h *ReviewsHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) ApproveReview(w http.ResponseWriter, r *http.Request) error {
@@ -319,7 +319,7 @@ func (h *ReviewsHandler) ApproveReview(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) RejectReview(w http.ResponseWriter, r *http.Request) error {
@@ -331,7 +331,7 @@ func (h *ReviewsHandler) RejectReview(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetStats(w http.ResponseWriter, r *http.Request) error {
@@ -341,7 +341,7 @@ func (h *ReviewsHandler) GetStats(w http.ResponseWriter, r *http.Request) error 
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetByStatus(w http.ResponseWriter, r *http.Request) error {
@@ -359,7 +359,7 @@ func (h *ReviewsHandler) GetByStatus(w http.ResponseWriter, r *http.Request) err
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) GetByUserId(w http.ResponseWriter, r *http.Request) error {
@@ -377,14 +377,14 @@ func (h *ReviewsHandler) GetByUserId(w http.ResponseWriter, r *http.Request) err
 	if err != nil {
 		return err
 	}
-	return helpers.WriteJson(w, http.StatusOK, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	var data models.ReviewDto
-	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
 		return helpers.BadRequest("Invalid JSON format")
 	}
 
@@ -415,5 +415,5 @@ func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Reque
 		return err
 	}
 
-	return helpers.WriteJson(w, http.StatusCreated, result)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
