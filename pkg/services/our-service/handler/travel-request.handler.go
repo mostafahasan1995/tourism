@@ -29,10 +29,13 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/travel-requests", func(r chi.Router) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(
-			middleware.Auth("authenticate", "getTravelRequests"),
-			middleware.CapabilityCheck("getOtherTravelRequests"),
+			middleware.Auth("authenticate", "tourismGetTravelRequests"),
+			middleware.CapabilityCheck("tourismGetOtherTravelRequests"),
 		).Get("/", helpers.Make(h.Get))
-		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
+		r.With(
+			middleware.Auth("authenticate", "tourismGetTravelRequests"),
+			middleware.CapabilityCheck("tourismGetOtherTravelRequests"),
+		).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Get("/customer/{customerId}", helpers.Make(h.GetCustomerRequests))
 		r.With(middleware.Auth("authenticate")).Get("/agent/{agentId}", helpers.Make(h.GetAgentTransactions))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
