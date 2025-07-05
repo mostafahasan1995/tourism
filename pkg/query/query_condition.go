@@ -240,6 +240,10 @@ func (c *Column) convertValue() error {
 				values := []interface{}{}
 				ss := strings.Split(val, ",")
 				for _, s := range ss {
+					if oid, ok := isObjectID(s); ok {
+						values = append(values, oid)
+						continue
+					}
 					s = strings.TrimSpace(s)
 					if strings.HasPrefix(s, "\"") {
 						values = append(values, strings.Trim(s, "\""))
