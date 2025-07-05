@@ -149,58 +149,75 @@ func (t *travelrequestsvcs) GetOne(ctx context.Context, id string) (*models.Trav
 }
 
 func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([]bson.M, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	userId := cfg.User.Id
-	//check if user can get other travel requests
-	check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
-	if !ok {
-		return nil, errors.New("error check user capability")
-	}
 
 	var pipeline []bson.M
 
-	if check.Capability == "getOtherTravelRequests" && check.IsAllowed {
-		match := bson.M{"trash": false}
+	match := bson.M{"trash": false}
 
-		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
 
-		if err != nil {
-			return nil, errors.New("invalid query")
-		}
-
-		pipeline = f.BuildPipeline(match)
-
-	} else {
-
-		pipeline = []bson.M{
-			{"$match": bson.M{
-				"trash": false,
-			}},
-		}
-
-		pipeline = append(pipeline, hotelLookup...)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{
-			"$or": bson.A{
-				bson.M{"departureAgent": userId},
-				bson.M{"tripCoordinator": userId},
-				bson.M{"hotelOwner": userId},
-			},
-		}})
-
-		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
-		if err != nil {
-			return nil, errors.New("invalid query")
-		}
-		filterPipeline := f.BuildPipeline(bson.M{})
-		pipeline = append(pipeline, filterPipeline...)
-
+	if err != nil {
+		return nil, errors.New("invalid query")
 	}
 
+	pipeline = f.BuildPipeline(match)
+
 	return pipeline, nil
+
+	/////////////////////////////////////////////////////////////
+
+	// cfg, err := util.GetReqAppCfg(ctx)
+	// if err != nil {
+	// 	return nil, err
+	// }
+
+	// userId := cfg.User.Id
+	// //check if user can get other travel requests
+	// check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
+	// if !ok {
+	// 	return nil, errors.New("error check user capability")
+	// }
+
+	// var pipeline []bson.M
+
+	// if check.Capability == "getOtherTravelRequests" && check.IsAllowed {
+	// 	match := bson.M{"trash": false}
+
+	// 	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+
+	// 	if err != nil {
+	// 		return nil, errors.New("invalid query")
+	// 	}
+
+	// 	pipeline = f.BuildPipeline(match)
+
+	// } else {
+
+	// 	pipeline = []bson.M{
+	// 		{"$match": bson.M{
+	// 			"trash": false,
+	// 		}},
+	// 	}
+
+	// 	pipeline = append(pipeline, hotelLookup...)
+	// 	pipeline = append(pipeline, bson.M{"$match": bson.M{
+	// 		"$or": bson.A{
+	// 			bson.M{"departureAgent": userId},
+	// 			bson.M{"tripCoordinator": userId},
+	// 			bson.M{"hotelOwner": userId},
+	// 		},
+	// 	}})
+
+	// 	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+	// 	if err != nil {
+	// 		return nil, errors.New("invalid query")
+	// 	}
+	// 	filterPipeline := f.BuildPipeline(bson.M{})
+	// 	pipeline = append(pipeline, filterPipeline...)
+
+	// }
+
+	// return pipeline, nil
 
 }
 
