@@ -300,6 +300,7 @@ func (c *customerSvcs) RegisterCustomerUser(ctx context.Context, data *models.Cu
 			"key":   "phonenumber",
 			"value": data.ClientContact.Mobile.Pre + data.ClientContact.Mobile.Content,
 		},
+
 		{
 			"key":   "whatsapp",
 			"value": data.ClientContact.Whatsapp.Pre + data.ClientContact.Whatsapp.Content,
