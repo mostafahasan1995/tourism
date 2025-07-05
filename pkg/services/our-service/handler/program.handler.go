@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	ourservice "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -34,6 +35,12 @@ func NewProgramHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
+
+	r.Route("/programs/v2/", func(r chi.Router) {
+		r.Post("/", helpers.Make(h.GetV2))
+		r.Post("/all", helpers.Make(h.GetAll))
+	})
+
 }
 
 func (h *ProgramHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
@@ -132,4 +139,26 @@ func (h *ProgramHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, "ok")
+}
+
+// v2
+func (h *ProgramHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.programsvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }

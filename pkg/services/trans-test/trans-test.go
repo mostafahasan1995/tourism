@@ -2,10 +2,10 @@ package transtest
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"larsa-tourism-microservices/pkg/db"
-	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/services/trans-test/filters"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/trans-test/models"
 	"larsa-tourism-microservices/pkg/services/trans-test/repo"
 	"larsa-tourism-microservices/pkg/types"
@@ -21,7 +21,7 @@ import (
 type TransTestSvcs interface {
 	Add(ctx context.Context, transTest *models.TransTestDto) (*models.TransTest, error)
 	GetOne(ctx context.Context, id string) (*models.TransTest, error)
-	Get(ctx context.Context, skip, limit int64, query any) (*models.TransTestPagination, error)
+	Get(ctx context.Context, skip, limit int64, queryStr string) (*models.TransTestPagination, error)
 }
 
 type transtestsvcs struct {
@@ -75,15 +75,27 @@ func (t *transtestsvcs) GetOne(ctx context.Context, id string) (*models.TransTes
 	return result, nil
 }
 
-func (t *transtestsvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.TransTestPagination, error) {
-	match := bson.M{"trash": false}
+func (t *transtestsvcs) Get(ctx context.Context, skip, limit int64, queryStr string) (*models.TransTestPagination, error) {
 
-	f, err := helpers.ParseFilters[filters.TransTestFilters](query)
-	if err != nil {
-		return nil, errors.New("invalid query")
+	var conditions query.Conditions
+
+	if err := json.Unmarshal([]byte(queryStr), &conditions); err != nil {
+		return nil, err
 	}
 
-	pipeline := f.BuildPipeline(match)
+	if err := conditions.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := conditions.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)

@@ -6,6 +6,7 @@ import (
 
 type CarsFilter struct {
 	SearchWord string `json:"searchWord"`
+	CarType    string `json:"carType"`
 	Page       int    `json:"page"`
 	Size       int    `json:"size"`
 }
@@ -20,23 +21,13 @@ func (f CarsFilter) BuildPipeline(m bson.M) []bson.M {
 		}
 	}
 
+	if f.CarType != "" {
+		m["carType.en"] = f.CarType
+	}
+
 	return []bson.M{
 		{
 			"$match": m,
 		},
 	}
 }
-
-// ToBsonFilter returns a bson.M representation of the filter
-// func (f CarsFilter) ToBsonFilter() bson.M {
-// 	filter := bson.M{"trash": bson.M{"$ne": true}}
-
-// 	if f.SearchWord != "" {
-// 		filter["carType"] = bson.M{
-// 			"$regex":   f.SearchWord,
-// 			"$options": "i",
-// 		}
-// 	}
-
-// 	return filter
-// }
