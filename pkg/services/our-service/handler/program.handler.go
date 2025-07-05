@@ -36,7 +36,7 @@ func NewProgramHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
 
-	r.Route("/programs/v2/", func(r chi.Router) {
+	r.Route("/programs/v2", func(r chi.Router) {
 		r.Post("/", helpers.Make(h.GetV2))
 		r.Post("/all", helpers.Make(h.GetAll))
 	})
