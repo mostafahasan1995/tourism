@@ -24,6 +24,7 @@ type DestinationSvcs interface {
 	Update(ctx context.Context, id string, data *models.DestinationDto) (*models.Destination, error)
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context, filter any) (int64, error)
+	GetDestinationByCountry(ctx context.Context, data *models.DestinationCountry) (*models.Destination, error)
 	//v2
 	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Destination, error)
 }
@@ -146,6 +147,32 @@ func (d *destinationSvcs) Delete(ctx context.Context, id string) error {
 
 func (d *destinationSvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return d.repo.Count(ctx, filter)
+}
+
+func (d *destinationSvcs) GetDestinationByCountry(ctx context.Context, data *models.DestinationCountry) (*models.Destination, error) {
+	dest, err := d.repo.GetByFilter(ctx, bson.M{"name": data.Country, "trash": false})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			//add new destination
+			dest = &models.Destination{
+				Id: primitive.NewObjectID(),
+				DestinationDto: models.DestinationDto{
+					Name: data.Country,
+				},
+				CreatedAt: time.Now(),
+			}
+
+			if err := d.repo.Add(ctx, dest); err != nil {
+				return nil, errors.New("failed to add new destination")
+			}
+			return dest, nil
+
+		} else {
+			return nil, err
+		}
+	}
+
+	return dest, nil
 }
 
 // v2

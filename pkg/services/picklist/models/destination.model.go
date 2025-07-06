@@ -2,10 +2,13 @@ package models
 
 import (
 	// "larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/util"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -29,4 +32,28 @@ type Destination struct {
 type DestinationPagination struct {
 	Destinations []Destination    `bson:"destinations" json:"destinations"`
 	Pagination   types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+type DestinationCountry struct {
+	Country string `bson:"country" json:"country" validate:"required,country"`
+}
+
+// ValidateCountry validates that the country is in the allowed list
+func ValidateCountry(fl validator.FieldLevel) bool {
+	country := fl.Field().String()
+	for _, validCountry := range util.Countries {
+		if country == validCountry {
+			return true
+		}
+	}
+	return false
+}
+
+// RegisterCustomValidations registers custom validation functions
+func RegisterCustomValidations(v *validator.Validate) {
+	v.RegisterValidation("country", ValidateCountry)
+}
+
+func (d *DestinationCountry) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, d)
 }

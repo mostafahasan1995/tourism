@@ -23,6 +23,9 @@ import (
 	//
 	transtest "larsa-tourism-microservices/pkg/services/trans-test/di"
 
+	// Import for custom validation
+	picklistModels "larsa-tourism-microservices/pkg/services/picklist/models"
+
 	"larsa-tourism-microservices/pkg/util"
 	"log"
 	"net/http"
@@ -62,6 +65,9 @@ func Start() error {
 		}
 		return name
 	})
+
+	// Register custom validations
+	picklistModels.RegisterCustomValidations(validateInstance)
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Compress(5))

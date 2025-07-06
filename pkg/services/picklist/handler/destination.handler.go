@@ -9,6 +9,7 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-json"
 
 	"github.com/go-chi/chi/v5"
@@ -16,12 +17,14 @@ import (
 )
 
 type DestinationHandler struct {
-	destinationSvcs picklist.DestinationSvcs
+	destinationSvcs    picklist.DestinationSvcs
+	validationInstance *validator.Validate
 }
 
 func NewDestinationHandler(i *do.Injector, r *chi.Mux) {
 	h := &DestinationHandler{
-		destinationSvcs: do.MustInvoke[picklist.DestinationSvcs](i),
+		destinationSvcs:    do.MustInvoke[picklist.DestinationSvcs](i),
+		validationInstance: do.MustInvoke[*validator.Validate](i),
 	}
 
 	r.Route("/destinations", func(r chi.Router) {
@@ -30,6 +33,7 @@ func NewDestinationHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+		r.With(middleware.Auth("authenticate")).Post("/country", helpers.Make(h.GetDistinationByCountry))
 	})
 
 	r.Route("/destinations/v2", func(r chi.Router) {
@@ -43,6 +47,26 @@ func (h *DestinationHandler) GetOne(w http.ResponseWriter, r *http.Request) erro
 	destinationId := chi.URLParam(r, "id")
 
 	result, err := h.destinationSvcs.GetOne(ctx, destinationId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *DestinationHandler) GetDistinationByCountry(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.DestinationCountry
+	if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+		return err
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.destinationSvcs.GetDestinationByCountry(ctx, &data)
 	if err != nil {
 		return err
 	}
