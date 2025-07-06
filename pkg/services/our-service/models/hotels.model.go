@@ -6,7 +6,6 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	//"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -244,8 +243,8 @@ type HotelsRes struct {
 }
 
 type HotelsPagination struct {
-	Hotels     []Hotels          `bson:"hotels" json:"hotels"`
-	Pagination common.Pagination `bson:"pagination" json:"pagination"`
+	Hotels     []Hotels         `bson:"hotels" json:"hotels"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
 
 type CheckInAndCheckOut struct {

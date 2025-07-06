@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"log"
+	"math"
 	"time"
 
 	"github.com/goccy/go-json"
@@ -16,6 +19,7 @@ import (
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type HotelsSvcs interface {
@@ -26,6 +30,9 @@ type HotelsSvcs interface {
 	Update(ctx context.Context, id string, data *models.HotelsDto) (*models.Hotels, error)
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context, filter any) (int64, error)
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.HotelsPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Hotels, error)
 }
 
 type hotelsSvcs struct {
@@ -272,4 +279,87 @@ func (h *hotelsSvcs) Delete(ctx context.Context, id string) error {
 
 func (h *hotelsSvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return h.repo.Count(ctx, filter)
+}
+
+// v2
+func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.HotelsPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := h.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Hotels
+	errAg := h.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	for i := range result {
+		result[i].CalculateAverageRating()
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.HotelsPagination{
+		Hotels:     result,
+		Pagination: pagination,
+	}, nil
+}
+
+func (h *hotelsSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Hotels, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.Hotels
+	errAg := h.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	for i := range result {
+		result[i].CalculateAverageRating()
+	}
+
+	return result, nil
 }

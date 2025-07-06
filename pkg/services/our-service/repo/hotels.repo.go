@@ -6,11 +6,11 @@ import (
 	dbrepo "larsa-tourism-microservices/pkg/services/db/repo"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 
 	"time"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -63,10 +63,7 @@ func (l *hotelsrepo) GetOne(ctx context.Context, id string) (*models.Hotels, err
 	return &data, nil
 }
 
-
-
-
-func (l *hotelsrepo) GetAllHotels(ctx context.Context, hotelFilter filter.HotelsFilter) ([]models.Hotels, error){
+func (l *hotelsrepo) GetAllHotels(ctx context.Context, hotelFilter filter.HotelsFilter) ([]models.Hotels, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
 		return nil, err
@@ -76,9 +73,6 @@ func (l *hotelsrepo) GetAllHotels(ctx context.Context, hotelFilter filter.Hotels
 
 	// Use the ToBsonFilter method to build the MongoDB filter
 	filterBody := hotelFilter.ToBsonFilter()
-
-	
-
 
 	findOptions := options.Find().
 		SetSort(bson.M{"createdAt": -1}) // Sort by creation date, newest first
@@ -100,8 +94,6 @@ func (l *hotelsrepo) GetAllHotels(ctx context.Context, hotelFilter filter.Hotels
 		hotels[i].CalculateAverageRating()
 	}
 
-
-
 	// result := models.Hotels{
 	// 	Hotels: hotels,
 	// 	Pagination: common.Pagination{
@@ -113,12 +105,6 @@ func (l *hotelsrepo) GetAllHotels(ctx context.Context, hotelFilter filter.Hotels
 
 	return hotels, nil
 }
-
-
-
-
-
-
 
 func (l *hotelsrepo) GetAll(ctx context.Context, hotelFilter filter.HotelsFilter, page, perPage int64) (models.HotelsPagination, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
@@ -179,7 +165,7 @@ func (l *hotelsrepo) GetAll(ctx context.Context, hotelFilter filter.HotelsFilter
 
 	result := models.HotelsPagination{
 		Hotels: hotels,
-		Pagination: common.Pagination{
+		Pagination: types.Pagination{
 			TotalPages: float64(totalPages),
 			PerPage:    perPage,
 			TotalCount: totalCount,
