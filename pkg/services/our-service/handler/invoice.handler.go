@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	ourService "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -36,6 +37,10 @@ func NewInvoiceHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Delete("/{id}/payments/{paymentId}", helpers.Make(h.DeletePayment))
 		r.With(middleware.Auth("authenticate")).Post("/{id}/pay-order", helpers.Make(h.PayOrder))
 		r.With(middleware.Auth("authenticate")).Post("/send-invoice", helpers.Make(h.SendInvoice))
+	})
+
+	r.Route("/invoices/v2", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.GetV2))
 	})
 }
 
@@ -194,4 +199,26 @@ func (h *InvoiceHandler) SendInvoice(w http.ResponseWriter, r *http.Request) err
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
+}
+
+// v2
+func (h *InvoiceHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.invoicesvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

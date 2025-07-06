@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member"
 	membermodels "larsa-tourism-microservices/pkg/services/member/models"
@@ -115,6 +116,9 @@ type TravelRequestSvcs interface {
 	SetAsCompleted(ctx context.Context, id string) (*models.TravelRequest, error)
 	GetAgentTransactions(ctx context.Context, agentId string, skip, limit int64, query any) (*models.AgentTransactionPagination, error)
 	Count(ctx context.Context, filter any) (int64, error)
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.TravelRequestPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.TravelRequestRes, error)
 }
 
 type travelrequestsvcs struct {
@@ -149,75 +153,58 @@ func (t *travelrequestsvcs) GetOne(ctx context.Context, id string) (*models.Trav
 }
 
 func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([]bson.M, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userId := cfg.User.Id
+	//check if user can get other travel requests
+	check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
+	if !ok {
+		return nil, errors.New("error check user capability")
+	}
 
 	var pipeline []bson.M
 
-	match := bson.M{"trash": false}
+	if check.Capability == "getOtherTravelRequests" && check.IsAllowed {
+		match := bson.M{"trash": false}
 
-	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
 
-	if err != nil {
-		return nil, errors.New("invalid query")
+		if err != nil {
+			return nil, errors.New("invalid query")
+		}
+
+		pipeline = f.BuildPipeline(match)
+
+	} else {
+
+		pipeline = []bson.M{
+			{"$match": bson.M{
+				"trash": false,
+			}},
+		}
+
+		pipeline = append(pipeline, hotelLookup...)
+		pipeline = append(pipeline, bson.M{"$match": bson.M{
+			"$or": bson.A{
+				bson.M{"departureAgent": userId},
+				bson.M{"tripCoordinator": userId},
+				bson.M{"hotelOwner": userId},
+			},
+		}})
+
+		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+		if err != nil {
+			return nil, errors.New("invalid query")
+		}
+		filterPipeline := f.BuildPipeline(bson.M{})
+		pipeline = append(pipeline, filterPipeline...)
+
 	}
 
-	pipeline = f.BuildPipeline(match)
-
 	return pipeline, nil
-
-	/////////////////////////////////////////////////////////////
-
-	// cfg, err := util.GetReqAppCfg(ctx)
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// userId := cfg.User.Id
-	// //check if user can get other travel requests
-	// check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
-	// if !ok {
-	// 	return nil, errors.New("error check user capability")
-	// }
-
-	// var pipeline []bson.M
-
-	// if check.Capability == "getOtherTravelRequests" && check.IsAllowed {
-	// 	match := bson.M{"trash": false}
-
-	// 	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
-
-	// 	if err != nil {
-	// 		return nil, errors.New("invalid query")
-	// 	}
-
-	// 	pipeline = f.BuildPipeline(match)
-
-	// } else {
-
-	// 	pipeline = []bson.M{
-	// 		{"$match": bson.M{
-	// 			"trash": false,
-	// 		}},
-	// 	}
-
-	// 	pipeline = append(pipeline, hotelLookup...)
-	// 	pipeline = append(pipeline, bson.M{"$match": bson.M{
-	// 		"$or": bson.A{
-	// 			bson.M{"departureAgent": userId},
-	// 			bson.M{"tripCoordinator": userId},
-	// 			bson.M{"hotelOwner": userId},
-	// 		},
-	// 	}})
-
-	// 	f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
-	// 	if err != nil {
-	// 		return nil, errors.New("invalid query")
-	// 	}
-	// 	filterPipeline := f.BuildPipeline(bson.M{})
-	// 	pipeline = append(pipeline, filterPipeline...)
-
-	// }
-
-	// return pipeline, nil
 
 }
 
@@ -818,4 +805,130 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 
 func (t *travelrequestsvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return t.repo.Count(ctx, filter)
+}
+
+// v2
+
+func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *query.Conditions) ([]bson.M, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	userId := cfg.User.Id
+	//check if user can get other travel requests
+	check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
+	if !ok {
+		return nil, errors.New("error check user capability")
+	}
+
+	var pipeline []bson.M
+
+	if check.Capability == "tourismGetOtherTravelRequests" && check.IsAllowed {
+		if err := query.CheckValid(); err != nil {
+			return nil, err
+		}
+		filter, err := query.ConvertToMongo()
+		if err != nil {
+			return nil, err
+		}
+
+		pipeline = []bson.M{
+			{"$match": bson.M{"trash": false}},
+			{"$match": filter},
+		}
+
+	} else {
+
+		pipeline = []bson.M{
+			{"$match": bson.M{"trash": false}},
+		}
+
+		pipeline = append(pipeline, hotelLookup...)
+		pipeline = append(pipeline, bson.M{"$match": bson.M{
+			"$or": bson.A{
+				bson.M{"departureAgent": userId},
+				bson.M{"tripCoordinator": userId},
+				bson.M{"hotelOwner": userId},
+			},
+		}})
+
+		if err := query.CheckValid(); err != nil {
+			return nil, err
+		}
+		filter, err := query.ConvertToMongo()
+		if err != nil {
+			return nil, err
+		}
+
+		pipeline = append(pipeline, bson.M{"$match": filter})
+
+	}
+
+	return pipeline, nil
+
+}
+
+func (t *travelrequestsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.TravelRequestPagination, error) {
+	pipeline, err := t.buildUserPipelineV2(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	pipeline = append(pipeline, programLookup...)
+	pipeline = append(pipeline, travelReqCustomerLookup...)
+	pipeline = append(pipeline, travelReqPackageLookup...)
+
+	var result []models.TravelRequestRes
+	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+
+	return &models.TravelRequestPagination{
+		Requests: result,
+		Pagination: types.Pagination{
+			TotalPages: totalPages,
+			PerPage:    limit,
+			TotalCount: count,
+		},
+	}, nil
+}
+
+func (t *travelrequestsvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.TravelRequestRes, error) {
+	pipeline, err := t.buildUserPipelineV2(ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+
+	pipeline = append(pipeline, programLookup...)
+	pipeline = append(pipeline, travelReqCustomerLookup...)
+	pipeline = append(pipeline, travelReqPackageLookup...)
+
+	var result []models.TravelRequestRes
+	errAg := t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }

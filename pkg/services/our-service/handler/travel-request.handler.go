@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	ourservice "larsa-tourism-microservices/pkg/services/our-service"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -29,14 +30,12 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/travel-requests", func(r chi.Router) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(
-			middleware.Auth("authenticate"),
-			//middleware.Auth("authenticate", "tourismGetTravelRequests"),
-			//middleware.CapabilityCheck("tourismGetOtherTravelRequests"),
+			middleware.Auth("authenticate", "tourismGetTravelRequests"),
+			middleware.CapabilityCheck("tourismGetOtherTravelRequests"),
 		).Get("/", helpers.Make(h.Get))
 		r.With(
-			middleware.Auth("authenticate"),
-			//middleware.Auth("authenticate", "tourismGetTravelRequests"),
-			//middleware.CapabilityCheck("tourismGetOtherTravelRequests"),
+			middleware.Auth("authenticate", "tourismGetTravelRequests"),
+			middleware.CapabilityCheck("tourismGetOtherTravelRequests"),
 		).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Get("/customer/{customerId}", helpers.Make(h.GetCustomerRequests))
 		r.With(middleware.Auth("authenticate")).Get("/agent/{agentId}", helpers.Make(h.GetAgentTransactions))
@@ -46,6 +45,15 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/approve", helpers.Make(h.Approve))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.Approve))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/complete", helpers.Make(h.SetAsCompleted))
+	})
+
+	r.Route("/travel-requests/v2", func(r chi.Router) {
+		r.With(
+			middleware.Auth("authenticate", "tourismGetTravelRequests"),
+			middleware.CapabilityCheck("tourismGetOtherTravelRequests")).Post("/", helpers.Make(h.GetV2))
+		r.With(
+			middleware.Auth("authenticate", "tourismGetTravelRequests"),
+			middleware.CapabilityCheck("tourismGetOtherTravelRequests")).Post("/all", helpers.Make(h.GetAllV2))
 	})
 }
 
@@ -223,6 +231,44 @@ func (h *TravelRequestHandler) SetAsCompleted(w http.ResponseWriter, r *http.Req
 	id := chi.URLParam(r, "id") // travel request id
 
 	result, err := h.travelreqsvcs.SetAsCompleted(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// v2
+func (h *TravelRequestHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.travelreqsvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.travelreqsvcs.GetAllV2(ctx, &query)
 	if err != nil {
 		return err
 	}

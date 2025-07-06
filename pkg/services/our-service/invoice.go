@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/query"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/messaging"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
@@ -37,6 +38,8 @@ type InvoiceSvcs interface {
 	//
 	AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error)
 	SendInvoice(ctx context.Context, data *models.SendInvoiceDto) error
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.InvoicePagination, error)
 }
 
 type invoiceSvcs struct {
@@ -436,4 +439,53 @@ func (i *invoiceSvcs) SendInvoice(ctx context.Context, data *models.SendInvoiceD
 	}
 
 	return nil
+}
+
+// v2
+func (i *invoiceSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.InvoicePagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := i.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Invoice
+	errAg := i.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.InvoicePagination{
+		Invoices:   result,
+		Pagination: pagination,
+	}, nil
 }
