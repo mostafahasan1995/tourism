@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/services/picklist/repo"
@@ -25,6 +26,9 @@ type CarsSvcs interface {
 	Add(ctx context.Context, data *models.CarsDto) (*models.Cars, error)
 	Update(ctx context.Context, id string, data *models.CarsDto) (*models.Cars, error)
 	Delete(ctx context.Context, id string) error
+	//v2
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Cars, error)
+	GetPaginatedV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CarsPagination, error)
 }
 
 type carsSvcs struct {
@@ -187,4 +191,81 @@ func (c *carsSvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// v2
+func (c *carsSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Cars, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+
+	var result []models.Cars
+	errAg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
+}
+
+func (c *carsSvcs) GetPaginatedV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CarsPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := c.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Cars
+	errAg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.CarsPagination{
+		Cars:       result,
+		Pagination: pagination,
+	}, nil
 }

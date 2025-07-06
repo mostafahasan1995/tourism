@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/services/picklist/repo"
@@ -23,6 +24,8 @@ type DestinationSvcs interface {
 	Update(ctx context.Context, id string, data *models.DestinationDto) (*models.Destination, error)
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context, filter any) (int64, error)
+	//v2
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Destination, error)
 }
 
 type destinationSvcs struct {
@@ -143,4 +146,33 @@ func (d *destinationSvcs) Delete(ctx context.Context, id string) error {
 
 func (d *destinationSvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return d.repo.Count(ctx, filter)
+}
+
+// v2
+func (d *destinationSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Destination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+
+	var result []models.Destination
+	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }

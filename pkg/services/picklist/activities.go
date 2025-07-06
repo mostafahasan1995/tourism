@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/services/picklist/repo"
@@ -22,6 +23,8 @@ type ActivitiesSvcs interface {
 	Add(ctx context.Context, data *models.ActivitiesDto) (*models.Activities, error)
 	Update(ctx context.Context, id string, data *models.ActivitiesDto) (*models.Activities, error)
 	Delete(ctx context.Context, id string) error
+	//v2
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Activities, error)
 }
 
 type activitiesSvcs struct {
@@ -138,4 +141,33 @@ func (a *activitiesSvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// v2
+func (a *activitiesSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Activities, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+
+	var result []models.Activities
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
 }
