@@ -7,6 +7,7 @@ import (
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/gateway"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -42,6 +43,9 @@ type CustomerSvcs interface {
 	Delete(ctx context.Context, customerId string) error
 	//
 	RegisterAsCustomer(ctx context.Context, data *models.CustomerRegisterData) (*models.Customer, error)
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CustomerWithPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Customer, error)
 }
 
 type customerSvcs struct {
@@ -395,4 +399,80 @@ func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.Cust
 	}
 
 	return result.(*models.Customer), nil
+}
+
+// v2
+func (c *customerSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CustomerWithPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := c.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Customer
+	errAg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.CustomerWithPagination{
+		Customers:  result,
+		Pagination: pagination,
+	}, nil
+}
+
+func (c *customerSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Customer, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$sort": bson.M{"_id": -1}},
+		{"$match": filter},
+	}
+
+	var result []models.Customer
+	errAgg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAgg != nil {
+		return nil, errAgg
+	}
+
+	return result, nil
 }

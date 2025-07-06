@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
 	"larsa-tourism-microservices/pkg/services/member/enums"
 	"larsa-tourism-microservices/pkg/services/member/filters"
@@ -46,6 +47,11 @@ type AgentSvcs interface {
 	//destination agent
 	GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error)
 	GetDestinationAgents(ctx context.Context, query string) ([]models.Agent, error)
+
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentWithPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Agent, error)
+	GetJoinRequestsV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentJoinPagination, error)
 }
 
 type agentsvcs struct {
@@ -571,4 +577,127 @@ func (a *agentsvcs) GetDestinationAgents(ctx context.Context, query string) ([]m
 	}
 
 	return result, nil
+}
+
+// v2
+func (a *agentsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentWithPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := a.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.Agent
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.AgentWithPagination{
+		Agents:     result,
+		Pagination: pagination,
+	}, nil
+}
+
+func (a *agentsvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Agent, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.Agent
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
+}
+
+func (a *agentsvcs) GetJoinRequestsV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentJoinPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"status": bson.M{"$ne": "converted"}}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := a.agentjoinrepo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.AgentJoin
+	errAg := a.agentjoinrepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.AgentJoinPagination{
+		Agents:     result,
+		Pagination: pagination,
+	}, nil
 }

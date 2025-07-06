@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/member"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -37,6 +38,11 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
 
+	r.Route("/agents/v2", func(r chi.Router) {
+		r.Post("/", helpers.Make(h.GetV2))
+		r.Post("/all", helpers.Make(h.GetAllV2))
+	})
+
 	r.Route("/agent-joins", func(r chi.Router) {
 		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOneAgentJoin))
 		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.GetJoinRequests))
@@ -44,6 +50,10 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/{id}/convert", helpers.Make(h.ConvertToAgent))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectJoin))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/pending", helpers.Make(h.SetAsPending))
+	})
+
+	r.Route("/agent-joins/v2", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.GetJoinRequestsV2))
 	})
 }
 
@@ -257,6 +267,65 @@ func (h *AgentHandler) GetDestinationAgents(w http.ResponseWriter, r *http.Reque
 	query := r.URL.Query().Get("query")
 
 	result, err := h.agentsvcs.GetDestinationAgents(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// v2
+func (h *AgentHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *AgentHandler) GetJoinRequestsV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.GetJoinRequestsV2(ctx, skip, limit, &query)
 	if err != nil {
 		return err
 	}
