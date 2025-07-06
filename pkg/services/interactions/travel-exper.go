@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/interactions/filter"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
@@ -34,6 +35,10 @@ type TravelExperSvcs interface {
 	AddClientStory(ctx context.Context, data *models.ClientStoryDto) (*models.ClientStory, error)
 	UpdateClientStory(ctx context.Context, storyId string, data *models.ClientStoryDto) (*models.ClientStory, error)
 	DeleteClientStory(ctx context.Context, storyId string) error
+	//v2
+	GetAllTravelerStoriesV2(ctx context.Context, query *query.Conditions) ([]models.TravelerStoryRes, error)
+	GetTravelerStoriesV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.TravelerStoryWithPagination, error)
+	GetClientStoriesV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ClientStoryWithPagination, error)
 }
 
 type travelexpersvcs struct {
@@ -464,4 +469,171 @@ func (t *travelexpersvcs) DeleteClientStory(ctx context.Context, storyId string)
 	}
 
 	return nil
+}
+
+// v2
+func (t *travelexpersvcs) GetAllTravelerStoriesV2(ctx context.Context, query *query.Conditions) ([]models.TravelerStoryRes, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	pipeline = append(pipeline, bson.M{
+		"$lookup": bson.M{
+			"from":         "tourismDestinations",
+			"localField":   "destinations",
+			"foreignField": "_id",
+			"as":           "destinationsData",
+		},
+	})
+	pipeline = append(pipeline, bson.M{
+		"$lookup": bson.M{
+			"from":         "tourismActivities",
+			"localField":   "activities",
+			"foreignField": "_id",
+			"as":           "activitiesData",
+		},
+	})
+
+	var result []models.TravelerStoryRes
+	errAgg := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+
+	if errAgg != nil {
+		return nil, errAgg
+	}
+
+	return result, nil
+}
+
+func (t *travelexpersvcs) GetTravelerStoriesV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.TravelerStoryWithPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.travelerStoryRepo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	pipeline = append(pipeline, bson.M{
+		"$lookup": bson.M{
+			"from":         "tourismDestinations",
+			"localField":   "destinations",
+			"foreignField": "_id",
+			"as":           "destinationsData",
+		},
+	})
+	pipeline = append(pipeline, bson.M{
+		"$lookup": bson.M{
+			"from":         "tourismActivities",
+			"localField":   "activities",
+			"foreignField": "_id",
+			"as":           "activitiesData",
+		},
+	})
+
+	var result []models.TravelerStoryRes
+	errAg := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.TravelerStoryWithPagination{
+		TravelerStories: result,
+		Pagination:      pagination,
+	}, nil
+}
+
+func (t *travelexpersvcs) GetClientStoriesV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ClientStoryWithPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.clientStoryRepo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.ClientStory
+	errAg := t.clientStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		if err := cur.All(ctx, &result); err != nil {
+			return err
+		}
+		return nil
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ClientStoryWithPagination{
+		ClientStories: result,
+		Pagination:    pagination,
+	}, nil
 }

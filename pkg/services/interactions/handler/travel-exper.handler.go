@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/interactions"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -38,6 +39,11 @@ func NewTravelExperHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/client-stories/", helpers.Make(h.AddClientStory))
 		r.With(middleware.Auth("authenticate")).Put("/client-stories/{id}", helpers.Make(h.UpdateClientStory))
 		r.With(middleware.Auth("authenticate")).Delete("/client-stories/{id}", helpers.Make(h.DeleteClientStory))
+	})
+
+	r.Route("/travel-exper/v2", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Post("/traveler-stories/", helpers.Make(h.GetTravelerStoriesV2))
+		r.With(middleware.Auth("authenticate")).Post("/client-stories/", helpers.Make(h.GetClientStoriesV2))
 	})
 }
 
@@ -239,4 +245,47 @@ func (h *TravelExperHandler) DeleteClientStory(w http.ResponseWriter, r *http.Re
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
+}
+
+// v2
+func (h *TravelExperHandler) GetTravelerStoriesV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, errGetPaginate := util.Paginate(r)
+	if errGetPaginate != nil {
+		return errGetPaginate
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.GetTravelerStoriesV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *TravelExperHandler) GetClientStoriesV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, errGetPaginate := util.Paginate(r)
+	if errGetPaginate != nil {
+		return errGetPaginate
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.travelexpersvcs.GetClientStoriesV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
