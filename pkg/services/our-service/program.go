@@ -238,63 +238,6 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	}, nil
 }
 
-func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ProgramPagination, error) {
-
-	if err := query.CheckValid(); err != nil {
-		return nil, err
-	}
-
-	filter, err := query.ConvertToMongo()
-	if err != nil {
-		return nil, err
-	}
-
-	pipeline := []bson.M{
-		{"$match": bson.M{"trash": false}},
-		{"$match": filter},
-	}
-
-	countPipeline := make([]bson.M, len(pipeline))
-	copy(countPipeline, pipeline)
-
-	count, err := p.repo.Count(ctx, countPipeline)
-	if err != nil {
-		return nil, err
-	}
-
-	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
-	pipeline = append(pipeline, bson.M{"$skip": skip})
-	pipeline = append(pipeline, bson.M{"$limit": limit})
-
-	pipeline = append(pipeline, customerLookup...)
-	pipeline = append(pipeline, packageLookup...)
-	pipeline = append(pipeline, updatedByUserLookup...)
-
-	// Calculate duration in days between startDate and endDate
-	pipeline = append(pipeline, durationLookup)
-
-	var result []models.ProgramRes
-	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		return cur.All(ctx, &result)
-	})
-	if errAg != nil {
-		return nil, errAg
-	}
-
-	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
-	pagination := types.Pagination{
-		TotalPages: totalPages,
-		PerPage:    limit,
-		TotalCount: count,
-	}
-
-	return &models.ProgramPagination{
-		Programs:   result,
-		Pagination: pagination,
-	}, nil
-
-}
-
 func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Program, error) {
 	match := bson.M{"trash": false}
 
@@ -530,4 +473,62 @@ func (p *programsvcs) Delete(ctx context.Context, id string) error {
 
 func (p *programsvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return p.repo.Count(ctx, filter)
+}
+
+// v2
+func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ProgramPagination, error) {
+
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := p.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	pipeline = append(pipeline, customerLookup...)
+	pipeline = append(pipeline, packageLookup...)
+	pipeline = append(pipeline, updatedByUserLookup...)
+
+	// Calculate duration in days between startDate and endDate
+	pipeline = append(pipeline, durationLookup)
+
+	var result []models.ProgramRes
+	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ProgramPagination{
+		Programs:   result,
+		Pagination: pagination,
+	}, nil
+
 }

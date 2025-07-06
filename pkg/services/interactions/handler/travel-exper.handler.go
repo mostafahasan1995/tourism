@@ -25,8 +25,8 @@ func NewTravelExperHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/travel-exper", func(r chi.Router) {
-		r.With(middleware.Auth("authenticate")).Get("/traveler-stories/{id}", helpers.Make(h.GetTravelerStory))
-		r.With(middleware.Auth("authenticate")).Get("/traveler-stories/", helpers.Make(h.GetTravelerStories))
+		r.Get("/traveler-stories/{id}", helpers.Make(h.GetTravelerStory))
+		r.Get("/traveler-stories/", helpers.Make(h.GetTravelerStories))
 		r.With(middleware.Auth("authenticate")).Post("/traveler-stories/", helpers.Make(h.AddTravelerStory))
 		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/status", helpers.Make(h.SetTravelerStoryStatus))
 		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/feedback", helpers.Make(h.SendFeedback))
@@ -34,16 +34,16 @@ func NewTravelExperHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Delete("/traveler-stories/{id}", helpers.Make(h.DeleteTravelerStory))
 		r.With(middleware.Auth("authenticate")).Patch("/traveler-stories/{id}/restore", helpers.Make(h.RestoreTravelerStory))
 		//client
-		r.With(middleware.Auth("authenticate")).Get("/client-stories/{id}", helpers.Make(h.GetClientStory))
-		r.With(middleware.Auth("authenticate")).Get("/client-stories/", helpers.Make(h.GetClientStories))
+		r.Get("/client-stories/{id}", helpers.Make(h.GetClientStory))
+		r.Get("/client-stories/", helpers.Make(h.GetClientStories))
 		r.With(middleware.Auth("authenticate")).Post("/client-stories/", helpers.Make(h.AddClientStory))
 		r.With(middleware.Auth("authenticate")).Put("/client-stories/{id}", helpers.Make(h.UpdateClientStory))
 		r.With(middleware.Auth("authenticate")).Delete("/client-stories/{id}", helpers.Make(h.DeleteClientStory))
 	})
 
 	r.Route("/travel-exper/v2", func(r chi.Router) {
-		r.With(middleware.Auth("authenticate")).Post("/traveler-stories/", helpers.Make(h.GetTravelerStoriesV2))
-		r.With(middleware.Auth("authenticate")).Post("/client-stories/", helpers.Make(h.GetClientStoriesV2))
+		r.Post("/traveler-stories/", helpers.Make(h.GetTravelerStoriesV2))
+		r.Post("/client-stories/", helpers.Make(h.GetClientStoriesV2))
 	})
 }
 
