@@ -167,7 +167,7 @@ func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([
 
 	var pipeline []bson.M
 
-	if check.Capability == "getOtherTravelRequests" && check.IsAllowed {
+	if check.Capability == "tourismGetOtherTravelRequests" && check.IsAllowed {
 		match := bson.M{"trash": false}
 
 		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
