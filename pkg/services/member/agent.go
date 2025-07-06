@@ -487,7 +487,7 @@ func (a *agentsvcs) GetJoinRequests(ctx context.Context, skip, limit int64, quer
 func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId string) (*models.Agent, error) {
 	destination, err := a.destinationsvcs.GetOne(ctx, destinationId)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("error get departure destination")
 	}
 
 	country := destination.Name
@@ -496,6 +496,7 @@ func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId str
 		{"$match": bson.M{
 			"countries": bson.M{"$in": []string{country}},
 			"status":    enums.AgentStatusActive,
+			"trash":     false,
 		}},
 	}
 
@@ -503,8 +504,12 @@ func (a *agentsvcs) GetAgentByDestination(ctx context.Context, destinationId str
 	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
-	if errAg != nil || len(result) == 0 {
-		return nil, errors.New("no agent found")
+	if errAg != nil {
+		return nil, errors.New("error get agent by destination")
+	}
+
+	if len(result) == 0 {
+		return nil, mongo.ErrNoDocuments
 	}
 
 	return &result[0], nil
