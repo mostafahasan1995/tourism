@@ -57,20 +57,20 @@ var packageLookup = []bson.M{
 		"from":         "tourismPackages",
 		"localField":   "package",
 		"foreignField": "_id",
-		"as":           "package",
+		"as":           "packageObj",
 	}},
 	{"$unwind": bson.M{
-		"path":                       "$package",
+		"path":                       "$packageObj",
 		"preserveNullAndEmptyArrays": true,
 	}},
 	{
 		"$set": bson.M{
-			"packageName": "$package.name",
+			"packageName": "$packageObj.name",
 		},
 	},
 	{
 		"$project": bson.M{
-			"package": 0,
+			"packageObj": 0,
 		},
 	},
 }
