@@ -24,14 +24,15 @@ import (
 
 type HotelsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Hotels, error)
-	GetAll(ctx context.Context, query any, page, perPage int64) (*models.HotelsPagination, error)
+	GetAll(ctx context.Context, query any, page, perPage int64) (*models.HotelsPaginationRes, error)
 	GetAllHotels(ctx context.Context, query any) ([]models.Hotels, error)
 	Add(ctx context.Context, data *models.HotelsDto) (*models.Hotels, error)
 	Update(ctx context.Context, id string, data *models.HotelsDto) (*models.Hotels, error)
+	UpdateIsFav(ctx context.Context, id string, isFav bool) error
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context, filter any) (int64, error)
 	//v2
-	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.HotelsPagination, error)
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.HotelsPaginationRes, error)
 	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Hotels, error)
 }
 
@@ -43,6 +44,24 @@ func NewHotelsSvcs(i *do.Injector) (HotelsSvcs, error) {
 	return &hotelsSvcs{
 		repo: do.MustInvoke[repo.HotelsRepo](i),
 	}, nil
+}
+
+// Helper method to convert Hotels to HotelsRes with isFav populated
+func (h *hotelsSvcs) convertToHotelsRes(ctx context.Context, hotels []models.Hotels) ([]models.HotelsRes, error) {
+	if len(hotels) == 0 {
+		return []models.HotelsRes{}, nil
+	}
+
+	// Convert to HotelsRes - isFav is now stored directly in the entity
+	result := make([]models.HotelsRes, len(hotels))
+	for i, hotel := range hotels {
+		result[i] = models.HotelsRes{
+			Hotels: hotel,
+			IsFav:  hotel.IsFav, // Use the isFav field directly from the entity
+		}
+	}
+
+	return result, nil
 }
 
 func (h *hotelsSvcs) GetOne(ctx context.Context, id string) (*models.Hotels, error) {
@@ -136,7 +155,7 @@ func (h *hotelsSvcs) GetAllHotels(ctx context.Context, query any) ([]models.Hote
 	return result, nil
 }
 
-func (h *hotelsSvcs) GetAll(ctx context.Context, query any, page, perPage int64) (*models.HotelsPagination, error) {
+func (h *hotelsSvcs) GetAll(ctx context.Context, query any, page, perPage int64) (*models.HotelsPaginationRes, error) {
 	// Log the incoming query
 	if jsonBytes, err := json.Marshal(query); err == nil {
 		log.Printf("Hotel service received query: %s", string(jsonBytes))
@@ -208,15 +227,27 @@ func (h *hotelsSvcs) GetAll(ctx context.Context, query any, page, perPage int64)
 		log.Printf("Using hotel filter: %s", string(jsonBytes))
 	}
 
-	// Call the repository with the parsed filter
-	result, err := h.repo.GetAll(ctx, hotelFilter, page, perPage)
+	// Get the pagination result from repository (still returns []Hotels)
+	repoResult, err := h.repo.GetAll(ctx, hotelFilter, page, perPage)
 	if err != nil {
 		log.Printf("Repository error: %v", err)
 		return nil, err
 	}
 
-	log.Printf("Found %d hotels", len(result.Hotels))
-	return &result, nil
+	// Convert []Hotels to []HotelsRes with isFav populated
+	hotelsRes, err := h.convertToHotelsRes(ctx, repoResult.Hotels)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return the new structure with converted hotels
+	result := &models.HotelsPaginationRes{
+		Hotels:     hotelsRes,
+		Pagination: repoResult.Pagination,
+	}
+
+	log.Printf("Found %d hotels", len(hotelsRes))
+	return result, nil
 }
 
 func (h *hotelsSvcs) Add(ctx context.Context, data *models.HotelsDto) (*models.Hotels, error) {
@@ -251,6 +282,32 @@ func (h *hotelsSvcs) Update(ctx context.Context, id string, data *models.HotelsD
 	return h.repo.Update(ctx, _id, data)
 }
 
+func (h *hotelsSvcs) UpdateIsFav(ctx context.Context, id string, isFav bool) error {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return helpers.InvalidObjectId()
+	}
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{
+		"isFav":     isFav,
+		"updatedAt": time.Now(),
+		"updatedBy": cfg.User.Id,
+	}}
+
+	_, err = h.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (h *hotelsSvcs) Delete(ctx context.Context, id string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -282,7 +339,7 @@ func (h *hotelsSvcs) Count(ctx context.Context, filter any) (int64, error) {
 }
 
 // v2
-func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.HotelsPagination, error) {
+func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.HotelsPaginationRes, error) {
 	if err := query.CheckValid(); err != nil {
 		return nil, err
 	}
@@ -321,6 +378,12 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 		result[i].CalculateAverageRating()
 	}
 
+	// Convert to HotelsRes with isFav populated
+	hotelsRes, err := h.convertToHotelsRes(ctx, result)
+	if err != nil {
+		return nil, err
+	}
+
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
 	pagination := types.Pagination{
 		TotalPages: totalPages,
@@ -328,8 +391,8 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 		TotalCount: count,
 	}
 
-	return &models.HotelsPagination{
-		Hotels:     result,
+	return &models.HotelsPaginationRes{
+		Hotels:     hotelsRes,
 		Pagination: pagination,
 	}, nil
 }

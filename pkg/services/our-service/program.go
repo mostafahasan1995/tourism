@@ -127,6 +127,7 @@ type ProgramSvcs interface {
 	GetAll(ctx context.Context, query string) ([]models.Program, error)
 	Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error)
 	Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error)
+	UpdateIsFav(ctx context.Context, id string, isFav bool) error
 	Delete(ctx context.Context, id string) error
 	Count(ctx context.Context, filter any) (int64, error)
 	//v2
@@ -150,6 +151,15 @@ func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 }
 
 //
+
+// Helper method to populate isFav field for programs
+func (p *programsvcs) populateIsFav(ctx context.Context, programs []models.ProgramRes) error {
+	// isFav is now stored directly in the Program entity, just copy it to ProgramRes
+	for i := range programs {
+		programs[i].IsFav = programs[i].Program.IsFav
+	}
+	return nil
+}
 
 func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
@@ -183,6 +193,11 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 
 	if len(result) == 0 {
 		return nil, errors.New("program not found")
+	}
+
+	// Populate isFav field
+	if err := p.populateIsFav(ctx, result); err != nil {
+		return nil, err
 	}
 
 	return &result[0], nil
@@ -223,6 +238,11 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	})
 	if errAg != nil {
 		return nil, errAg
+	}
+
+	// Populate isFav field
+	if err := p.populateIsFav(ctx, result); err != nil {
+		return nil, err
 	}
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
@@ -447,6 +467,22 @@ func (p *programsvcs) Update(ctx context.Context, id string, data *models.Progra
 	return result.(*models.Program), nil
 }
 
+func (p *programsvcs) UpdateIsFav(ctx context.Context, id string, isFav bool) error {
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	filter := bson.M{"_id": _id}
+	update := bson.M{"$set": bson.M{"isFav": isFav}}
+
+	if _, err := p.repo.Patch(ctx, filter, update); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (p *programsvcs) Delete(ctx context.Context, id string) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -517,6 +553,11 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 	})
 	if errAg != nil {
 		return nil, errAg
+	}
+
+	// Populate isFav field
+	if err := p.populateIsFav(ctx, result); err != nil {
+		return nil, err
 	}
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))

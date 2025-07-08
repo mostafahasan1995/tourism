@@ -10,6 +10,7 @@ import (
 )
 
 type VisitorDto struct {
+	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
 	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
 	FullName     string                 `bson:"fullName" json:"fullName" validate:"required"`
 	Nationality  string                 `bson:"nationality" json:"nationality" validate:"required"`
@@ -96,6 +97,7 @@ type VisitorStats struct {
 type VisitorActivity struct {
 	Id           primitive.ObjectID     `bson:"_id,omitempty" json:"_id,omitempty"`
 	VisitorId    primitive.ObjectID     `bson:"visitorId" json:"visitorId"`
+	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId"`
 	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId"`
 	ActivityType string                 `bson:"activityType" json:"activityType"` // "visit", "inquiry", "booking", etc.
 	Description  string                 `bson:"description" json:"description"`

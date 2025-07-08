@@ -15,6 +15,7 @@ import (
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
+	exhibitionmanagement "larsa-tourism-microservices/pkg/services/exhibition-management/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
 	marketing "larsa-tourism-microservices/pkg/services/marketing/di"
 	member "larsa-tourism-microservices/pkg/services/member/di"
@@ -99,11 +100,14 @@ func Start() error {
 	//db service
 	dbsvcs.Init(injector, r)
 
+	// interactions must be initialized before modules that depend on FaveSvcs
+	interactions.Init(injector, r)
+
 	picklist.Init(injector, r)
 	home.Init(injector, r)
 	member.Init(injector, r)
 	ourService.Init(injector, r)
-	interactions.Init(injector, r)
+	exhibitionmanagement.Init(injector, r)
 	marketing.Init(injector, r)
 	statistics.Init(injector, r)
 	transtest.Init(injector, r)

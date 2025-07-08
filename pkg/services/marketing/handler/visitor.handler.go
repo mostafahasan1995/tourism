@@ -11,6 +11,8 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"larsa-tourism-microservices/pkg/query"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/do"
@@ -56,6 +58,11 @@ func NewVisitorHandler(i *do.Injector, r *chi.Mux) {
 
 		r.Get("/hotel/{hotelId}", helpers.Make(h.GetByHotelId))
 		r.Get("/hotel/{hotelId}/stats", helpers.Make(h.GetHotelStats))
+	})
+
+	// v2 routes with filter support
+	r.Route("/marketing/visitors/v2", func(r chi.Router) {
+		r.Post("/", helpers.Make(h.GetV2))
 	})
 }
 
@@ -448,6 +455,28 @@ func (h *VisitorHandler) GetVisitorActivities(w http.ResponseWriter, r *http.Req
 	}
 
 	result, err := h.visitorSvcs.GetVisitorActivities(ctx, id, skip, limit)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// GetV2 - Get visitors with filters in request body
+func (h *VisitorHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.visitorSvcs.GetV2(ctx, skip, limit, &query)
 	if err != nil {
 		return err
 	}

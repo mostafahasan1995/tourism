@@ -31,6 +31,7 @@ import (
 type Program struct {
 	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	ProgramDto `bson:",inline"`
+	IsFav      bool               `bson:"isFav" json:"isFav"`
 	Trash      bool               `bson:"trash" json:"trash"`
 	CreatedAt  time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy  primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
@@ -68,6 +69,7 @@ type ProgramRes struct {
 	CustomerName  transl.Localizable[string] `bson:"customerName" json:"customerName"`
 	PackageName   transl.Localizable[string] `bson:"packageName" json:"packageName"`
 	Duration      int                        `bson:"duration" json:"duration"`
+	IsFav         bool                       `bson:"isFav" json:"isFav"`
 }
 
 func (p *ProgramDto) Validate(v *validator.Validate) error {

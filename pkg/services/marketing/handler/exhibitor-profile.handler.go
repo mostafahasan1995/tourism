@@ -11,6 +11,8 @@ import (
 
 	"github.com/goccy/go-json"
 
+	"larsa-tourism-microservices/pkg/query"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/do"
@@ -52,6 +54,11 @@ func NewExhibitorProfileHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/publish", helpers.Make(h.Publish))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/unpublish", helpers.Make(h.Unpublish))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/toggle-active", helpers.Make(h.ToggleActive))
+	})
+
+	// v2 routes with filter support
+	r.Route("/marketing/exhibitor-profiles/v2", func(r chi.Router) {
+		r.Post("/", helpers.Make(h.GetV2))
 	})
 }
 
@@ -381,6 +388,28 @@ func (h *ExhibitorProfileHandler) UpdateExhibitorRequestStatus(w http.ResponseWr
 	}
 
 	result, err := h.exhibitorProfileSvcs.UpdateExhibitorRequestStatus(ctx, id, data.Status)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// GetV2 - Get exhibitor profiles with filters in request body
+func (h *ExhibitorProfileHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.exhibitorProfileSvcs.GetV2(ctx, skip, limit, &query)
 	if err != nil {
 		return err
 	}

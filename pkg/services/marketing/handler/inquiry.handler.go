@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/marketing"
 	"larsa-tourism-microservices/pkg/services/marketing/filter"
 	"larsa-tourism-microservices/pkg/services/marketing/models"
@@ -49,6 +50,11 @@ func NewInquiryHandler(i *do.Injector, r *chi.Mux) {
 
 		r.Get("/hotel/{hotelId}", helpers.Make(h.GetByHotelId))
 		r.Get("/hotel/{hotelId}/stats", helpers.Make(h.GetHotelStats))
+	})
+
+	// v2 routes with filter support
+	r.Route("/marketing/inquiries/v2", func(r chi.Router) {
+		r.Post("/", helpers.Make(h.GetV2))
 	})
 }
 
@@ -369,3 +375,25 @@ func (h *InquiryHandler) GetUnreadCount(w http.ResponseWriter, r *http.Request) 
 // 	}
 // 	return helpers.WriteJson(w, http.StatusOK, response)
 // }
+
+// GetV2 - Get inquiries with filters in request body
+func (h *InquiryHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.inquirySvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}

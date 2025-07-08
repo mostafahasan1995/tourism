@@ -22,6 +22,7 @@ type DestinationDto struct {
 type Destination struct {
 	Id             primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	DestinationDto `bson:",inline"`
+	IsFav          bool               `bson:"isFav" json:"isFav"`
 	Trash          bool               `bson:"trash" json:"trash"`
 	CreatedBy      primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	CreatedAt      time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
@@ -29,8 +30,18 @@ type Destination struct {
 	UpdatedAt      time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 }
 
+type DestinationRes struct {
+	Destination `bson:",inline"`
+	IsFav       bool `bson:"isFav" json:"isFav"`
+}
+
 type DestinationPagination struct {
 	Destinations []Destination    `bson:"destinations" json:"destinations"`
+	Pagination   types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+type DestinationPaginationRes struct {
+	Destinations []DestinationRes `bson:"destinations" json:"destinations"`
 	Pagination   types.Pagination `bson:"pagination" json:"pagination"`
 }
 
