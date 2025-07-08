@@ -107,8 +107,8 @@ func Start() error {
 	home.Init(injector, r)
 	member.Init(injector, r)
 	ourService.Init(injector, r)
-	exhibitionmanagement.Init(injector, r)
 	marketing.Init(injector, r)
+	exhibitionmanagement.Init(injector, r)
 	statistics.Init(injector, r)
 	transtest.Init(injector, r)
 

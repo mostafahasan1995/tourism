@@ -6,6 +6,8 @@ import (
 	"larsa-tourism-microservices/pkg/query"
 	exhibition_management "larsa-tourism-microservices/pkg/services/exhibition-management"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
+	"larsa-tourism-microservices/pkg/services/marketing"
+	"larsa-tourism-microservices/pkg/services/marketing/filter"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 
@@ -17,14 +19,20 @@ import (
 )
 
 type ExhibitionHandler struct {
-	exhibitionSvcs     exhibition_management.ExhibitionSvcs
-	validationInstance *validator.Validate
+	exhibitionSvcs       exhibition_management.ExhibitionSvcs
+	validationInstance   *validator.Validate
+	visitorSvcs          marketing.VisitorSvcs
+	exhibitorProfileSvcs marketing.ExhibitorProfileSvcs
+	inquirySvcs          marketing.InquirySvcs
 }
 
 func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 	h := &ExhibitionHandler{
-		exhibitionSvcs:     do.MustInvoke[exhibition_management.ExhibitionSvcs](i),
-		validationInstance: do.MustInvoke[*validator.Validate](i),
+		exhibitionSvcs:       do.MustInvoke[exhibition_management.ExhibitionSvcs](i),
+		validationInstance:   do.MustInvoke[*validator.Validate](i),
+		visitorSvcs:          do.MustInvoke[marketing.VisitorSvcs](i),
+		exhibitorProfileSvcs: do.MustInvoke[marketing.ExhibitorProfileSvcs](i),
+		inquirySvcs:          do.MustInvoke[marketing.InquirySvcs](i),
 	}
 
 	r.Route("/exhibitions", func(r chi.Router) {
@@ -49,6 +57,7 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 
 		// Marketing-related routes
 		r.Route("/{exhibitionId}/marketing", func(r chi.Router) {
+			r.Get("/", helpers.Make(h.GetExhibitionMarketing))
 			r.Get("/visitors", helpers.Make(h.GetExhibitionVisitors))
 			r.Get("/requests", helpers.Make(h.GetExhibitionRequests))
 			r.Get("/inquiries", helpers.Make(h.GetExhibitionInquiries))
@@ -299,16 +308,57 @@ func (h *ExhibitionHandler) DebugRaw(w http.ResponseWriter, r *http.Request) err
 }
 
 // Marketing-related methods (These should be moved to marketing module or inject marketing services)
+func (h *ExhibitionHandler) GetExhibitionMarketing(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	response := map[string]interface{}{
+		"exhibitionId": exhibitionId,
+		"availableEndpoints": map[string]string{
+			"visitors":  "/exhibitions/" + exhibitionId + "/marketing/visitors",
+			"requests":  "/exhibitions/" + exhibitionId + "/marketing/requests",
+			"inquiries": "/exhibitions/" + exhibitionId + "/marketing/inquiries",
+			"stats":     "/exhibitions/" + exhibitionId + "/marketing/stats",
+		},
+		"description": "Marketing data and analytics for exhibition",
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
+}
+
 func (h *ExhibitionHandler) GetExhibitionVisitors(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	exhibitionId := chi.URLParam(r, "exhibitionId")
 
-	// TODO: Query marketing.visitors collection where exhibitionId = exhibitionId
-	// For now, return placeholder response
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Create empty filter - note: current visitor filter doesn't support exhibition filtering
+	// This would need to be implemented by adding ExhibitionId to VisitorFilter
+	filterQuery := filter.VisitorFilter{}
+
+	result, err := h.visitorSvcs.Get(ctx, skip, limit, filterQuery)
+	if err != nil {
+		return err
+	}
+
+	// Add note about exhibition filtering
 	response := map[string]interface{}{
-		"message":      "This endpoint should query visitors collection by exhibitionId: " + exhibitionId,
+		"note":         "Currently showing all visitors - exhibition-specific filtering needs to be implemented",
 		"exhibitionId": exhibitionId,
-		"note":         "Implement by querying marketing.visitors where exhibitionId = " + exhibitionId,
+		"data":         result,
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
@@ -318,11 +368,30 @@ func (h *ExhibitionHandler) GetExhibitionRequests(w http.ResponseWriter, r *http
 	ctx, _ := util.AddCtxAppCfg(r)
 	exhibitionId := chi.URLParam(r, "exhibitionId")
 
-	// TODO: Query marketing.exhibitor_requests collection where exhibitionId = exhibitionId
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Create empty filter - note: current filter doesn't support exhibition filtering
+	// This would need to be implemented by adding ExhibitionId to ExhibitorRequestFilter
+	filterQuery := filter.ExhibitorRequestFilter{}
+
+	result, err := h.exhibitorProfileSvcs.GetExhibitorRequests(ctx, skip, limit, filterQuery)
+	if err != nil {
+		return err
+	}
+
+	// Add note about exhibition filtering
 	response := map[string]interface{}{
-		"message":      "This endpoint should query exhibitor requests collection by exhibitionId: " + exhibitionId,
+		"note":         "Currently showing all exhibitor requests - exhibition-specific filtering needs to be implemented",
 		"exhibitionId": exhibitionId,
-		"note":         "Implement by querying marketing.exhibitor_requests where exhibitionId = " + exhibitionId,
+		"data":         result,
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
@@ -332,11 +401,30 @@ func (h *ExhibitionHandler) GetExhibitionInquiries(w http.ResponseWriter, r *htt
 	ctx, _ := util.AddCtxAppCfg(r)
 	exhibitionId := chi.URLParam(r, "exhibitionId")
 
-	// TODO: Query marketing.inquiries collection where exhibitionId = exhibitionId
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Create empty filter - note: current filter doesn't support exhibition filtering
+	// This would need to be implemented by adding ExhibitionId to InquiryFilter
+	filterQuery := filter.InquiryFilter{}
+
+	result, err := h.inquirySvcs.Get(ctx, skip, limit, filterQuery)
+	if err != nil {
+		return err
+	}
+
+	// Add note about exhibition filtering
 	response := map[string]interface{}{
-		"message":      "This endpoint should query inquiries collection by exhibitionId: " + exhibitionId,
+		"note":         "Currently showing all inquiries - exhibition-specific filtering needs to be implemented",
 		"exhibitionId": exhibitionId,
-		"note":         "Implement by querying marketing.inquiries where exhibitionId = " + exhibitionId,
+		"data":         result,
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
@@ -346,15 +434,25 @@ func (h *ExhibitionHandler) GetExhibitionStats(w http.ResponseWriter, r *http.Re
 	ctx, _ := util.AddCtxAppCfg(r)
 	exhibitionId := chi.URLParam(r, "exhibitionId")
 
-	// TODO: Aggregate stats from marketing collections
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	// For now, return basic stats structure with counts set to 0
+	// Proper implementation would need exhibition-specific filtering
 	response := map[string]interface{}{
-		"message":      "This endpoint should return aggregated stats for exhibitionId: " + exhibitionId,
 		"exhibitionId": exhibitionId,
 		"stats": map[string]interface{}{
-			"totalVisitors":  0, // Count from visitors collection
-			"totalRequests":  0, // Count from exhibitor_requests collection
-			"totalInquiries": 0, // Count from inquiries collection
-			"note":           "Implement by aggregating counts from marketing collections",
+			"totalVisitors":  0,
+			"totalRequests":  0,
+			"totalInquiries": 0,
+		},
+		"note": "Exhibition-specific stats need to be implemented by adding ExhibitionId filtering to all marketing services",
+		"availableEndpoints": map[string]string{
+			"visitors":  "/exhibitions/" + exhibitionId + "/marketing/visitors",
+			"requests":  "/exhibitions/" + exhibitionId + "/marketing/requests",
+			"inquiries": "/exhibitions/" + exhibitionId + "/marketing/inquiries",
 		},
 	}
 
