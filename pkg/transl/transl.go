@@ -5,6 +5,7 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 
 	"github.com/goccy/go-json"
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 type Localizable[T any] map[string]T
@@ -55,4 +56,20 @@ func (l *Localizable[T]) GetContentByLang(lang string) T {
 	} else {
 		return (*l)["en"]
 	}
+}
+
+func (l *Localizable[T]) UnmarshalBSON(data []byte) error {
+
+	var result map[string]T
+	if err := bson.Unmarshal(data, &result); err != nil {
+		var str any = string(data)
+
+		result = map[string]T{
+			"en": str.(T),
+		}
+	}
+
+	*l = result
+
+	return nil
 }
