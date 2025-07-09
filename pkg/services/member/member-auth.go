@@ -3,12 +3,14 @@ package member
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/gateway"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/messaging"
 	messagingenums "larsa-tourism-microservices/pkg/services/messaging/enums"
 	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 	messagingtpls "larsa-tourism-microservices/pkg/services/messaging/template"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 
 	"github.com/goccy/go-json"
@@ -16,6 +18,7 @@ import (
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type MemberAuthSvcs interface {
@@ -41,6 +44,7 @@ func NewMemberAuthSvcs(i *do.Injector) (MemberAuthSvcs, error) {
 func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId primitive.ObjectID, pass string, err error) {
 	var user map[string]any
 	var password string
+	zeroId := primitive.NilObjectID
 
 	switch member := data.(type) {
 	case *models.Agent:
@@ -49,6 +53,15 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
+		role, err := m.GetAgentRole(ctx)
+		if err == nil {
+			user["roles"] = []primitive.ObjectID{role.Id}
+		} else {
+			if !errors.Is(err, mongo.ErrNoDocuments) {
+				return zeroId, "", errors.New("error getting agent role")
+			}
+		}
+
 		password = member.Security.NewPassword
 	case *models.Customer:
 		user = map[string]any{
@@ -66,8 +79,6 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 	user["password"] = password
 
 	resp, err := m.gateway.Request(ctx, "users", "users/", "POST", "", user)
-
-	zeroId := primitive.NilObjectID
 
 	if err != nil {
 		return zeroId, "", errors.New("error adding user")
@@ -110,6 +121,14 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, password string,
 			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
+		}
+		role, err := m.GetAgentRole(ctx)
+		if err == nil {
+			user["roles"] = []primitive.ObjectID{role.Id}
+		} else {
+			if !errors.Is(err, mongo.ErrNoDocuments) {
+				return errors.New("error getting agent role")
+			}
 		}
 		id = member.Id.Hex()
 	case *models.Customer:
@@ -310,4 +329,32 @@ func (m *memberAuthSvcs) GetAccountUpdatedEmail(ctx context.Context, password st
 	}
 
 	return msg, nil
+}
+
+func (m *memberAuthSvcs) GetAgentRole(ctx context.Context) (*types.Role, error) {
+	serviceToken, err := common.GetServiceToken("tourism", &common.HeaderParams{})
+	if err != nil {
+		return nil, errors.New("error getting service token")
+	}
+
+	name := "tourismAgent"
+	path := fmt.Sprintf("roles/?query={\"name\":{\"$eq\":\"%s\"}}", name)
+
+	resp, err := m.gateway.Request(ctx, "users", path, "GET", serviceToken, map[string]any{})
+
+	if err != nil {
+		return nil, err
+	}
+
+	var result types.RoleList
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return nil, err
+	}
+
+	if len(result.Roles) == 0 {
+		return nil, mongo.ErrNoDocuments
+	}
+
+	return &result.Roles[0], nil
+
 }
