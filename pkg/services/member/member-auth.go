@@ -54,14 +54,14 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 			"email":     member.Security.Email,
 		}
 		role, err := m.GetAgentRole(ctx)
-		if err == nil {
-			user["roles"] = []primitive.ObjectID{role.Id}
-		} else {
-			if !errors.Is(err, mongo.ErrNoDocuments) {
-				return zeroId, "", errors.New("error getting agent role")
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return zeroId, "", errors.New("no role found, make sure the role (tourismAgent) is created in the users service")
 			}
+			return zeroId, "", errors.New("error getting agent role")
 		}
 
+		user["roles"] = []primitive.ObjectID{role.Id}
 		password = member.Security.NewPassword
 	case *models.Customer:
 		user = map[string]any{
@@ -122,14 +122,7 @@ func (m *memberAuthSvcs) UpdateCredentials(ctx context.Context, password string,
 			"lastName":  "-",
 			"email":     member.Security.Email,
 		}
-		role, err := m.GetAgentRole(ctx)
-		if err == nil {
-			user["roles"] = []primitive.ObjectID{role.Id}
-		} else {
-			if !errors.Is(err, mongo.ErrNoDocuments) {
-				return errors.New("error getting agent role")
-			}
-		}
+
 		id = member.Id.Hex()
 	case *models.Customer:
 		user = map[string]any{
@@ -358,3 +351,33 @@ func (m *memberAuthSvcs) GetAgentRole(ctx context.Context) (*types.Role, error) 
 	return &result.Roles[0], nil
 
 }
+
+// func (m *memberAuthSvcs) GetRelatedUser(ctx context.Context, id string) (*common.User, error) {
+// 	serviceToken, err := common.GetServiceToken("tourism", &common.HeaderParams{})
+// 	if err != nil {
+// 		return nil, errors.New("error getting service token")
+// 	}
+
+// 	path := fmt.Sprintf("users/all?query={\"_id\":{\"$eq\":\"oid(%s)\"}}", id)
+
+// 	resp, err := m.gateway.Request(ctx, "users", path, "GET", serviceToken, map[string]any{})
+
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	type aux struct {
+// 		Users []common.User `json:"users"`
+// 	}
+
+// 	var result aux
+// 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+// 		return nil, err
+// 	}
+
+// 	if len(result.Users) == 0 {
+// 		return nil, mongo.ErrNoDocuments
+// 	}
+
+// 	return &result.Users[0], nil
+// }

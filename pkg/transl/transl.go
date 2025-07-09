@@ -58,6 +58,7 @@ func (l *Localizable[T]) GetContentByLang(lang string) T {
 	}
 }
 
+// todo: no need for this function
 func (l *Localizable[T]) UnmarshalBSON(data []byte) error {
 
 	var result map[string]T
