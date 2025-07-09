@@ -230,6 +230,7 @@ type PoliciesPage struct {
 type Hotels struct {
 	HotelsDto `bson:",inline"`
 	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	IsFav     bool               `bson:"isFav" json:"isFav"`
 	Trash     bool               `bson:"trash" json:"trash"`
 	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
@@ -244,6 +245,11 @@ type HotelsRes struct {
 
 type HotelsPagination struct {
 	Hotels     []Hotels         `bson:"hotels" json:"hotels"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+type HotelsPaginationRes struct {
+	Hotels     []HotelsRes      `bson:"hotels" json:"hotels"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
 

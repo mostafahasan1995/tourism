@@ -32,15 +32,16 @@ type InquiryReply struct {
 }
 
 type InquiryDto struct {
-	HotelId     primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
-	VisitorName string                 `bson:"visitorName" json:"visitorName" validate:"required"`
-	Email       string                 `bson:"email" json:"email" validate:"required,email"`
-	Phone       string                 `bson:"phone,omitempty" json:"phone,omitempty"`
-	Message     string                 `bson:"message" json:"message" validate:"required"`
-	Subject     string                 `bson:"subject,omitempty" json:"subject,omitempty"`
-	Priority    string                 `bson:"priority" json:"priority" validate:"oneof=low medium high urgent"`
-	Source      string                 `bson:"source" json:"source"` // "chat", "contact_form", "email", etc.
-	Metadata    map[string]interface{} `bson:"metadata,omitempty" json:"metadata,omitempty"`
+	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
+	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
+	VisitorName  string                 `bson:"visitorName" json:"visitorName" validate:"required"`
+	Email        string                 `bson:"email" json:"email" validate:"required,email"`
+	Phone        string                 `bson:"phone,omitempty" json:"phone,omitempty"`
+	Message      string                 `bson:"message" json:"message" validate:"required"`
+	Subject      string                 `bson:"subject,omitempty" json:"subject,omitempty"`
+	Priority     string                 `bson:"priority" json:"priority" validate:"oneof=low medium high urgent"`
+	Source       string                 `bson:"source" json:"source"` // "chat", "contact_form", "email", etc.
+	Metadata     map[string]interface{} `bson:"metadata,omitempty" json:"metadata,omitempty"`
 }
 
 func (i *InquiryDto) Validate(v *validator.Validate) error {

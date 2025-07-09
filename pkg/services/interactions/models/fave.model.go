@@ -10,15 +10,16 @@ import (
 type FaveType string
 
 const (
-	FaveTypeProgram    FaveType = "program"
-	FaveTypeHotel      FaveType = "hotel"
-	FaveTypeDiary      FaveType = "diary"
-	FaveTypeExhibition FaveType = "exhibition"
-	FaveTypeAgent      FaveType = "agent"
+	FaveTypeProgram     FaveType = "program"
+	FaveTypeHotel       FaveType = "hotel"
+	FaveTypeDiary       FaveType = "diary"
+	FaveTypeExhibition  FaveType = "exhibition"
+	FaveTypeAgent       FaveType = "agent"
+	FaveTypeDestination FaveType = "destination"
 )
 
 type FaveDto struct {
-	Type  FaveType           `bson:"type" json:"type" validate:"required,oneof=program hotel diary exhibition agent"` //program - hotel - diary - exhibition
+	Type  FaveType           `bson:"type" json:"type" validate:"required,oneof=program hotel diary exhibition agent destination"` //program - hotel - diary - exhibition - agent - destination
 	RefId primitive.ObjectID `bson:"refId" json:"refId" validate:"required"`
 	IsFav bool               `bson:"isFav" json:"isFav"`
 }

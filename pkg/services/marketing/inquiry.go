@@ -3,6 +3,7 @@ package marketing
 import (
 	"context"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/marketing/filter"
 	"larsa-tourism-microservices/pkg/services/marketing/models"
 	"larsa-tourism-microservices/pkg/services/marketing/repo"
@@ -20,6 +21,7 @@ import (
 type InquirySvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Inquiry, error)
 	Get(ctx context.Context, skip, limit int64, filterQuery filter.InquiryFilter) (*models.InquiryPagination, error)
+	GetV2(ctx context.Context, skip, limit int64, filters *query.Conditions) (*models.InquiryPagination, error)
 	Add(ctx context.Context, data *models.InquiryDto) (*models.Inquiry, error)
 	Update(ctx context.Context, id string, data *models.InquiryDto) (*models.Inquiry, error)
 	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Inquiry, error)
@@ -70,6 +72,82 @@ func (s *inquirySvcs) Get(ctx context.Context, skip, limit int64, filterQuery fi
 		{"$skip": skip},
 		{"$limit": limit},
 	}
+
+	var result []models.Inquiry
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.InquiryPagination{
+		Inquiries:  result,
+		Pagination: pagination,
+	}, nil
+}
+
+// GetV2 retrieves inquiries with pagination and advanced filters
+func (s *inquirySvcs) GetV2(ctx context.Context, skip, limit int64, filters *query.Conditions) (*models.InquiryPagination, error) {
+	// Start with base match condition
+	match := bson.M{}
+
+	// Convert filter conditions to MongoDB filter
+	if filters != nil && len(filters.Columns) > 0 {
+		filterBson, err := filters.ConvertToMongo()
+		if err != nil {
+			return nil, helpers.BadRequest("Invalid filter conditions: " + err.Error())
+		}
+
+		// Check if user is explicitly filtering on trash field
+		hasTrashFilter := false
+		for _, column := range filters.Columns {
+			if column.Name == "trash" {
+				hasTrashFilter = true
+				break
+			}
+		}
+
+		// If user filters have content
+		if len(filterBson) > 0 {
+			if hasTrashFilter {
+				// User is explicitly filtering trash, so don't add our base condition
+				match = filterBson
+			} else {
+				// User is not filtering trash, so add our base condition to exclude trash
+				match = bson.M{
+					"$and": []bson.M{
+						{"trash": false},
+						filterBson,
+					},
+				}
+			}
+		} else {
+			// No valid filters, use base condition
+			match = bson.M{"trash": false}
+		}
+	} else {
+		// No filters provided, use base condition
+		match = bson.M{"trash": false}
+	}
+
+	pipeline := []bson.M{{"$match": match}}
+
+	count, err := s.repo.Count(ctx, pipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"createdAt": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
 
 	var result []models.Inquiry
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
