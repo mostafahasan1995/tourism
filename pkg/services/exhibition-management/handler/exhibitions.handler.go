@@ -268,17 +268,17 @@ func (h *ExhibitionHandler) GetV2(w http.ResponseWriter, r *http.Request) error 
 
 	skip, limit, err := util.Paginate(r)
 	if err != nil {
-		return helpers.InternalServerError(err.Error())
+		return err
 	}
 
 	var query query.Conditions
 	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
-		return helpers.InternalServerError(err.Error())
+		return err
 	}
 
 	result, err := h.exhibitionSvcs.GetV2(ctx, skip, limit, &query)
 	if err != nil {
-		return helpers.InternalServerError(err.Error())
+		return err
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
