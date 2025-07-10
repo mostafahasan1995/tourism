@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"time"
 
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
@@ -26,6 +28,10 @@ type ContactUsSvcs interface {
 	Update(ctx context.Context, id string, data *models.ContactUsDto) error
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
+
+	// V2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ContactUsPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ContactUs, error)
 }
 
 type contactUssvcs struct {
@@ -314,4 +320,77 @@ func (a *contactUssvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// V2
+func (a *contactUssvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ContactUsPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+	count, err := a.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.ContactUs
+	err = a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pg := common.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+	return &models.ContactUsPagination{
+		ContactUs:  result,
+		Pagination: pg,
+	}, nil
+}
+
+func (a *contactUssvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ContactUs, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+	pipline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.ContactUs
+	err = a.repo.Aggregate(ctx, pipline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

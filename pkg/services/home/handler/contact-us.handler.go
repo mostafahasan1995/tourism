@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
@@ -95,6 +96,12 @@ func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+
+		// V2
+		r.Route("/v2", func(r chi.Router) {
+			r.Post("/", helpers.Make(h.GetV2))
+			r.Post("/all", helpers.Make(h.GetAllV2))
+		})
 	})
 
 }
@@ -253,4 +260,36 @@ func (l *ContactUsHandler) AddMany(w http.ResponseWriter, r *http.Request) error
 	}
 	w.WriteHeader(http.StatusOK)
 	return nil
+}
+
+// V2:
+func (l *ContactUsHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := l.contactUssvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (l *ContactUsHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+	result, err := l.contactUssvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
