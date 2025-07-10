@@ -1,17 +1,15 @@
 package handler
 
 import (
-	"context"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/interactions"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
-	"time"
 
 	"github.com/goccy/go-json"
-	"go.mongodb.org/mongo-driver/bson"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -91,10 +89,10 @@ func (h *FaveHandler) Patch(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	// Update the entity's isFav field if both type and refId are provided
-	if data.Type != "" && !data.RefId.IsZero() {
-		h.updateEntityIsFav(ctx, data.Type, data.RefId, data.IsFav)
-	}
+	// // Update the entity's isFav field if both type and refId are provided
+	// if data.Type != "" && !data.RefId.IsZero() {
+	// 	h.updateEntityIsFav(ctx, data.Type, data.RefId, data.IsFav)
+	// }
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
@@ -146,49 +144,49 @@ func (h *FaveHandler) Get(w http.ResponseWriter, r *http.Request) error {
 
 }
 
-// Helper method to update entity isFav field based on favorite type
-func (h *FaveHandler) updateEntityIsFav(ctx context.Context, faveType models.FaveType, refId primitive.ObjectID, isFav bool) {
-	// Update entity asynchronously to avoid blocking the response
-	// If it fails, it's not critical as the favorite is still saved
-	go func() {
-		cfg, err := util.GetReqAppCfg(ctx)
-		if err != nil {
-			return
-		}
+// // Helper method to update entity isFav field based on favorite type
+// func (h *FaveHandler) updateEntityIsFav(ctx context.Context, faveType models.FaveType, refId primitive.ObjectID, isFav bool) {
+// 	// Update entity asynchronously to avoid blocking the response
+// 	// If it fails, it's not critical as the favorite is still saved
+// 	go func() {
+// 		cfg, err := util.GetReqAppCfg(ctx)
+// 		if err != nil {
+// 			return
+// 		}
 
-		// Get the collection name based on favorite type
-		var collectionName string
-		switch faveType {
-		case models.FaveTypeProgram:
-			collectionName = "tourismPrograms"
-		case models.FaveTypeHotel:
-			collectionName = "tourismHotels"
-		case models.FaveTypeDestination:
-			collectionName = "tourismDestinations"
-		case models.FaveTypeExhibition:
-			collectionName = "tourismExhibitions"
-		case models.FaveTypeDiary:
-			collectionName = "tourismDiaries"
-		case models.FaveTypeAgent:
-			collectionName = "tourismAgents"
-		default:
-			return // Unknown type, skip update
-		}
+// 		// Get the collection name based on favorite type
+// 		var collectionName string
+// 		switch faveType {
+// 		case models.FaveTypeProgram:
+// 			collectionName = "tourismPrograms"
+// 		case models.FaveTypeHotel:
+// 			collectionName = "tourismHotels"
+// 		case models.FaveTypeDestination:
+// 			collectionName = "tourismDestinations"
+// 		case models.FaveTypeExhibition:
+// 			collectionName = "tourismExhibitions"
+// 		case models.FaveTypeDiary:
+// 			collectionName = "tourismDiaries"
+// 		case models.FaveTypeAgent:
+// 			collectionName = "tourismAgents"
+// 		default:
+// 			return // Unknown type, skip update
+// 		}
 
-		// Update the entity's isFav field directly in the database
-		collection := h.db.Database(cfg.Db).Collection(collectionName)
-		filter := bson.M{"_id": refId}
-		update := bson.M{
-			"$set": bson.M{
-				"isFav":     isFav,
-				"updatedAt": time.Now(),
-			},
-		}
+// 		// Update the entity's isFav field directly in the database
+// 		collection := h.db.Database(cfg.Db).Collection(collectionName)
+// 		filter := bson.M{"_id": refId}
+// 		update := bson.M{
+// 			"$set": bson.M{
+// 				"isFav":     isFav,
+// 				"updatedAt": time.Now(),
+// 			},
+// 		}
 
-		// Perform the update - don't worry about errors since this is supplementary
-		_, _ = collection.UpdateOne(ctx, filter, update)
-	}()
-}
+// 		// Perform the update - don't worry about errors since this is supplementary
+// 		_, _ = collection.UpdateOne(ctx, filter, update)
+// 	}()
+// }
 
 func (h *FaveHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
@@ -223,7 +221,7 @@ func (h *FaveHandler) Add(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	// Update the entity's isFav field
-	h.updateEntityIsFav(ctx, data.Type, data.RefId, data.IsFav)
+	// h.updateEntityIsFav(ctx, data.Type, data.RefId, data.IsFav)
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

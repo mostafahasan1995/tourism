@@ -38,8 +38,13 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/exhibitions", func(r chi.Router) {
 		// Public routes
 		r.Get("/", helpers.Make(h.Get))
+		r.Get("/all", helpers.Make(h.GetAll))
 		r.Get("/{id}", helpers.Make(h.GetById))
 		r.Get("/{id}/related", helpers.Make(h.GetRelatedExhibitions))
+
+		// Authenticated routes
+		r.With(middleware.Auth("authenticate")).Get("/auth", helpers.Make(h.GetAuth))
+		r.With(middleware.Auth("authenticate")).Get("/all/auth", helpers.Make(h.GetAllAuth))
 
 		// Protected routes
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Save))
@@ -86,6 +91,44 @@ func (h *ExhibitionHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.exhibitionSvcs.Get(ctx, skip, limit)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.exhibitionSvcs.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) GetAuth(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	result, err := h.exhibitionSvcs.GetAuth(ctx, skip, limit)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) GetAllAuth(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.exhibitionSvcs.GetAllAuth(ctx)
 	if err != nil {
 		return err
 	}
