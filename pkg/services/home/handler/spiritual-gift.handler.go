@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -35,6 +36,12 @@ func NewSpiritualGiftHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/toggle", helpers.Make(h.Toggle))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+
+		// V2
+		r.Route("/v2", func(r chi.Router) {
+			r.Post("/", helpers.Make(h.GetV2))
+			r.Post("/all", helpers.Make(h.GetAllV2))
+		})
 	})
 }
 
@@ -174,4 +181,35 @@ func (h *SpiritualGiftHandler) Delete(w http.ResponseWriter, r *http.Request) er
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{
 		"message": "Spiritual gift configuration deleted successfully",
 	})
+}
+
+func (h *SpiritualGiftHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.spiritualGiftSvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *SpiritualGiftHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+	result, err := h.spiritualGiftSvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

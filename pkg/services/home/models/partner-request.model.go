@@ -4,6 +4,7 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -43,4 +44,9 @@ type PartnerRequest struct {
 	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+}
+
+type PartnerRequestPagination struct {
+	PartnerRequests []PartnerRequest  `bson:"partnerRequests" json:"partnerRequests"`
+	Pagination      common.Pagination `bson:"pagination" json:"pagination"`
 }

@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
@@ -42,6 +43,12 @@ func NewFaqHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.UpdatePage))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.PatchPage))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.DeletePage))
+
+		//V2
+		r.Route("/v2", func(r chi.Router) {
+			r.Post("/", helpers.Make(h.GetPagesV2))
+			r.Post("/all", helpers.Make(h.GetAllPagesV2))
+		})
 	})
 
 	// FAQ Groups routes - nested under FAQ pages
@@ -55,6 +62,12 @@ func NewFaqHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.UpdateGroup))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.PatchGroup))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.DeleteGroup))
+
+		// V2
+		r.Route("/v2", func(r chi.Router) {
+			r.Post("/", helpers.Make(h.GetGroupsV2))
+			r.Post("/all", helpers.Make(h.GetAllGroupsV2))
+		})
 	})
 
 	// FAQ Groups routes - simplified without page ID requirement
@@ -80,6 +93,12 @@ func NewFaqHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.UpdateQuestion))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.PatchQuestion))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.DeleteQuestion))
+
+		// V2
+		r.Route("/v2", func(r chi.Router) {
+			r.Post("/", helpers.Make(h.GetQuestionsV2))
+			r.Post("/all", helpers.Make(h.GetAllQuestionsV2))
+		})
 	})
 
 	// FAQ Questions routes - general questions (no group)
@@ -364,6 +383,39 @@ func (h *FaqHandler) InitializeStaticPages(w http.ResponseWriter, r *http.Reques
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
+// V2:
+
+func (h *FaqHandler) GetPagesV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.faqPageSvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *FaqHandler) GetAllPagesV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+	result, err := h.faqPageSvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
 // =============================================================================
 // FAQ GROUP HANDLERS
 // =============================================================================
@@ -563,6 +615,39 @@ func (h *FaqHandler) DeleteGroup(w http.ResponseWriter, r *http.Request) error {
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
+// V2:
+
+func (h *FaqHandler) GetGroupsV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.faqGroupSvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *FaqHandler) GetAllGroupsV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+	result, err := h.faqGroupSvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
 // =============================================================================
 // FAQ QUESTION HANDLERS
 // =============================================================================
@@ -710,6 +795,39 @@ func (h *FaqHandler) DeleteQuestion(w http.ResponseWriter, r *http.Request) erro
 		"message": "FAQ question deleted successfully",
 	}
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
+}
+
+// V2:
+
+func (h *FaqHandler) GetQuestionsV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.faqQuestionSvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *FaqHandler) GetAllQuestionsV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+	result, err := h.faqQuestionSvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 // Debug route - temporary for troubleshooting
