@@ -8,14 +8,17 @@ import (
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
 	"larsa-tourism-microservices/pkg/services/marketing"
 	"larsa-tourism-microservices/pkg/services/marketing/filter"
+	marketingModels "larsa-tourism-microservices/pkg/services/marketing/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
+	"time"
 
 	"github.com/goccy/go-json"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-playground/validator/v10"
 	"github.com/samber/do"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type ExhibitionHandler struct {
@@ -49,6 +52,7 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 		// Protected routes
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Save))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/toggle", helpers.Make(h.Toggle))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 
@@ -61,24 +65,34 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 		})
 
 		// Marketing-related routes
-		r.Route("/{exhibitionId}/marketing", func(r chi.Router) {
-			r.Get("/", helpers.Make(h.GetExhibitionMarketing))
-			r.Get("/visitors", helpers.Make(h.GetExhibitionVisitors))
-			r.Get("/requests", helpers.Make(h.GetExhibitionRequests))
-			r.Get("/inquiries", helpers.Make(h.GetExhibitionInquiries))
-			r.Get("/stats", helpers.Make(h.GetExhibitionStats))
+		r.Route("/{exhibitionId}/visitors", func(r chi.Router) {
+			r.Get("/", helpers.Make(h.GetExhibitionVisitors))
+			r.Get("/stats", helpers.Make(h.GetExhibitionVisitorStats))
+			r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.AddExhibitionVisitor))
 		})
+
+		r.Route("/{exhibitionId}/inquiries", func(r chi.Router) {
+			r.Get("/", helpers.Make(h.GetExhibitionInquiries))
+			r.Get("/stats", helpers.Make(h.GetExhibitionInquiryStats))
+			r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.AddExhibitionInquiry))
+		})
+
+		r.Route("/{exhibitionId}/exhibitor-profiles", func(r chi.Router) {
+			r.Get("/", helpers.Make(h.GetExhibitionProfiles))
+			r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.AddExhibitionProfile))
+		})
+
+		// Overall marketing stats for exhibition
+		r.Get("/{exhibitionId}/marketing/stats", helpers.Make(h.GetExhibitionMarketingStats))
+
+		// Debug routes - remove in production
+		r.Get("/debug/count", helpers.Make(h.DebugCount))
+		r.Get("/debug/raw", helpers.Make(h.DebugRaw))
 	})
 
 	// v2 routes with filter support
 	r.Route("/exhibitions/v2", func(r chi.Router) {
 		r.Post("/", helpers.Make(h.GetV2))
-	})
-
-	// Debug routes (remove in production)
-	r.Route("/exhibitions/debug", func(r chi.Router) {
-		r.Get("/count", helpers.Make(h.DebugCount))
-		r.Get("/raw", helpers.Make(h.DebugRaw))
 	})
 }
 
@@ -196,6 +210,23 @@ func (h *ExhibitionHandler) Update(w http.ResponseWriter, r *http.Request) error
 	}
 
 	result, err := h.exhibitionSvcs.Update(ctx, id, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) Patch(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	id := chi.URLParam(r, "id")
+
+	var updates map[string]interface{}
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &updates); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	result, err := h.exhibitionSvcs.Patch(ctx, id, updates)
 	if err != nil {
 		return err
 	}
@@ -388,23 +419,79 @@ func (h *ExhibitionHandler) GetExhibitionVisitors(w http.ResponseWriter, r *http
 		return err
 	}
 
-	// Create empty filter - note: current visitor filter doesn't support exhibition filtering
-	// This would need to be implemented by adding ExhibitionId to VisitorFilter
-	filterQuery := filter.VisitorFilter{}
-
-	result, err := h.visitorSvcs.Get(ctx, skip, limit, filterQuery)
+	result, err := h.visitorSvcs.GetV2(ctx, skip, limit, &query.Conditions{
+		Columns: []query.Column{
+			{Name: "exhibitionId", Value: exhibitionId, Exp: "="},
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	// Add note about exhibition filtering
-	response := map[string]interface{}{
-		"note":         "Currently showing all visitors - exhibition-specific filtering needs to be implemented",
-		"exhibitionId": exhibitionId,
-		"data":         result,
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) GetExhibitionVisitorStats(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
 	}
 
-	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
+	// Convert exhibitionId to ObjectID
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return helpers.BadRequest("Invalid exhibition ID")
+	}
+
+	// Get stats for this specific exhibition
+	result, err := h.visitorSvcs.GetStats(ctx, &exhibitionObjectId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) AddExhibitionVisitor(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	var data marketingModels.VisitorDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	// Set exhibitionId from URL parameter
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return helpers.BadRequest("Invalid exhibition ID")
+	}
+	data.ExhibitionId = exhibitionObjectId
+
+	// If no hotelId provided, use zero ObjectID (exhibition visitor without hotel)
+	if data.HotelId.IsZero() {
+		data.HotelId = primitive.NilObjectID
+	}
+
+	// Validate the data (hotelId is still required in struct but we allow NilObjectID)
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.visitorSvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
 }
 
 func (h *ExhibitionHandler) GetExhibitionRequests(w http.ResponseWriter, r *http.Request) error {
@@ -454,26 +541,20 @@ func (h *ExhibitionHandler) GetExhibitionInquiries(w http.ResponseWriter, r *htt
 		return err
 	}
 
-	// Create empty filter - note: current filter doesn't support exhibition filtering
-	// This would need to be implemented by adding ExhibitionId to InquiryFilter
-	filterQuery := filter.InquiryFilter{}
-
-	result, err := h.inquirySvcs.Get(ctx, skip, limit, filterQuery)
+	// Get inquiries for this specific exhibition
+	result, err := h.inquirySvcs.GetV2(ctx, skip, limit, &query.Conditions{
+		Columns: []query.Column{
+			{Name: "exhibitionId", Value: exhibitionId, Exp: "="},
+		},
+	})
 	if err != nil {
 		return err
 	}
 
-	// Add note about exhibition filtering
-	response := map[string]interface{}{
-		"note":         "Currently showing all inquiries - exhibition-specific filtering needs to be implemented",
-		"exhibitionId": exhibitionId,
-		"data":         result,
-	}
-
-	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
-func (h *ExhibitionHandler) GetExhibitionStats(w http.ResponseWriter, r *http.Request) error {
+func (h *ExhibitionHandler) GetExhibitionInquiryStats(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	exhibitionId := chi.URLParam(r, "exhibitionId")
 
@@ -482,21 +563,151 @@ func (h *ExhibitionHandler) GetExhibitionStats(w http.ResponseWriter, r *http.Re
 		return err
 	}
 
-	// For now, return basic stats structure with counts set to 0
-	// Proper implementation would need exhibition-specific filtering
+	// Convert exhibitionId to ObjectID
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return helpers.BadRequest("Invalid exhibition ID")
+	}
+
+	// Get inquiry stats for this specific exhibition
+	result, err := h.inquirySvcs.GetStats(ctx, &exhibitionObjectId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) AddExhibitionInquiry(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	var data marketingModels.InquiryDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	// Set exhibitionId from URL parameter
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return helpers.BadRequest("Invalid exhibition ID")
+	}
+	data.ExhibitionId = exhibitionObjectId
+
+	// If no hotelId provided, use zero ObjectID (exhibition inquiry without hotel)
+	if data.HotelId.IsZero() {
+		data.HotelId = primitive.NilObjectID
+	}
+
+	// Validate the data (hotelId is still required in struct but we allow NilObjectID)
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.inquirySvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *ExhibitionHandler) GetExhibitionProfiles(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	// Get exhibitor profiles for this specific exhibition
+	result, err := h.exhibitorProfileSvcs.GetV2(ctx, skip, limit, &query.Conditions{
+		Columns: []query.Column{
+			{Name: "exhibitionId", Value: exhibitionId, Exp: "="},
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ExhibitionHandler) AddExhibitionProfile(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	var data marketingModels.ExhibitorProfileDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return helpers.BadRequest("Invalid JSON format")
+	}
+
+	// Set exhibitionId from URL parameter
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return helpers.BadRequest("Invalid exhibition ID")
+	}
+	data.ExhibitionId = exhibitionObjectId
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.exhibitorProfileSvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *ExhibitionHandler) GetExhibitionMarketingStats(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	exhibitionId := chi.URLParam(r, "exhibitionId")
+
+	// Validate exhibition exists
+	if err := h.exhibitionSvcs.ValidateExhibitionExists(ctx, exhibitionId); err != nil {
+		return err
+	}
+
+	// Convert exhibitionId to ObjectID
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return helpers.BadRequest("Invalid exhibition ID")
+	}
+
+	// Get comprehensive marketing stats for this exhibition
+	visitorStats, err := h.visitorSvcs.GetStats(ctx, &exhibitionObjectId)
+	if err != nil {
+		visitorStats = nil
+	}
+
+	inquiryStats, err := h.inquirySvcs.GetStats(ctx, &exhibitionObjectId)
+	if err != nil {
+		inquiryStats = nil
+	}
+
 	response := map[string]interface{}{
 		"exhibitionId": exhibitionId,
-		"stats": map[string]interface{}{
-			"totalVisitors":  0,
-			"totalRequests":  0,
-			"totalInquiries": 0,
-		},
-		"note": "Exhibition-specific stats need to be implemented by adding ExhibitionId filtering to all marketing services",
-		"availableEndpoints": map[string]string{
-			"visitors":  "/exhibitions/" + exhibitionId + "/marketing/visitors",
-			"requests":  "/exhibitions/" + exhibitionId + "/marketing/requests",
-			"inquiries": "/exhibitions/" + exhibitionId + "/marketing/inquiries",
-		},
+		"visitorStats": visitorStats,
+		"inquiryStats": inquiryStats,
+		"lastUpdated":  time.Now(),
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)

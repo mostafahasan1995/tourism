@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
@@ -11,7 +12,7 @@ import (
 
 type VisitorDto struct {
 	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
-	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
+	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId"`
 	FullName     string                 `bson:"fullName" json:"fullName" validate:"required"`
 	Nationality  string                 `bson:"nationality" json:"nationality" validate:"required"`
 	Email        string                 `bson:"email" json:"email" validate:"required,email"`
@@ -42,6 +43,42 @@ type Visitor struct {
 	CreatedAt     time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	UpdatedBy     primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 	UpdatedAt     time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+}
+
+// Custom JSON marshalling for Visitor to handle zero ObjectIDs
+func (v Visitor) MarshalJSON() ([]byte, error) {
+	type Alias Visitor
+	aux := &struct {
+		*Alias
+		ExhibitionId *primitive.ObjectID `json:"exhibitionId,omitempty"`
+		HotelId      *primitive.ObjectID `json:"hotelId,omitempty"`
+		CreatedBy    *primitive.ObjectID `json:"createdBy,omitempty"`
+		UpdatedBy    *primitive.ObjectID `json:"updatedBy,omitempty"`
+	}{
+		Alias: (*Alias)(&v),
+	}
+
+	// Handle ExhibitionId
+	if !v.ExhibitionId.IsZero() {
+		aux.ExhibitionId = &v.ExhibitionId
+	}
+
+	// Handle HotelId
+	if !v.HotelId.IsZero() {
+		aux.HotelId = &v.HotelId
+	}
+
+	// Handle CreatedBy
+	if !v.CreatedBy.IsZero() {
+		aux.CreatedBy = &v.CreatedBy
+	}
+
+	// Handle UpdatedBy
+	if !v.UpdatedBy.IsZero() {
+		aux.UpdatedBy = &v.UpdatedBy
+	}
+
+	return json.Marshal(aux)
 }
 
 type VisitorPagination struct {
@@ -103,6 +140,36 @@ type VisitorActivity struct {
 	Description  string                 `bson:"description" json:"description"`
 	Metadata     map[string]interface{} `bson:"metadata,omitempty" json:"metadata,omitempty"`
 	CreatedAt    time.Time              `bson:"createdAt" json:"createdAt"`
+}
+
+// Custom JSON marshalling for VisitorActivity to handle zero ObjectIDs
+func (va VisitorActivity) MarshalJSON() ([]byte, error) {
+	type Alias VisitorActivity
+	aux := &struct {
+		*Alias
+		VisitorId    *primitive.ObjectID `json:"visitorId,omitempty"`
+		ExhibitionId *primitive.ObjectID `json:"exhibitionId,omitempty"`
+		HotelId      *primitive.ObjectID `json:"hotelId,omitempty"`
+	}{
+		Alias: (*Alias)(&va),
+	}
+
+	// Handle VisitorId
+	if !va.VisitorId.IsZero() {
+		aux.VisitorId = &va.VisitorId
+	}
+
+	// Handle ExhibitionId
+	if !va.ExhibitionId.IsZero() {
+		aux.ExhibitionId = &va.ExhibitionId
+	}
+
+	// Handle HotelId
+	if !va.HotelId.IsZero() {
+		aux.HotelId = &va.HotelId
+	}
+
+	return json.Marshal(aux)
 }
 
 type VisitorActivityPagination struct {

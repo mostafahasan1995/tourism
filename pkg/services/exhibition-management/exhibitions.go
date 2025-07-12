@@ -2,7 +2,6 @@ package exhibition_management
 
 import (
 	"context"
-	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
@@ -28,6 +27,7 @@ type ExhibitionSvcs interface {
 	GetById(ctx context.Context, id string) (*models.Exhibition, error)
 	Save(ctx context.Context, data *models.ExhibitionDto) (*models.Exhibition, error)
 	Update(ctx context.Context, id string, data *models.ExhibitionDto) (*models.Exhibition, error)
+	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Exhibition, error)
 	Toggle(ctx context.Context, id string, isActive bool) (*models.Exhibition, error)
 	Delete(ctx context.Context, id string) error
 	GetRelatedExhibitions(ctx context.Context, id string) ([]models.Exhibition, error)
@@ -248,16 +248,10 @@ func (s *exhibitionSvcs) GetV2(ctx context.Context, skip, limit int64, filters *
 
 	// Convert filter conditions to MongoDB filter
 	if filters != nil && len(filters.Columns) > 0 {
-		// Debug: Print the incoming filter conditions
-		fmt.Printf("DEBUG: Incoming filters: %+v\n", filters.Columns)
-
 		filterBson, err := filters.ConvertToMongo()
 		if err != nil {
 			return nil, helpers.BadRequest("Invalid filter conditions: " + err.Error())
 		}
-
-		// Debug: Print the converted BSON filter
-		fmt.Printf("DEBUG: Converted BSON: %+v\n", filterBson)
 
 		// Check if user is explicitly filtering on trash field
 		hasTrashFilter := false
@@ -290,9 +284,6 @@ func (s *exhibitionSvcs) GetV2(ctx context.Context, skip, limit int64, filters *
 		// No filters provided, use base condition
 		match = bson.M{"trash": false}
 	}
-
-	// Debug: Print the final match condition
-	fmt.Printf("DEBUG: Final match: %+v\n", match)
 
 	pipeline := []bson.M{{"$match": match}}
 
@@ -568,6 +559,41 @@ func (s *exhibitionSvcs) Update(ctx context.Context, id string, data *models.Exh
 	}
 
 	return s.GetById(ctx, id)
+}
+
+// Patch updates an existing exhibition with a map of fields to update
+func (s *exhibitionSvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Exhibition, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, helpers.BadRequest("Invalid exhibition ID")
+	}
+
+	// Add audit fields to the update
+	updateDoc := bson.M{}
+	for key, value := range updates {
+		updateDoc[key] = value
+	}
+	updateDoc["updatedAt"] = time.Now()
+	updateDoc["updatedBy"] = cfg.User.Id
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$set": updateDoc}
+
+	updatedExhibition, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	if updatedExhibition == nil {
+		return nil, helpers.NotFoundError("Exhibition not found")
+	}
+
+	return updatedExhibition, nil
 }
 
 // Toggle enables or disables an exhibition
