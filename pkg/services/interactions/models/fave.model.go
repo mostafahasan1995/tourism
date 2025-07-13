@@ -11,16 +11,17 @@ import (
 type FaveType string
 
 const (
-	FaveTypeProgram     FaveType = "program" // DONE
-	FaveTypeHotel       FaveType = "hotel"   // DONE
-	FaveTypeDiary       FaveType = "diary"   // DONE
-	FaveTypeExhibition  FaveType = "exhibition"
-	FaveTypeAgent       FaveType = "agent"       // DONE
-	FaveTypeDestination FaveType = "destination" // DONE
+	FaveTypeProgram       FaveType = "program"       // DONE
+	FaveTypeHotel         FaveType = "hotel"         // DONE
+	FaveTypeTravelerStory FaveType = "travelerStory" // DONE
+	FaveTypeClientStory   FaveType = "clientStory"   // DONE
+	FaveTypeExhibition    FaveType = "exhibition"    // DONE
+	FaveTypeAgent         FaveType = "agent"         // DONE
+	FaveTypeDestination   FaveType = "destination"   // INPROGRESS
 )
 
 type FaveDto struct {
-	Type  FaveType           `bson:"type" json:"type" validate:"required,oneof=program hotel diary exhibition agent destination"` //program - hotel - diary - exhibition - agent - destination
+	Type  FaveType           `bson:"type" json:"type" validate:"required,oneof=program hotel travelerStory clientStory exhibition agent destination"` //program - hotel - diary - exhibition - agent - destination
 	RefId primitive.ObjectID `bson:"refId" json:"refId" validate:"required"`
 	IsFav bool               `bson:"isFav" json:"isFav"`
 }

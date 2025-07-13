@@ -22,7 +22,7 @@ import (
 )
 
 type DestinationSvcs interface {
-	GetOne(ctx context.Context, id string) (*models.Destination, error)
+	GetOne(ctx context.Context, id string) (*models.DestinationRes, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.DestinationPaginationRes, error)
 	GetAll(ctx context.Context, query any) ([]models.Destination, error)
 	Add(ctx context.Context, data *models.DestinationDto) (*models.Destination, error)
@@ -97,13 +97,30 @@ func (d *destinationSvcs) Get(ctx context.Context, skip, limit int64, query any)
 	}, nil
 }
 
-func (d *destinationSvcs) GetOne(ctx context.Context, id string) (*models.Destination, error) {
+func (d *destinationSvcs) GetOne(ctx context.Context, id string) (*models.DestinationRes, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, helpers.InvalidObjectId()
 	}
 
-	return d.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+	pipeline := []bson.M{{"$match": bson.M{"_id": _id, "trash": false}}}
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
+
+	var result []models.DestinationRes
+	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return &result[0], nil
 }
 
 func (d *destinationSvcs) GetAll(ctx context.Context, query any) ([]models.Destination, error) {

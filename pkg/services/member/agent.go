@@ -31,7 +31,7 @@ import (
 
 type AgentSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error)
-	GetOne(ctx context.Context, agentId string) (*models.Agent, error)
+	GetOne(ctx context.Context, agentId string) (*models.AgentRes, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.AgentWithPagination, error)
 	GetAll(ctx context.Context, query string) ([]models.Agent, error)
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
@@ -78,13 +78,34 @@ func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 }
 
 // agent
-func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.Agent, error) {
+func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.AgentRes, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
 		return nil, err
 	}
 
-	return a.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+	pipeline := []bson.M{{"$match": bson.M{"_id": _id, "trash": false}}}
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeAgent)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
+
+	var result []models.AgentRes
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	if len(result) == 0 {
+		return nil, helpers.NotFoundError("Agent not found")
+	}
+
+	return &result[0], nil
 }
 
 func (a *agentsvcs) GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error) {

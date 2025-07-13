@@ -83,7 +83,7 @@ func (t *travelexpersvcs) GetTravelerStory(ctx context.Context, storyId string) 
 
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeDiary)...)
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeTravelerStory)...)
 	} else {
 		pipeline = append(pipeline, models.BuildDefaultFavorite())
 	}
@@ -183,7 +183,7 @@ func (t *travelexpersvcs) GetTravelerStories(ctx context.Context, skip, limit in
 	// add favorite pipeline
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeDiary)...)
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeTravelerStory)...)
 	} else {
 		pipeline = append(pipeline, models.BuildDefaultFavorite())
 	}
@@ -397,7 +397,7 @@ func (t *travelexpersvcs) GetClientStories(ctx context.Context, skip, limit int6
 	// add favorite pipeline
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeDiary)...)
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeClientStory)...)
 	} else {
 		pipeline = append(pipeline, models.BuildDefaultFavorite())
 	}
@@ -586,7 +586,7 @@ func (t *travelexpersvcs) GetTravelerStoriesV2(ctx context.Context, skip, limit 
 	// add favorite pipeline
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeDiary)...)
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeTravelerStory)...)
 	} else {
 		pipeline = append(pipeline, models.BuildDefaultFavorite())
 	}
@@ -644,7 +644,7 @@ func (t *travelexpersvcs) GetClientStoriesV2(ctx context.Context, skip, limit in
 	// add favorite pipeline
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeDiary)...)
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeClientStory)...)
 	} else {
 		pipeline = append(pipeline, models.BuildDefaultFavorite())
 	}

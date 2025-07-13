@@ -25,7 +25,7 @@ import (
 )
 
 type HotelsSvcs interface {
-	GetOne(ctx context.Context, id string) (*models.Hotels, error)
+	GetOne(ctx context.Context, id string) (*models.HotelsRes, error)
 	GetAll(ctx context.Context, query any, page, perPage int64) (*models.HotelsPaginationRes, error)
 	GetAllHotels(ctx context.Context, query any) ([]models.Hotels, error)
 	GetAuth(ctx context.Context, query any, page, perPage int64) (*models.HotelsPaginationRes, error)
@@ -50,31 +50,36 @@ func NewHotelsSvcs(i *do.Injector) (HotelsSvcs, error) {
 	}, nil
 }
 
-// Helper method to convert Hotels to HotelsRes with isFav populated
-func (h *hotelsSvcs) convertToHotelsRes(ctx context.Context, hotels []models.Hotels) ([]models.HotelsRes, error) {
-	if len(hotels) == 0 {
-		return []models.HotelsRes{}, nil
-	}
-
-	// Convert to HotelsRes - isFav is now stored directly in the entity
-	result := make([]models.HotelsRes, len(hotels))
-	for i, hotel := range hotels {
-		result[i] = models.HotelsRes{
-			Hotels: hotel,
-			// IsFav:  hotel.IsFav, // Use the isFav field directly from the entity
-		}
-	}
-
-	return result, nil
-}
-
-func (h *hotelsSvcs) GetOne(ctx context.Context, id string) (*models.Hotels, error) {
+func (h *hotelsSvcs) GetOne(ctx context.Context, id string) (*models.HotelsRes, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, helpers.InvalidObjectId()
 	}
 
-	return h.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+	pipeline := []bson.M{
+		{"$match": bson.M{"_id": _id, "trash": false}},
+	}
+
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeHotel)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
+
+	var result []models.HotelsRes
+	errAg := h.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	if len(result) == 0 {
+		return nil, helpers.NotFoundError("Hotel not found")
+	}
+
+	return &result[0], nil
 }
 
 func (h *hotelsSvcs) GetAllHotels(ctx context.Context, query any) ([]models.Hotels, error) {

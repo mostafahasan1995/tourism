@@ -28,8 +28,8 @@ func NewProgramHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/programs", func(r chi.Router) {
-		r.Get("/{id}", helpers.Make(h.GetOne))
-		r.Get("/", helpers.Make(h.Get))
+		r.With(middleware.OptionalAuth()).Get("/{id}", helpers.Make(h.GetOne))
+		r.With(middleware.OptionalAuth()).Get("/", helpers.Make(h.Get))
 		r.Get("/all", helpers.Make(h.GetAll))
 
 		// Authenticated routes
