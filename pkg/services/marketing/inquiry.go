@@ -454,7 +454,7 @@ func (s *inquirySvcs) GetStats(ctx context.Context, hotelId *primitive.ObjectID)
 	}
 
 	if len(result) > 0 {
-		stats.UnreadCount = result[0].UnreadCount
+		stats.UnreadInquiries = result[0].UnreadCount
 		stats.TodayInquiries = result[0].TodayCount
 
 		// Count occurrences for breakdowns
