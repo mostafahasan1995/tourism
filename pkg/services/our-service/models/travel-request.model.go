@@ -34,8 +34,10 @@ type TravelRequestDto struct {
 	FlightTicketRequest *FlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty" validate:"required_if=ServiceType flight-request"`
 	PartnerRequest      *PartnerRequest      `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty" validate:"required_if=ServiceType partner-request"`
 	//delegation - business-man - custom-plan info
-	Destinations    []Destination      `bson:"destinations,omitempty" json:"destinations,omitempty" `
-	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"` // destination agent id
+	Destinations []Destination `bson:"destinations,omitempty" json:"destinations,omitempty" `
+
+	//This shouldn't be required but, AUTOMATICALLY set based on the starting country
+	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"` // destination agent id
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
