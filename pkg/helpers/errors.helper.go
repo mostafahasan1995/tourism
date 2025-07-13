@@ -85,6 +85,13 @@ func NotFoundError(message string) APIError {
 	)
 }
 
+func Unauthorized(message string) APIError {
+	return NewApiError(
+		http.StatusUnauthorized,
+		fmt.Errorf(message),
+	)
+}
+
 func InvalidObjectId() APIError {
 	return NewApiError(
 		http.StatusBadRequest,

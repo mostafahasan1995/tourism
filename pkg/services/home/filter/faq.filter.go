@@ -39,6 +39,7 @@ type FaqGroupFilter struct {
 	Size      int                `bson:"size" json:"size"`
 	FaqPageId primitive.ObjectID `bson:"faqPageId" json:"faqPageId"` // Filter by FAQ page
 	Name      string             `bson:"name" json:"name"`           // Search by name
+	Search    string             `bson:"search" json:"search"`       // Search in questions and answers
 	IsActive  *bool              `bson:"isActive" json:"isActive"`   // Filter by active status
 }
 
@@ -65,6 +66,16 @@ func (f *FaqGroupFilter) ToBsonFilter() bson.M {
 	}
 
 	return bson.M{"$and": filterConditions}
+}
+
+// HasQuestionSearch returns true if the filter includes search in questions/answers
+func (f *FaqGroupFilter) HasQuestionSearch() bool {
+	return f.Search != ""
+}
+
+// GetQuestionSearchTerm returns the search term for questions/answers
+func (f *FaqGroupFilter) GetQuestionSearchTerm() string {
+	return f.Search
 }
 
 // FaqQuestionFilter for filtering FAQ questions

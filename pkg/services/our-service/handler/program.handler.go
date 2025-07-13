@@ -31,13 +31,17 @@ func NewProgramHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/all", helpers.Make(h.GetAll))
+
+		// Authenticated routes
+		r.With(middleware.Auth("authenticate")).Get("/auth", helpers.Make(h.GetAuth))
+		r.With(middleware.Auth("authenticate")).Get("/all/auth", helpers.Make(h.GetAllAuth))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
 
 	r.Route("/programs/v2", func(r chi.Router) {
-		r.Post("/", helpers.Make(h.GetV2))
+		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.GetV2))
 		r.Post("/all", helpers.Make(h.GetAll))
 	})
 
@@ -80,6 +84,37 @@ func (h *ProgramHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
 	query := r.URL.Query().Get("query")
 
 	result, err := h.programsvcs.GetAll(ctx, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *ProgramHandler) GetAuth(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.programsvcs.GetAuth(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *ProgramHandler) GetAllAuth(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.programsvcs.GetAllAuth(ctx, query)
 	if err != nil {
 		return err
 	}

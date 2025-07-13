@@ -97,6 +97,19 @@ type FaqPageComplete struct {
 	Groups           []FaqGroupWithQuestions `json:"groups"`           // Groups with their questions
 }
 
+// Search result model for returning matching questions/answers
+type FaqSearchResult struct {
+	Id        string    `json:"id"`
+	PageId    string    `json:"pageId"`
+	GroupId   string    `json:"groupId,omitempty"`
+	Question  string    `json:"question"`
+	Answer    string    `json:"answer"`
+	IsActive  bool      `json:"isActive"`
+	SortOrder int       `json:"sortOrder"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
 // Pagination models
 type FaqPagePagination struct {
 	FaqPages   []FaqPageWithStats `json:"faqPages"`
@@ -111,4 +124,10 @@ type FaqGroupPagination struct {
 type FaqQuestionPagination struct {
 	FaqQuestions []FaqQuestion     `json:"faqQuestions"`
 	Pagination   common.Pagination `json:"pagination"`
+}
+
+// Search result pagination
+type FaqSearchResultPagination struct {
+	FaqSearchResults []FaqSearchResult `json:"faqSearchResults"`
+	Pagination       common.Pagination `json:"pagination"`
 }

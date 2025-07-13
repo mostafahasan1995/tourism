@@ -56,6 +56,7 @@ func NewFaqHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/", helpers.Make(h.GetAllGroups))
 		r.Get("/{id}", helpers.Make(h.GetOneGroup))
 		r.Get("/{id}/with-questions", helpers.Make(h.GetGroupWithQuestions))
+		r.Get("/search-questions", helpers.Make(h.SearchQuestions))
 
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.AddGroup))
 		r.With(middleware.Auth("authenticate")).Post("/many", helpers.Make(h.AddManyGroups))
@@ -113,8 +114,9 @@ func NewFaqHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.DeleteQuestion))
 	})
 
-	// Debug route - temporary for troubleshooting
+	// Debug routes - temporary for troubleshooting
 	r.Get("/debug/questions", helpers.Make(h.DebugAllQuestions))
+	r.Get("/debug/questions/search/{pageId}/{searchTerm}", helpers.Make(h.DebugSearch))
 }
 
 // Helper function to parse pagination and filter parameters
@@ -177,6 +179,9 @@ func parseGroupFilter(r *http.Request) filter.FaqGroupFilter {
 	}
 	if nameParam := r.URL.Query().Get("name"); nameParam != "" {
 		groupFilter.Name = nameParam
+	}
+	if searchParam := r.URL.Query().Get("search"); searchParam != "" {
+		groupFilter.Search = searchParam
 	}
 	if activeParam := r.URL.Query().Get("isActive"); activeParam != "" {
 		if active, err := strconv.ParseBool(activeParam); err == nil {
@@ -493,6 +498,59 @@ func (h *FaqHandler) GetGroupWithQuestions(w http.ResponseWriter, r *http.Reques
 	if err != nil {
 		return err
 	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *FaqHandler) SearchQuestions(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	faqPageId := chi.URLParam(r, "faqPageId")
+
+	// Get search term from direct parameter first
+	searchTerm := r.URL.Query().Get("search")
+
+	// If no direct search parameter, try to get it from JSON query parameter
+	if searchTerm == "" {
+		filterParam := r.URL.Query().Get("query")
+		if filterParam != "" {
+			var queryFilter struct {
+				Search string `json:"search"`
+			}
+			if err := json.Unmarshal([]byte(filterParam), &queryFilter); err == nil {
+				searchTerm = queryFilter.Search
+			}
+		}
+	}
+
+	// Remove surrounding quotes if they exist
+	if len(searchTerm) >= 2 && searchTerm[0] == '"' && searchTerm[len(searchTerm)-1] == '"' {
+		searchTerm = searchTerm[1 : len(searchTerm)-1]
+	}
+
+	if searchTerm == "" {
+		return helpers.BadRequest("search parameter is required")
+	}
+
+	// Parse pagination parameters
+	page := 1
+	size := 10
+
+	if pageParam := r.URL.Query().Get("page"); pageParam != "" {
+		if p, err := strconv.Atoi(pageParam); err == nil && p > 0 {
+			page = p
+		}
+	}
+
+	if sizeParam := r.URL.Query().Get("size"); sizeParam != "" {
+		if s, err := strconv.Atoi(sizeParam); err == nil && s > 0 {
+			size = s
+		}
+	}
+
+	result, err := h.faqGroupSvcs.SearchQuestions(ctx, faqPageId, searchTerm, page, size)
+	if err != nil {
+		return err
+	}
+
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
@@ -839,4 +897,60 @@ func (h *FaqHandler) DebugAllQuestions(w http.ResponseWriter, r *http.Request) e
 		return err
 	}
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// Debug search - temporary for troubleshooting
+func (h *FaqHandler) DebugSearch(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	pageId := chi.URLParam(r, "pageId")
+	searchTerm := chi.URLParam(r, "searchTerm")
+
+	// Get all questions in database (no page filter)
+	allQuestionsGlobal, err := h.faqQuestionSvcs.GetAll(ctx, filter.FaqQuestionFilter{})
+	if err != nil {
+		return err
+	}
+
+	// Get groups for this specific page
+	groupFilter := filter.FaqGroupFilter{}
+	if pageIdObj, err := primitive.ObjectIDFromHex(pageId); err == nil {
+		groupFilter.FaqPageId = pageIdObj
+	}
+
+	allGroupsPage, err := h.faqGroupSvcs.GetAll(ctx, groupFilter)
+	if err != nil {
+		return err
+	}
+
+	// Get questions that belong directly to this page (no group)
+	pageQuestionFilter := filter.FaqQuestionFilter{}
+	if pageIdObj, err := primitive.ObjectIDFromHex(pageId); err == nil {
+		pageQuestionFilter.FaqPageId = pageIdObj
+		nilGroupId := primitive.NilObjectID
+		pageQuestionFilter.FaqGroupId = &nilGroupId
+	}
+
+	directPageQuestions, err := h.faqQuestionSvcs.GetAll(ctx, pageQuestionFilter)
+	if err != nil {
+		return err
+	}
+
+	// Perform the search (now with proper relationship lookup)
+	searchResult, err := h.faqGroupSvcs.SearchQuestions(ctx, pageId, searchTerm, 1, 50)
+	if err != nil {
+		return err
+	}
+
+	response := map[string]interface{}{
+		"pageId":                   pageId,
+		"searchTerm":               searchTerm,
+		"allQuestionsGlobalCount":  allQuestionsGlobal.Pagination.TotalCount,
+		"groupsInPageCount":        allGroupsPage.Pagination.TotalCount,
+		"groupsInPage":             allGroupsPage.FaqGroups,
+		"directPageQuestionsCount": directPageQuestions.Pagination.TotalCount,
+		"searchResults":            searchResult,
+		"explanation":              "Search now finds questions in groups belonging to this page + direct page questions",
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }

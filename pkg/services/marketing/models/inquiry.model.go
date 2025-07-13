@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
@@ -31,9 +32,33 @@ type InquiryReply struct {
 	CreatedBy       primitive.ObjectID  `bson:"createdBy" json:"createdBy"`
 }
 
+// Custom JSON marshalling for InquiryReply to handle zero ObjectIDs
+func (ir InquiryReply) MarshalJSON() ([]byte, error) {
+	type Alias InquiryReply
+	aux := &struct {
+		*Alias
+		UserId    *primitive.ObjectID `json:"userId,omitempty"`
+		CreatedBy *primitive.ObjectID `json:"createdBy,omitempty"`
+	}{
+		Alias: (*Alias)(&ir),
+	}
+
+	// Handle UserId
+	if ir.UserId != nil && !ir.UserId.IsZero() {
+		aux.UserId = ir.UserId
+	}
+
+	// Handle CreatedBy
+	if !ir.CreatedBy.IsZero() {
+		aux.CreatedBy = &ir.CreatedBy
+	}
+
+	return json.Marshal(aux)
+}
+
 type InquiryDto struct {
 	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
-	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
+	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId"`
 	VisitorName  string                 `bson:"visitorName" json:"visitorName" validate:"required"`
 	Email        string                 `bson:"email" json:"email" validate:"required,email"`
 	Phone        string                 `bson:"phone,omitempty" json:"phone,omitempty"`
@@ -63,6 +88,48 @@ type Inquiry struct {
 	UpdatedAt  time.Time           `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 }
 
+// Custom JSON marshalling for Inquiry to handle zero ObjectIDs
+func (i Inquiry) MarshalJSON() ([]byte, error) {
+	type Alias Inquiry
+	aux := &struct {
+		*Alias
+		ExhibitionId *primitive.ObjectID `json:"exhibitionId,omitempty"`
+		HotelId      *primitive.ObjectID `json:"hotelId,omitempty"`
+		ReadBy       *primitive.ObjectID `json:"readBy,omitempty"`
+		CreatedBy    *primitive.ObjectID `json:"createdBy,omitempty"`
+		UpdatedBy    *primitive.ObjectID `json:"updatedBy,omitempty"`
+	}{
+		Alias: (*Alias)(&i),
+	}
+
+	// Handle ExhibitionId
+	if !i.ExhibitionId.IsZero() {
+		aux.ExhibitionId = &i.ExhibitionId
+	}
+
+	// Handle HotelId
+	if !i.HotelId.IsZero() {
+		aux.HotelId = &i.HotelId
+	}
+
+	// Handle ReadBy
+	if i.ReadBy != nil && !i.ReadBy.IsZero() {
+		aux.ReadBy = i.ReadBy
+	}
+
+	// Handle CreatedBy
+	if !i.CreatedBy.IsZero() {
+		aux.CreatedBy = &i.CreatedBy
+	}
+
+	// Handle UpdatedBy
+	if !i.UpdatedBy.IsZero() {
+		aux.UpdatedBy = &i.UpdatedBy
+	}
+
+	return json.Marshal(aux)
+}
+
 type InquiryPagination struct {
 	Inquiries  []Inquiry        `bson:"inquiries" json:"inquiries"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
@@ -87,17 +154,21 @@ func (u *UpdateInquiryStatusDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, u)
 }
 
-type InquiryStats struct {
-	TotalInquiries      int64            `json:"totalInquiries"`
-	StatusBreakdown     map[string]int64 `json:"statusBreakdown"`
-	PriorityBreakdown   map[string]int64 `json:"priorityBreakdown"`
-	SourceBreakdown     map[string]int64 `json:"sourceBreakdown"`
-	AverageResponseTime float64          `json:"averageResponseTime"` // in hours
-	UnreadCount         int64            `json:"unreadCount"`
-	TodayInquiries      int64            `json:"todayInquiries"`
-	WeeklyTrend         []int64          `json:"weeklyTrend"` // Last 7 days
-}
-
 type MarkAsReadDto struct {
 	IsRead bool `bson:"isRead" json:"isRead"`
+}
+
+func (m *MarkAsReadDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, m)
+}
+
+type InquiryStats struct {
+	TotalInquiries    int64            `json:"totalInquiries"`
+	UnreadInquiries   int64            `json:"unreadInquiries"`
+	TodayInquiries    int64            `json:"todayInquiries"`
+	StatusBreakdown   map[string]int64 `json:"statusBreakdown"`
+	PriorityBreakdown map[string]int64 `json:"priorityBreakdown"`
+	SourceBreakdown   map[string]int64 `json:"sourceBreakdown"`
+	WeeklyTrend       []int64          `json:"weeklyTrend"`
+	ResponseTime      float64          `json:"responseTime"` // Average response time in hours
 }

@@ -125,6 +125,8 @@ type ProgramSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.ProgramRes, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
 	GetAll(ctx context.Context, query string) ([]models.Program, error)
+	GetAuth(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
+	GetAllAuth(ctx context.Context, query string) ([]models.Program, error)
 	Add(ctx context.Context, data *models.ProgramDto) (*models.Program, error)
 	Update(ctx context.Context, id string, data *models.ProgramDto) (*models.Program, error)
 	UpdateIsFav(ctx context.Context, id string, isFav bool) error
@@ -151,15 +153,6 @@ func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 }
 
 //
-
-// Helper method to populate isFav field for programs
-func (p *programsvcs) populateIsFav(ctx context.Context, programs []models.ProgramRes) error {
-	// isFav is now stored directly in the Program entity, just copy it to ProgramRes
-	for i := range programs {
-		programs[i].IsFav = programs[i].Program.IsFav
-	}
-	return nil
-}
 
 func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
@@ -195,10 +188,8 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 		return nil, errors.New("program not found")
 	}
 
-	// Populate isFav field
-	if err := p.populateIsFav(ctx, result); err != nil {
-		return nil, err
-	}
+	// isFav is now populated directly from the pipeline
+	result[0].IsFav = result[0].Program.IsFav
 
 	return &result[0], nil
 }
@@ -213,6 +204,64 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 
 	pipeline := f.BuildPipeline(match)
 
+	// Add customer, package, and user lookups first
+	pipeline = append(pipeline, customerLookup...)
+	pipeline = append(pipeline, packageLookup...)
+	pipeline = append(pipeline, updatedByUserLookup...)
+
+	// Calculate duration in days between startDate and endDate
+	pipeline = append(pipeline, durationLookup)
+
+	// Add fave lookup - check if user is authenticated
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		// User is authenticated, add lookup to check favorites
+		pipeline = append(pipeline, bson.M{
+			"$lookup": bson.M{
+				"from": "tourismFavorites",
+				"let":  bson.M{"programId": "$_id"},
+				"pipeline": []bson.M{
+					{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": []bson.M{
+									{"$eq": []interface{}{"$refId", "$$programId"}},
+									{"$eq": []interface{}{"$type", "program"}},
+									{"$eq": []interface{}{"$userId", cfg.User.Id}},
+									{"$eq": []interface{}{"$isFav", true}},
+								},
+							},
+							"trash": bson.M{"$ne": true},
+						},
+					},
+				},
+				"as": "faveRecord",
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": bson.M{
+					"$gt": []interface{}{
+						bson.M{"$size": "$faveRecord"},
+						0,
+					},
+				},
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$project": bson.M{
+				"faveRecord": 0,
+			},
+		})
+	} else {
+		// User not authenticated, set isFav to false
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": false,
+			},
+		})
+	}
+
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
 
@@ -225,13 +274,6 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	pipeline = append(pipeline, customerLookup...)
-	pipeline = append(pipeline, packageLookup...)
-	pipeline = append(pipeline, updatedByUserLookup...)
-
-	// Calculate duration in days between startDate and endDate
-	pipeline = append(pipeline, durationLookup)
-
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
@@ -240,10 +282,8 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 		return nil, errAg
 	}
 
-	// Populate isFav field
-	if err := p.populateIsFav(ctx, result); err != nil {
-		return nil, err
-	}
+	// The isFav field should already be populated correctly from the pipeline
+	// No manual assignment needed as it comes directly from the aggregation
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
 	pagination := types.Pagination{
@@ -277,6 +317,34 @@ func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Progra
 	}
 
 	return result, nil
+}
+
+// GetAuth retrieves programs with pagination, requiring authentication
+func (p *programsvcs) GetAuth(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+	if cfg.User == nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+
+	// Use the same logic as Get but ensure user is authenticated
+	return p.Get(ctx, skip, limit, query)
+}
+
+// GetAllAuth retrieves all programs without pagination, requiring authentication
+func (p *programsvcs) GetAllAuth(ctx context.Context, query string) ([]models.Program, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+	if cfg.User == nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+
+	// Use the same logic as GetAll but ensure user is authenticated
+	return p.GetAll(ctx, query)
 }
 
 // add general or custom program - update related travel request
@@ -540,12 +608,65 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
+	//
+
+	// Add customer, package, and user lookups first
 	pipeline = append(pipeline, customerLookup...)
 	pipeline = append(pipeline, packageLookup...)
 	pipeline = append(pipeline, updatedByUserLookup...)
 
 	// Calculate duration in days between startDate and endDate
 	pipeline = append(pipeline, durationLookup)
+
+	// Add fave lookup - check if user is authenticated
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		// User is authenticated, add lookup to check favorites
+		pipeline = append(pipeline, bson.M{
+			"$lookup": bson.M{
+				"from": "tourismFavorites",
+				"let":  bson.M{"programId": "$_id"},
+				"pipeline": []bson.M{
+					{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": []bson.M{
+									{"$eq": []interface{}{"$refId", "$$programId"}},
+									{"$eq": []interface{}{"$type", "program"}},
+									{"$eq": []interface{}{"$userId", cfg.User.Id}},
+									{"$eq": []interface{}{"$isFav", true}},
+								},
+							},
+							"trash": bson.M{"$ne": true},
+						},
+					},
+				},
+				"as": "faveRecord",
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": bson.M{
+					"$gt": []interface{}{
+						bson.M{"$size": "$faveRecord"},
+						0,
+					},
+				},
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$project": bson.M{
+				"faveRecord": 0,
+			},
+		})
+	} else {
+		// User not authenticated, set isFav to false
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": false,
+			},
+		})
+	}
 
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -555,10 +676,8 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 		return nil, errAg
 	}
 
-	// Populate isFav field
-	if err := p.populateIsFav(ctx, result); err != nil {
-		return nil, err
-	}
+	// The isFav field should already be populated correctly from the pipeline
+	// No manual assignment needed as it comes directly from the aggregation
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
 	pagination := types.Pagination{

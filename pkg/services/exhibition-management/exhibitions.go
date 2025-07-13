@@ -2,7 +2,6 @@ package exhibition_management
 
 import (
 	"context"
-	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
@@ -21,10 +20,14 @@ import (
 // ExhibitionSvcs defines the interface for exhibition services
 type ExhibitionSvcs interface {
 	Get(ctx context.Context, skip, limit int64) (*models.ExhibitionWithPagination, error)
+	GetAll(ctx context.Context) ([]models.Exhibition, error)
+	GetAuth(ctx context.Context, skip, limit int64) (*models.ExhibitionWithPagination, error)
+	GetAllAuth(ctx context.Context) ([]models.Exhibition, error)
 	GetV2(ctx context.Context, skip, limit int64, filters *query.Conditions) (*models.ExhibitionWithPagination, error)
 	GetById(ctx context.Context, id string) (*models.Exhibition, error)
 	Save(ctx context.Context, data *models.ExhibitionDto) (*models.Exhibition, error)
 	Update(ctx context.Context, id string, data *models.ExhibitionDto) (*models.Exhibition, error)
+	Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Exhibition, error)
 	Toggle(ctx context.Context, id string, isActive bool) (*models.Exhibition, error)
 	Delete(ctx context.Context, id string) error
 	GetRelatedExhibitions(ctx context.Context, id string) ([]models.Exhibition, error)
@@ -61,6 +64,56 @@ func (s *exhibitionSvcs) Get(ctx context.Context, skip, limit int64) (*models.Ex
 
 	pipeline := []bson.M{{"$match": match}}
 
+	// Add fave lookup - check if user is authenticated
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		// User is authenticated, add lookup to check favorites
+		pipeline = append(pipeline, bson.M{
+			"$lookup": bson.M{
+				"from": "tourismFavorites",
+				"let":  bson.M{"exhibitionId": "$_id"},
+				"pipeline": []bson.M{
+					{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": []bson.M{
+									{"$eq": []interface{}{"$refId", "$$exhibitionId"}},
+									{"$eq": []interface{}{"$type", "exhibition"}},
+									{"$eq": []interface{}{"$userId", cfg.User.Id}},
+									{"$eq": []interface{}{"$isFav", true}},
+								},
+							},
+							"trash": bson.M{"$ne": true},
+						},
+					},
+				},
+				"as": "faveRecord",
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": bson.M{
+					"$gt": []interface{}{
+						bson.M{"$size": "$faveRecord"},
+						0,
+					},
+				},
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$project": bson.M{
+				"faveRecord": 0,
+			},
+		})
+	} else {
+		// User not authenticated, set isFav to false
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": false,
+			},
+		})
+	}
+
 	count, err := s.repo.Count(ctx, match)
 	if err != nil {
 		return nil, err
@@ -91,6 +144,103 @@ func (s *exhibitionSvcs) Get(ctx context.Context, skip, limit int64) (*models.Ex
 	}, nil
 }
 
+// GetAll retrieves all exhibitions without pagination
+func (s *exhibitionSvcs) GetAll(ctx context.Context) ([]models.Exhibition, error) {
+	match := bson.M{"trash": false}
+
+	pipeline := []bson.M{{"$match": match}}
+
+	// Add fave lookup - check if user is authenticated
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		// User is authenticated, add lookup to check favorites
+		pipeline = append(pipeline, bson.M{
+			"$lookup": bson.M{
+				"from": "tourismFavorites",
+				"let":  bson.M{"exhibitionId": "$_id"},
+				"pipeline": []bson.M{
+					{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": []bson.M{
+									{"$eq": []interface{}{"$refId", "$$exhibitionId"}},
+									{"$eq": []interface{}{"$type", "exhibition"}},
+									{"$eq": []interface{}{"$userId", cfg.User.Id}},
+									{"$eq": []interface{}{"$isFav", true}},
+								},
+							},
+							"trash": bson.M{"$ne": true},
+						},
+					},
+				},
+				"as": "faveRecord",
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": bson.M{
+					"$gt": []interface{}{
+						bson.M{"$size": "$faveRecord"},
+						0,
+					},
+				},
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$project": bson.M{
+				"faveRecord": 0,
+			},
+		})
+	} else {
+		// User not authenticated, set isFav to false
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": false,
+			},
+		})
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"createdAt": -1}})
+
+	var result []models.Exhibition
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	return result, nil
+}
+
+// GetAuth retrieves exhibitions with pagination, requiring authentication
+func (s *exhibitionSvcs) GetAuth(ctx context.Context, skip, limit int64) (*models.ExhibitionWithPagination, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+	if cfg.User == nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+
+	// Use the same logic as Get but ensure user is authenticated
+	return s.Get(ctx, skip, limit)
+}
+
+// GetAllAuth retrieves all exhibitions without pagination, requiring authentication
+func (s *exhibitionSvcs) GetAllAuth(ctx context.Context) ([]models.Exhibition, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+	if cfg.User == nil {
+		return nil, helpers.Unauthorized("Authentication required")
+	}
+
+	// Use the same logic as GetAll but ensure user is authenticated
+	return s.GetAll(ctx)
+}
+
 // GetV2 retrieves exhibitions with pagination and filters
 func (s *exhibitionSvcs) GetV2(ctx context.Context, skip, limit int64, filters *query.Conditions) (*models.ExhibitionWithPagination, error) {
 	// Start with base match condition
@@ -98,16 +248,10 @@ func (s *exhibitionSvcs) GetV2(ctx context.Context, skip, limit int64, filters *
 
 	// Convert filter conditions to MongoDB filter
 	if filters != nil && len(filters.Columns) > 0 {
-		// Debug: Print the incoming filter conditions
-		fmt.Printf("DEBUG: Incoming filters: %+v\n", filters.Columns)
-
 		filterBson, err := filters.ConvertToMongo()
 		if err != nil {
 			return nil, helpers.BadRequest("Invalid filter conditions: " + err.Error())
 		}
-
-		// Debug: Print the converted BSON filter
-		fmt.Printf("DEBUG: Converted BSON: %+v\n", filterBson)
 
 		// Check if user is explicitly filtering on trash field
 		hasTrashFilter := false
@@ -141,10 +285,57 @@ func (s *exhibitionSvcs) GetV2(ctx context.Context, skip, limit int64, filters *
 		match = bson.M{"trash": false}
 	}
 
-	// Debug: Print the final match condition
-	fmt.Printf("DEBUG: Final match: %+v\n", match)
-
 	pipeline := []bson.M{{"$match": match}}
+
+	// Add fave lookup - check if user is authenticated
+	cfg, cfgErr := util.GetReqAppCfg(ctx)
+	if cfgErr == nil && cfg.User != nil {
+		// User is authenticated, add lookup to check favorites
+		pipeline = append(pipeline, bson.M{
+			"$lookup": bson.M{
+				"from": "tourismFavorites",
+				"let":  bson.M{"exhibitionId": "$_id"},
+				"pipeline": []bson.M{
+					{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": []bson.M{
+									{"$eq": []interface{}{"$refId", "$$exhibitionId"}},
+									{"$eq": []interface{}{"$type", "exhibition"}},
+									{"$eq": []interface{}{"$userId", cfg.User.Id}},
+									{"$eq": []interface{}{"$isFav", true}},
+								},
+							},
+							"trash": bson.M{"$ne": true},
+						},
+					},
+				},
+				"as": "faveRecord",
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": bson.M{
+					"$gt": []interface{}{
+						bson.M{"$size": "$faveRecord"},
+						0,
+					},
+				},
+			},
+		})
+		pipeline = append(pipeline, bson.M{
+			"$project": bson.M{
+				"faveRecord": 0,
+			},
+		})
+	} else {
+		// User not authenticated, set isFav to false
+		pipeline = append(pipeline, bson.M{
+			"$addFields": bson.M{
+				"isFav": false,
+			},
+		})
+	}
 
 	count, err := s.repo.Count(ctx, match)
 	if err != nil {
@@ -201,6 +392,9 @@ func (s *exhibitionSvcs) Save(ctx context.Context, data *models.ExhibitionDto) (
 	if err != nil {
 		return nil, err
 	}
+
+	// Set auto status if not provided
+	data.SetAutoStatus()
 
 	// Validate related exhibitions exist
 	if len(data.RelatedExhibitions) > 0 {
@@ -282,6 +476,9 @@ func (s *exhibitionSvcs) Update(ctx context.Context, id string, data *models.Exh
 		return nil, helpers.BadRequest("Invalid exhibition ID")
 	}
 
+	// Set auto status if not provided
+	data.SetAutoStatus()
+
 	// Check if record exists
 	existing, err := s.GetById(ctx, id)
 	if err != nil {
@@ -362,6 +559,41 @@ func (s *exhibitionSvcs) Update(ctx context.Context, id string, data *models.Exh
 	}
 
 	return s.GetById(ctx, id)
+}
+
+// Patch updates an existing exhibition with a map of fields to update
+func (s *exhibitionSvcs) Patch(ctx context.Context, id string, updates map[string]interface{}) (*models.Exhibition, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	objID, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, helpers.BadRequest("Invalid exhibition ID")
+	}
+
+	// Add audit fields to the update
+	updateDoc := bson.M{}
+	for key, value := range updates {
+		updateDoc[key] = value
+	}
+	updateDoc["updatedAt"] = time.Now()
+	updateDoc["updatedBy"] = cfg.User.Id
+
+	filter := bson.M{"_id": objID}
+	update := bson.M{"$set": updateDoc}
+
+	updatedExhibition, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	if updatedExhibition == nil {
+		return nil, helpers.NotFoundError("Exhibition not found")
+	}
+
+	return updatedExhibition, nil
 }
 
 // Toggle enables or disables an exhibition

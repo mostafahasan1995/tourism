@@ -43,6 +43,7 @@ type FaqGroupSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.FaqGroup, error)
 	GetAll(ctx context.Context, filter filter.FaqGroupFilter) (models.FaqGroupPagination, error)
 	GetWithQuestions(ctx context.Context, id string) (*models.FaqGroupWithQuestions, error)
+	SearchQuestions(ctx context.Context, pageId string, searchTerm string, page, size int) (models.FaqSearchResultPagination, error)
 	Add(ctx context.Context, data *models.FaqGroupDto) error
 	AddMany(ctx context.Context, data []models.FaqGroupDto) error
 	Update(ctx context.Context, id string, data *models.FaqGroupDto) error
@@ -813,13 +814,6 @@ func (s *faqGroupSvcs) GetOne(ctx context.Context, id string) (*models.FaqGroup,
 }
 
 func (s *faqGroupSvcs) GetAll(ctx context.Context, filter filter.FaqGroupFilter) (models.FaqGroupPagination, error) {
-	filterBody := filter.ToBsonFilter()
-
-	totalCount, err := s.repo.Count(ctx, filterBody)
-	if err != nil {
-		return models.FaqGroupPagination{}, err
-	}
-
 	page := filter.Page
 	if page <= 0 {
 		page = 1
@@ -834,15 +828,138 @@ func (s *faqGroupSvcs) GetAll(ctx context.Context, filter filter.FaqGroupFilter)
 	skip := int64((page - 1) * size)
 	limit := int64(size)
 
-	pipeline := []bson.M{
-		{"$match": filterBody},
-		{"$sort": bson.M{"sortOrder": 1, "createdAt": 1}},
-		{"$skip": skip},
-		{"$limit": limit},
+	var pipeline []bson.M
+	var countPipeline []bson.M
+
+	// If we have a search term for questions/answers, use a more complex pipeline
+	if filter.HasQuestionSearch() {
+		searchTerm := filter.GetQuestionSearchTerm()
+
+		// Base match conditions
+		baseMatch := filter.ToBsonFilter()
+
+		// Main pipeline with lookup and search
+		pipeline = []bson.M{
+			{"$match": baseMatch},
+			{
+				"$lookup": bson.M{
+					"from": "tourismFaqQuestions",
+					"let":  bson.M{"groupId": "$_id"},
+					"pipeline": []bson.M{
+						{
+							"$match": bson.M{
+								"$expr": bson.M{
+									"$and": []bson.M{
+										{"$eq": []interface{}{"$faqGroupId", "$$groupId"}},
+										{"$ne": []interface{}{"$trash", true}},
+									},
+								},
+								"$or": []bson.M{
+									{"question": bson.M{"$regex": searchTerm, "$options": "i"}},
+									{"answer": bson.M{"$regex": searchTerm, "$options": "i"}},
+								},
+							},
+						},
+					},
+					"as": "matchingQuestions",
+				},
+			},
+			{
+				"$match": bson.M{
+					"matchingQuestions": bson.M{"$ne": []interface{}{}},
+				},
+			},
+			{
+				"$project": bson.M{
+					"matchingQuestions": 0, // Remove the temporary field
+				},
+			},
+			{"$sort": bson.M{"sortOrder": 1, "createdAt": 1}},
+			{"$skip": skip},
+			{"$limit": limit},
+		}
+
+		// Count pipeline (same logic but without skip/limit)
+		countPipeline = []bson.M{
+			{"$match": baseMatch},
+			{
+				"$lookup": bson.M{
+					"from": "tourismFaqQuestions",
+					"let":  bson.M{"groupId": "$_id"},
+					"pipeline": []bson.M{
+						{
+							"$match": bson.M{
+								"$expr": bson.M{
+									"$and": []bson.M{
+										{"$eq": []interface{}{"$faqGroupId", "$$groupId"}},
+										{"$ne": []interface{}{"$trash", true}},
+									},
+								},
+								"$or": []bson.M{
+									{"question": bson.M{"$regex": searchTerm, "$options": "i"}},
+									{"answer": bson.M{"$regex": searchTerm, "$options": "i"}},
+								},
+							},
+						},
+					},
+					"as": "matchingQuestions",
+				},
+			},
+			{
+				"$match": bson.M{
+					"matchingQuestions": bson.M{"$ne": []interface{}{}},
+				},
+			},
+			{"$count": "total"},
+		}
+	} else {
+		// Simple pipeline when no search is needed
+		filterBody := filter.ToBsonFilter()
+
+		pipeline = []bson.M{
+			{"$match": filterBody},
+			{"$sort": bson.M{"sortOrder": 1, "createdAt": 1}},
+			{"$skip": skip},
+			{"$limit": limit},
+		}
+
+		countPipeline = []bson.M{
+			{"$match": filterBody},
+			{"$count": "total"},
+		}
 	}
 
+	// Get total count
+	var totalCount int64
+	if filter.HasQuestionSearch() {
+		var countResult []bson.M
+		err := s.repo.Aggregate(ctx, countPipeline, func(cur *mongo.Cursor) error {
+			return cur.All(ctx, &countResult)
+		})
+		if err != nil {
+			return models.FaqGroupPagination{}, err
+		}
+
+		if len(countResult) > 0 {
+			if count, ok := countResult[0]["total"].(int32); ok {
+				totalCount = int64(count)
+			} else if count, ok := countResult[0]["total"].(int64); ok {
+				totalCount = count
+			}
+		}
+	} else {
+		// Use simple count for non-search queries
+		filterBody := filter.ToBsonFilter()
+		var err error
+		totalCount, err = s.repo.Count(ctx, filterBody)
+		if err != nil {
+			return models.FaqGroupPagination{}, err
+		}
+	}
+
+	// Get the groups
 	var groups []models.FaqGroup
-	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &groups)
 	})
 	if err != nil {
@@ -941,6 +1058,131 @@ func (s *faqGroupSvcs) GetWithQuestions(ctx context.Context, id string) (*models
 	return &models.FaqGroupWithQuestions{
 		FaqGroup:  *group,
 		Questions: questions,
+	}, nil
+}
+
+func (s *faqGroupSvcs) SearchQuestions(ctx context.Context, pageId string, searchTerm string, page, size int) (models.FaqSearchResultPagination, error) {
+	_pageId, err := primitive.ObjectIDFromHex(pageId)
+	if err != nil {
+		return models.FaqSearchResultPagination{}, err
+	}
+
+	// Set pagination defaults
+	if page <= 0 {
+		page = 1
+	}
+	if size <= 0 {
+		size = 10
+	}
+	if size > 100 {
+		size = 100
+	}
+	skip := int64((page - 1) * size)
+	limit := int64(size)
+
+	// First, find all groups that belong to this page
+	groupFilter := bson.M{
+		"faqPageId": _pageId,
+		"trash":     bson.M{"$ne": true},
+	}
+
+	// Get all group IDs for this page using Aggregate
+	groupPipeline := []bson.M{
+		{"$match": groupFilter},
+		{"$project": bson.M{"_id": 1}}, // Only get the IDs
+	}
+
+	var groups []models.FaqGroup
+	err = s.repo.Aggregate(ctx, groupPipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &groups)
+	})
+	if err != nil {
+		return models.FaqSearchResultPagination{}, err
+	}
+
+	// Extract group IDs
+	var groupIds []primitive.ObjectID
+	for _, group := range groups {
+		groupIds = append(groupIds, group.Id)
+	}
+
+	// Build search filter for questions
+	// Include questions that either:
+	// 1. Belong to groups within this page, OR
+	// 2. Belong directly to this page (faqPageId) with no group (faqGroupId is null)
+	searchFilter := bson.M{
+		"trash": bson.M{"$ne": true},
+		"$and": []bson.M{
+			{
+				"$or": []bson.M{
+					{"faqPageId": _pageId, "faqGroupId": nil}, // Direct page questions (no group)
+					{"faqGroupId": bson.M{"$in": groupIds}},   // Questions in groups belonging to this page
+				},
+			},
+			{
+				"$or": []bson.M{
+					{"question": bson.M{"$regex": searchTerm, "$options": "i"}},
+					{"answer": bson.M{"$regex": searchTerm, "$options": "i"}},
+				},
+			},
+		},
+	}
+
+	// Count total matching questions
+	totalCount, err := s.questionRepo.Count(ctx, searchFilter)
+	if err != nil {
+		return models.FaqSearchResultPagination{}, err
+	}
+
+	// Get matching questions with pagination
+	pipeline := []bson.M{
+		{"$match": searchFilter},
+		{"$sort": bson.M{"sortOrder": 1, "createdAt": 1}},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+
+	var questions []models.FaqQuestion
+	err = s.questionRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &questions)
+	})
+	if err != nil {
+		return models.FaqSearchResultPagination{}, err
+	}
+
+	// Convert to search results
+	var searchResults []models.FaqSearchResult
+	for _, q := range questions {
+		groupId := ""
+		if q.FaqGroupId != nil {
+			groupId = q.FaqGroupId.Hex()
+		}
+
+		searchResults = append(searchResults, models.FaqSearchResult{
+			Id:        q.Id.Hex(),
+			PageId:    q.FaqPageId.Hex(),
+			GroupId:   groupId,
+			Question:  q.Question,
+			Answer:    q.Answer,
+			IsActive:  q.IsActive,
+			SortOrder: q.SortOrder,
+			CreatedAt: q.CreatedAt,
+			UpdatedAt: q.UpdatedAt,
+		})
+	}
+
+	totalPages := int64(0)
+	if size > 0 {
+		totalPages = (totalCount + int64(size) - 1) / int64(size)
+	}
+
+	return models.FaqSearchResultPagination{
+		FaqSearchResults: searchResults,
+		Pagination: common.Pagination{
+			TotalPages: float64(totalPages),
+			PerPage:    int64(size),
+			TotalCount: totalCount,
+		},
 	}, nil
 }
 

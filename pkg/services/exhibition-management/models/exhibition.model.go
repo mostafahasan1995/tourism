@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/exhibition-management/enums"
 	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 
@@ -66,6 +67,7 @@ type ExhibitionDto struct {
 	Tags               []transl.Localizable[string] `json:"tags" bson:"tags"`
 	IsActive           bool                         `json:"isActive" bson:"isActive"`
 	Ads                []AdDto                      `json:"ads" bson:"ads"` // Ads can be included in exhibition creation
+	Status             string                       `json:"status" bson:"status" validate:"required,oneof=active closed upcoming"`
 }
 
 // Exhibition main model with nested ads
@@ -96,6 +98,11 @@ func (e *ExhibitionDto) Validate(v *validator.Validate) error {
 	// Custom validation: end date should be after start date
 	if e.EndDate.Before(e.StartDate) {
 		return helpers.BadRequest("End date must be after start date")
+	}
+
+	// Custom validation: status must be one of the valid enum values
+	if !enums.IsValidExhibitionStatus(e.Status) {
+		return helpers.BadRequest("Status must be one of: active, closed, upcoming")
 	}
 
 	// Validate each ad if provided
@@ -135,4 +142,24 @@ func CalculateAdPrice(packageType string, duration int) float64 {
 		return price * float64(duration)
 	}
 	return 0
+}
+
+// GetExhibitionStatusByDates automatically determines exhibition status based on current date and exhibition dates
+func GetExhibitionStatusByDates(startDate, endDate time.Time) string {
+	now := time.Now()
+
+	if now.Before(startDate) {
+		return enums.ExhibitionStatusUpcoming
+	} else if now.After(endDate) {
+		return enums.ExhibitionStatusClosed
+	} else {
+		return enums.ExhibitionStatusActive
+	}
+}
+
+// SetAutoStatus automatically sets the status based on start and end dates if no status is provided
+func (e *ExhibitionDto) SetAutoStatus() {
+	if e.Status == "" {
+		e.Status = GetExhibitionStatusByDates(e.StartDate, e.EndDate)
+	}
 }

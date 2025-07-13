@@ -151,11 +151,6 @@ func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query any) (*m
 		return nil, errors.New("invalid query")
 	}
 
-	if filters.Status == nil {
-		approved := "approved"
-		filters.Status = &approved
-	}
-
 	pipeline := filters.BuildPipeline(match)
 
 	countPipeline := make([]bson.M, len(pipeline))

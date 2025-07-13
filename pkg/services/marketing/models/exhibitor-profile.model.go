@@ -1,6 +1,7 @@
 package models
 
 import (
+	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
@@ -71,6 +72,42 @@ type ExhibitorProfile struct {
 	UpdatedBy           primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 	UpdatedAt           time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 	Status              string             `bson:"status,omitempty" json:"status,omitempty"`
+}
+
+// Custom JSON marshalling for ExhibitorProfile to handle zero ObjectIDs
+func (ep ExhibitorProfile) MarshalJSON() ([]byte, error) {
+	type Alias ExhibitorProfile
+	aux := &struct {
+		*Alias
+		ExhibitionId *primitive.ObjectID `json:"exhibitionId,omitempty"`
+		HotelId      *primitive.ObjectID `json:"hotelId,omitempty"`
+		CreatedBy    *primitive.ObjectID `json:"createdBy,omitempty"`
+		UpdatedBy    *primitive.ObjectID `json:"updatedBy,omitempty"`
+	}{
+		Alias: (*Alias)(&ep),
+	}
+
+	// Handle ExhibitionId
+	if !ep.ExhibitionId.IsZero() {
+		aux.ExhibitionId = &ep.ExhibitionId
+	}
+
+	// Handle HotelId
+	if !ep.HotelId.IsZero() {
+		aux.HotelId = &ep.HotelId
+	}
+
+	// Handle CreatedBy
+	if !ep.CreatedBy.IsZero() {
+		aux.CreatedBy = &ep.CreatedBy
+	}
+
+	// Handle UpdatedBy
+	if !ep.UpdatedBy.IsZero() {
+		aux.UpdatedBy = &ep.UpdatedBy
+	}
+
+	return json.Marshal(aux)
 }
 
 type ExhibitorProfilePagination struct {
