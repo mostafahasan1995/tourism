@@ -596,6 +596,20 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 		{"$match": filter},
 	}
 
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := p.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	//
+
 	// Add customer, package, and user lookups first
 	pipeline = append(pipeline, customerLookup...)
 	pipeline = append(pipeline, packageLookup...)
@@ -653,18 +667,6 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 			},
 		})
 	}
-
-	countPipeline := make([]bson.M, len(pipeline))
-	copy(countPipeline, pipeline)
-
-	count, err := p.repo.Count(ctx, countPipeline)
-	if err != nil {
-		return nil, err
-	}
-
-	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
-	pipeline = append(pipeline, bson.M{"$skip": skip})
-	pipeline = append(pipeline, bson.M{"$limit": limit})
 
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
