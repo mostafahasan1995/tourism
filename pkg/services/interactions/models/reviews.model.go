@@ -55,13 +55,19 @@ type Review struct {
 
 type ReviewRes struct {
 	Review   `bson:",inline"`
-	RefData  RefData `bson:"refData" json:"refData"`
-	UserData any     `bson:"userData" json:"userData"`
+	RefData  RefData  `bson:"refData" json:"refData"`
+	UserData UserData `bson:"userData" json:"userData"`
 }
 
 type RefData struct {
 	Name  *transl.Localizable[string] `bson:"name,omitempty" json:"name,omitempty"`
 	Title *transl.Localizable[string] `bson:"title,omitempty" json:"title,omitempty"`
+}
+
+type UserData struct {
+	FirstName string `bson:"firstName" json:"firstName"`
+	LastName  string `bson:"lastName" json:"lastName"`
+	Email     string `bson:"email" json:"email"`
 }
 
 type ReviewPagination struct {

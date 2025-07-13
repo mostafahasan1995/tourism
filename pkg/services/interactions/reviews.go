@@ -104,12 +104,51 @@ var refLookup = []bson.M{
 	},
 }
 
+var userLookup = []bson.M{
+	{
+		"$addFields": bson.M{
+			"userObjectId": bson.M{
+				"$cond": bson.M{
+					"if": bson.M{
+						"$and": []interface{}{
+							bson.M{"$ne": []interface{}{"$userId", nil}},
+							bson.M{"$ne": []interface{}{"$userId", ""}},
+							bson.M{"$ne": []interface{}{"$userId", "000000000000000000000000"}},
+						},
+					},
+					"then": bson.M{"$toObjectId": "$userId"},
+					"else": nil,
+				},
+			},
+		},
+	},
+	{
+		"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "userObjectId",
+			"foreignField": "_id",
+			"as":           "userData",
+		},
+	},
+	{
+		"$unwind": bson.M{
+			"path":                       "$userData",
+			"preserveNullAndEmptyArrays": true,
+		},
+	},
+	{
+		"$project": bson.M{
+			"userObjectId": 0,
+		},
+	},
+}
+
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
-	GetAllApproved(ctx context.Context) ([]models.Review, error)
+	GetAllApproved(ctx context.Context) ([]models.ReviewRes, error)
 	GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
-	GetAllWithoutPagination(ctx context.Context, query any) ([]models.Review, error)
+	GetAllWithoutPagination(ctx context.Context, query any) ([]models.ReviewRes, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	AddFromDashboard(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
@@ -133,17 +172,18 @@ func NewReviewsSvcs(i *do.Injector) (ReviewsSvcs, error) {
 	}, nil
 }
 
-func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.Review, error) {
+func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.ReviewRes, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false, "status": "approved"}},
 	}
 
 	// Add reference lookup
 	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
 
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 
-	var result []models.Review
+	var result []models.ReviewRes
 	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
 			return err
@@ -157,7 +197,7 @@ func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.Review, erro
 	return result, nil
 }
 
-func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([]models.Review, error) {
+func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([]models.ReviewRes, error) {
 	match := bson.M{}
 
 	filters, err := helpers.ParseFilters[filter.ReviewsFilter](query)
@@ -170,10 +210,11 @@ func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([
 
 	// Add reference lookup
 	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
 
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 
-	var result []models.Review
+	var result []models.ReviewRes
 	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -209,6 +250,7 @@ func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int6
 
 	// Add reference lookup
 	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
 
 	var result []models.ReviewRes
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -258,15 +300,13 @@ func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query any) (*m
 		return nil, err
 	}
 
-	// Add reference lookup
-	pipeline = append(pipeline, refLookup...)
-
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
 	// Add reference lookup
 	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
 
 	var result []models.ReviewRes
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
