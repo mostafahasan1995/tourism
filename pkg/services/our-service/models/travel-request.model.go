@@ -36,8 +36,7 @@ type TravelRequestDto struct {
 	//delegation - business-man - custom-plan info
 	Destinations []Destination `bson:"destinations,omitempty" json:"destinations,omitempty" `
 
-	//This shouldn't be required but, AUTOMATICALLY set based on the starting country
-	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator"` // destination agent id
+	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"` // destination agent id
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
 }
