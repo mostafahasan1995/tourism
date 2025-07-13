@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/transl"
+	"larsa-tourism-microservices/pkg/util"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -191,6 +192,23 @@ func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
 			Qty:   1,
 		}
 		services = append(services, service)
+
+		// Map the struct into a map[string]any
+		serviceConfigs, err := util.StructToMap(des.Services)
+		// check for error
+		if err != nil {
+			return nil, err
+		}
+		// Append services
+		for key, value := range serviceConfigs {
+			if value.(Service).Active {
+				services = append(services, InvoiceService{
+					Item:  key,
+					Price: value.(Service).Cost,
+					Qty:   1,
+				})
+			}
+		}
 	}
 
 	for _, des := range cp.FlightTicketRequest.Destinations {
