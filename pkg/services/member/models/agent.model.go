@@ -47,6 +47,17 @@ type Agent struct {
 	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
+// For favorite
+type AgentRes struct {
+	Agent `bson:",inline"`
+	IsFav bool `bson:"isFav" json:"isFav"`
+}
+
+// For favorite
+type AgentV2Pagination struct {
+	Agents     []AgentRes       `bson:"agents" json:"agents"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
 type AgentWithPagination struct {
 	Agents     []Agent          `bson:"agents" json:"agents"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`

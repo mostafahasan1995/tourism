@@ -3,8 +3,10 @@ package picklist
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
+	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/picklist/filter"
 	"larsa-tourism-microservices/pkg/services/picklist/models"
 	"larsa-tourism-microservices/pkg/services/picklist/repo"
@@ -30,7 +32,7 @@ type DestinationSvcs interface {
 	Count(ctx context.Context, filter any) (int64, error)
 	GetDestinationByCountry(ctx context.Context, data *models.DestinationCountry) (*models.Destination, error)
 	//v2
-	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Destination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.DestinationRes, error)
 	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.DestinationPaginationRes, error)
 }
 
@@ -66,18 +68,20 @@ func (d *destinationSvcs) Get(ctx context.Context, skip, limit int64, query any)
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Destination
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
+
+	var result []models.DestinationRes
 	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
 	if errAg != nil {
 		return nil, errAg
-	}
-
-	// Convert to DestinationRes with isFav populated
-	destinationsRes, err := d.convertToDestinationRes(ctx, result)
-	if err != nil {
-		return nil, err
 	}
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
@@ -88,7 +92,7 @@ func (d *destinationSvcs) Get(ctx context.Context, skip, limit int64, query any)
 	}
 
 	return &models.DestinationPaginationRes{
-		Destinations: destinationsRes,
+		Destinations: result,
 		Pagination:   pagination,
 	}, nil
 }
@@ -252,7 +256,7 @@ func (d *destinationSvcs) GetDestinationByCountry(ctx context.Context, data *mod
 }
 
 // v2
-func (d *destinationSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Destination, error) {
+func (d *destinationSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.DestinationRes, error) {
 	if err := query.CheckValid(); err != nil {
 		return nil, err
 	}
@@ -268,13 +272,21 @@ func (d *destinationSvcs) GetAllV2(ctx context.Context, query *query.Conditions)
 	}
 
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	fmt.Println("cfg", cfg.User)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
 
-	var result []models.Destination
-	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+	var result []models.DestinationRes
+	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
-	if errAg != nil {
-		return nil, errAg
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -307,19 +319,27 @@ func (d *destinationSvcs) GetV2(ctx context.Context, skip, limit int64, query *q
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Destination
-	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-		return cur.All(ctx, &result)
-	})
-	if errAg != nil {
-		return nil, errAg
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
 	}
 
-	// Convert to DestinationRes with isFav populated
-	destinationsRes, err := d.convertToDestinationRes(ctx, result)
+	var result []models.DestinationRes
+	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
 	if err != nil {
 		return nil, err
 	}
+
+	// Convert to DestinationRes with isFav populated
+	// destinationsRes, err := d.convertToDestinationRes(ctx, result)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
 	pagination := types.Pagination{
@@ -329,25 +349,25 @@ func (d *destinationSvcs) GetV2(ctx context.Context, skip, limit int64, query *q
 	}
 
 	return &models.DestinationPaginationRes{
-		Destinations: destinationsRes,
+		Destinations: result,
 		Pagination:   pagination,
 	}, nil
 }
 
 // Helper method to convert Destination to DestinationRes with isFav populated
-func (d *destinationSvcs) convertToDestinationRes(ctx context.Context, destinations []models.Destination) ([]models.DestinationRes, error) {
-	if len(destinations) == 0 {
-		return []models.DestinationRes{}, nil
-	}
+// func (d *destinationSvcs) convertToDestinationRes(ctx context.Context, destinations []models.Destination) ([]models.DestinationRes, error) {
+// 	if len(destinations) == 0 {
+// 		return []models.DestinationRes{}, nil
+// 	}
 
-	// Convert to DestinationRes - isFav is now stored directly in the entity
-	result := make([]models.DestinationRes, len(destinations))
-	for i, dest := range destinations {
-		result[i] = models.DestinationRes{
-			Destination: dest,
-			IsFav:       dest.IsFav, // Use the isFav field directly from the entity
-		}
-	}
+// 	// Convert to DestinationRes - isFav is now stored directly in the entity
+// 	result := make([]models.DestinationRes, len(destinations))
+// 	for i, dest := range destinations {
+// 		result[i] = models.DestinationRes{
+// 			Destination: dest,
+// 			IsFav:       dest.IsFav, // Use the isFav field directly from the entity
+// 		}
+// 	}
 
-	return result, nil
-}
+// 	return result, nil
+// }

@@ -24,7 +24,8 @@ type FaveSvcs interface {
 	Delete(ctx context.Context, id string) error
 	GetAll(ctx context.Context, query any) ([]models.Fave, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.FavePagination, error)
-	// GetAllByType(ctx context.Context, faveType models.FaveType) ([]models.FaveItem, error)
+	Fav(ctx context.Context, data *models.FaveDto) (string, error)
+	GetAllByType(ctx context.Context, faveType models.FaveType) ([]models.FaveItem, error)
 }
 
 type faveSvcs struct {
@@ -35,6 +36,42 @@ func NewFaveSvcs(i *do.Injector) (FaveSvcs, error) {
 	return &faveSvcs{
 		repo: do.MustInvoke[repo.FaveRepo](i),
 	}, nil
+}
+
+func (s *faveSvcs) Fav(ctx context.Context, data *models.FaveDto) (string, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return "", err
+	}
+	existingFave, err := s.repo.GetByFilter(ctx, bson.M{"userId": cfg.User.Id, "refId": data.RefId, "type": data.Type})
+	if err != nil && err.Error() != "mongo: no documents in result" {
+		return "", err
+	}
+
+	if existingFave != nil {
+		err := s.repo.DeleteMain(ctx, bson.M{"_id": existingFave.Id})
+		if err != nil {
+			return "", err
+		}
+		return "Removed From Favorites", nil
+	}
+
+	data.IsFav = true
+	data.Type = models.FaveType(data.Type)
+	fave := &models.Fave{
+		Id:        primitive.NewObjectID(),
+		UserId:    cfg.User.Id,
+		FaveDto:   *data,
+		CreatedAt: time.Now(),
+	}
+
+	err = s.repo.Add(ctx, fave)
+
+	if err != nil {
+		return "", err
+	}
+
+	return "Added To Favorites", nil
 }
 
 func (s *faveSvcs) Add(ctx context.Context, data *models.FaveDto) (*models.Fave, error) {
@@ -193,63 +230,66 @@ func (s *faveSvcs) Get(ctx context.Context, skip, limit int64, query any) (*mode
 	}, nil
 }
 
-// func (s *faveSvcs) GetAllByType(ctx context.Context, faveType models.FaveType) ([]models.FaveItem, error) {
-// 	cfg, err := util.GetReqAppCfg(ctx)
-// 	if err != nil {
-// 		return nil, err
-// 	}
+func (s *faveSvcs) GetAllByType(ctx context.Context, faveType models.FaveType) ([]models.FaveItem, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-// 	var userId primitive.ObjectID
-// 	if cfg.User != nil {
-// 		userId = cfg.User.Id
-// 	}
+	var userId primitive.ObjectID
+	if cfg.User != nil {
+		userId = cfg.User.Id
+	}
 
-// 	// Determine the collection name based on the favorite type
-// 	var collectionName string
-// 	switch faveType {
-// 	case models.FaveTypeProgram:
-// 		collectionName = "tourismPrograms"
-// 	case models.FaveTypeHotel:
-// 		collectionName = "tourismHotels"
-// 	case models.FaveTypeDiary:
-// 		collectionName = "tourismDiaries"
-// 	case models.FaveTypeExhibition:
-// 		collectionName = "tourismExhibitions"
-// 	case models.FaveTypeAgent:
-// 		collectionName = "tourismAgents"
-// 	default:
-// 		return []models.FaveItem{}, nil
-// 	}
+	// Determine the collection name based on the favorite type
+	var collectionName string
+	switch faveType {
+	case models.FaveTypeProgram:
+		collectionName = "tourismPrograms"
+	case models.FaveTypeHotel:
+		collectionName = "tourismHotels"
+	case models.FaveTypeDiary:
+		collectionName = "tourismDiaries"
+	case models.FaveTypeExhibition:
+		collectionName = "tourismExhibitions"
+	case models.FaveTypeAgent:
+		collectionName = "tourismAgents"
+	default:
+		return []models.FaveItem{}, nil
+	}
 
-// 	pipeline := []bson.M{
-// 		{
-// 			"$match": bson.M{
-// 				"type":   faveType,
-// 				"isFav":  true,
-// 				"userId": userId,
-// 				"trash":  bson.M{"$ne": true},
-// 			},
-// 		},
-// 		{
-// 			"$lookup": bson.M{
-// 				"from":         collectionName,
-// 				"localField":   "refId",
-// 				"foreignField": "_id",
-// 				"as":           "item",
-// 			},
-// 		},
-// 		{
-// 			"$unwind": bson.M{
-// 				"path":                       "$item",
-// 				"preserveNullAndEmptyArrays": true,
-// 			},
-// 		},
-// 	}
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"type":   faveType,
+				"isFav":  true,
+				"userId": userId,
+				"trash":  bson.M{"$ne": true},
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         collectionName,
+				"localField":   "refId",
+				"foreignField": "_id",
+				"as":           "item",
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$item",
+				"preserveNullAndEmptyArrays": true,
+			},
+		},
+	}
 
-// 	var result []models.FaveItem
-// 	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
-// 		return cur.All(ctx, &result)
-// 	})
+	var result []models.FaveItem
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
 
-// 	return result, nil
-// }
+	return result, nil
+}

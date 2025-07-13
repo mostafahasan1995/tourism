@@ -4,18 +4,19 @@ import (
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type FaveType string
 
 const (
-	FaveTypeProgram     FaveType = "program"
-	FaveTypeHotel       FaveType = "hotel"
-	FaveTypeDiary       FaveType = "diary"
+	FaveTypeProgram     FaveType = "program" // DONE
+	FaveTypeHotel       FaveType = "hotel"   // DONE
+	FaveTypeDiary       FaveType = "diary"   // DONE
 	FaveTypeExhibition  FaveType = "exhibition"
-	FaveTypeAgent       FaveType = "agent"
-	FaveTypeDestination FaveType = "destination"
+	FaveTypeAgent       FaveType = "agent"       // DONE
+	FaveTypeDestination FaveType = "destination" // DONE
 )
 
 type FaveDto struct {
@@ -39,4 +40,58 @@ type FaveItem struct {
 type FavePagination struct {
 	Faves      []Fave           `bson:"faves" json:"faves"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}
+
+// BuildFavoritePipeline create a pipeline to add favorite to items
+// Used with any favtype (program, hotel, etc.)
+func BuildFavoritePipeline(userId primitive.ObjectID, faveType FaveType) []bson.M {
+	return []bson.M{
+		{
+			"$lookup": bson.M{
+				"from": "tourismFavorites",
+				"let":  bson.M{"itemId": "$_id"},
+				"pipeline": []bson.M{
+					{
+						"$match": bson.M{
+							"$expr": bson.M{
+								"$and": []bson.M{
+									{"$eq": []interface{}{"$refId", "$$itemId"}},
+									{"$eq": []interface{}{"$type", faveType}},
+									{"$eq": []interface{}{"$userId", userId}},
+									{"$eq": []interface{}{"$isFav", true}},
+								},
+							},
+							"trash": bson.M{"$ne": true},
+						},
+					},
+				},
+				"as": "faveRecord",
+			},
+		},
+		{
+			"$addFields": bson.M{
+				"isFav": bson.M{
+					"$gt": []interface{}{
+						bson.M{"$size": "$faveRecord"},
+						0,
+					},
+				},
+			},
+		},
+		{
+			"$project": bson.M{
+				"faveRecord": 0, // Remove temporary field
+			},
+		},
+	}
+}
+
+// BuildDefaultFavorite adds a default isFav field set to false
+// Use this when user is not authenticated
+func BuildDefaultFavorite() bson.M {
+	return bson.M{
+		"$addFields": bson.M{
+			"isFav": false,
+		},
+	}
 }
