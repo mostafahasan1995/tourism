@@ -42,7 +42,7 @@ func NewProgramHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/programs/v2", func(r chi.Router) {
 		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.GetV2))
-		r.Post("/all", helpers.Make(h.GetAll))
+		r.With(middleware.OptionalAuth()).Post("/all", helpers.Make(h.GetAll))
 	})
 
 }
