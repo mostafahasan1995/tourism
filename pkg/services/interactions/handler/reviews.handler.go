@@ -3,6 +3,7 @@ package handler
 import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/interactions"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/types"
@@ -52,6 +53,11 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/approve", helpers.Make(h.ApproveReview))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.RejectReview))
+	})
+
+	r.Route("/reviews/v2", func(r chi.Router) {
+		r.Post("/", helpers.Make(h.GetV2))
+		r.Post("/all", helpers.Make(h.GetAllV2))
 	})
 }
 func (h *ReviewsHandler) GetAllApproved(w http.ResponseWriter, r *http.Request) error {
@@ -416,4 +422,43 @@ func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Reque
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+//v2
+
+func (h *ReviewsHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	result, err := h.reviewsSvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *ReviewsHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	result, err := h.reviewsSvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

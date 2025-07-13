@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/interactions/filter"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
@@ -160,6 +161,10 @@ type ReviewsSvcs interface {
 	ApproveReview(ctx context.Context, reviewId string) (*models.Review, error)
 	RejectReview(ctx context.Context, reviewId string) (*models.Review, error)
 	Count(ctx context.Context, filter any) (int64, error)
+
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ReviewPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ReviewRes, error)
 }
 
 type reviewsSvcs struct {
@@ -172,6 +177,7 @@ func NewReviewsSvcs(i *do.Injector) (ReviewsSvcs, error) {
 	}, nil
 }
 
+// deprecated
 func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.ReviewRes, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false, "status": "approved"}},
@@ -197,6 +203,7 @@ func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.ReviewRes, e
 	return result, nil
 }
 
+// deprecated
 func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([]models.ReviewRes, error) {
 	match := bson.M{}
 
@@ -225,6 +232,7 @@ func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([
 	return result, nil
 }
 
+// deprecated
 func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error) {
 	match := bson.M{}
 
@@ -272,6 +280,8 @@ func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int6
 		Pagination: pagination,
 	}, nil
 }
+
+//
 
 func (s *reviewsSvcs) GetOne(ctx context.Context, id string) (*models.Review, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
@@ -768,4 +778,91 @@ func (s *reviewsSvcs) RejectReview(ctx context.Context, reviewId string) (*model
 
 func (s *reviewsSvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return s.repo.Count(ctx, filter)
+}
+
+//v2
+
+func (s *reviewsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ReviewPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	var result []models.ReviewRes
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ReviewPagination{
+		Reviews:    result,
+		Pagination: pagination,
+	}, nil
+
+}
+
+func (s *reviewsSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ReviewRes, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+
+	var result []models.ReviewRes
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
