@@ -18,6 +18,92 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var refLookup = []bson.M{
+	{
+		"$facet": bson.M{
+			"hotelRef": []bson.M{
+				{
+					"$match": bson.M{"type": "hotel"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismHotels",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"destinationRef": []bson.M{
+				{
+					"$match": bson.M{"type": "destination"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismDestinations",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"programRef": []bson.M{
+				{
+					"$match": bson.M{"type": "program"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismPrograms",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"agentRef": []bson.M{
+				{
+					"$match": bson.M{"type": "agent"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismAgents",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+		},
+	},
+	{
+		"$project": bson.M{
+			"result": bson.M{
+				"$concatArrays": []interface{}{
+					"$hotelRef",
+					"$destinationRef",
+					"$programRef",
+					"$agentRef",
+				},
+			},
+		},
+	},
+	{
+		"$unwind": "$result",
+	},
+	{
+		"$replaceRoot": bson.M{
+			"newRoot": "$result",
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"refData": bson.M{
+				"$arrayElemAt": []interface{}{"$refData", 0},
+			},
+		},
+	},
+}
+
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
@@ -50,8 +136,12 @@ func NewReviewsSvcs(i *do.Injector) (ReviewsSvcs, error) {
 func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.Review, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false, "status": "approved"}},
-		{"$sort": bson.M{"date": -1, "createdAt": -1}},
 	}
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 
 	var result []models.Review
 	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -77,6 +167,10 @@ func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([
 
 	// Don't filter by status - get all reviews regardless of status
 	pipeline := filters.BuildPipeline(match)
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 
 	var result []models.Review
@@ -113,7 +207,10 @@ func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int6
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Review
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+
+	var result []models.ReviewRes
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -161,11 +258,17 @@ func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query any) (*m
 		return nil, err
 	}
 
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Review
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+
+	var result []models.ReviewRes
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -393,7 +496,7 @@ func (s *reviewsSvcs) AddFromDashboard(ctx context.Context, data *models.ReviewD
 	createdBy = userObjectId
 
 	// Validate countries for destination type
-	if data.Type == "destination" && (data.Countries == nil || len(data.Countries) == 0) {
+	if data.Type == "destination" && (len(data.Countries) == 0) {
 		return nil, helpers.BadRequest("countries are required for destination reviews")
 	}
 

@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -15,26 +16,26 @@ type ReviewReply struct {
 }
 
 type ReviewDto struct {
-	Type               string                 `bson:"type" json:"type" validate:"required"`
-	Ref                primitive.ObjectID     `bson:"ref" json:"ref"`
-	UserId             string                 `bson:"userId" json:"userId"`
-	FirstName          string                 `bson:"firstName" json:"firstName"`
-	LastName           string                 `bson:"lastName" json:"lastName"`
-	Email              string                 `bson:"email" json:"email"`
-	Username           string                 `bson:"username" json:"username"`
-	UserImg            *types.FileField       `bson:"userImg,omitempty" json:"userImg,omitempty"`
-	Destination        string                 `bson:"destination,omitempty" json:"destination,omitempty"`
-	Countries          []string               `bson:"countries,omitempty" json:"countries,omitempty"`
-	Description        interface{}            `bson:"description" json:"description" validate:"required"`
-	AdviceForTravelers string                 `bson:"adviceForTravelers,omitempty" json:"adviceForTravelers,omitempty"`
-	Value              float64                `bson:"value" json:"value" validate:"required,min=1,max=5"`
-	Images             []types.FileField      `bson:"images" json:"images"`
-	Status             string                 `bson:"status" json:"status"`
-	Date               time.Time              `bson:"date" json:"date"`
-	Replies            []ReviewReply          `bson:"replies" json:"replies"`
-	Customer           string                 `bson:"customer,omitempty" json:"customer,omitempty"`
-	Metadata           map[string]interface{} `bson:"metadata,omitempty" json:"metadata,omitempty"`
-	Text               string                 `bson:"text,omitempty" json:"text,omitempty"`
+	Type               string             `bson:"type" json:"type" validate:"required,oneof=general hotel destination program agent"` //e.g general - hotel - destination - program - agent
+	Ref                primitive.ObjectID `bson:"ref" json:"ref" `
+	UserId             string             `bson:"userId" json:"userId"`
+	FirstName          string             `bson:"firstName" json:"firstName"`
+	LastName           string             `bson:"lastName" json:"lastName"`
+	Email              string             `bson:"email" json:"email"`
+	Username           string             `bson:"username" json:"username"`
+	UserImg            *types.FileField   `bson:"userImg,omitempty" json:"userImg,omitempty"`
+	Destination        string             `bson:"destination,omitempty" json:"destination,omitempty"`
+	Countries          []string           `bson:"countries,omitempty" json:"countries,omitempty"`
+	Description        any                `bson:"description" json:"description" validate:"required"`
+	AdviceForTravelers string             `bson:"adviceForTravelers,omitempty" json:"adviceForTravelers,omitempty"`
+	Value              float64            `bson:"value" json:"value" validate:"required,min=1,max=5"`
+	Images             []types.FileField  `bson:"images" json:"images"`
+	Status             string             `bson:"status" json:"status"`
+	Date               time.Time          `bson:"date" json:"date"`
+	Replies            []ReviewReply      `bson:"replies" json:"replies"`
+	Customer           string             `bson:"customer,omitempty" json:"customer,omitempty"`
+	Metadata           map[string]any     `bson:"metadata,omitempty" json:"metadata,omitempty"`
+	Text               string             `bson:"text,omitempty" json:"text,omitempty"`
 	//ProfileImage       *types.FileField       `bson:"profileImage" json:"profileImage"`
 }
 
@@ -52,8 +53,19 @@ type Review struct {
 	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 }
 
+type ReviewRes struct {
+	Review   `bson:",inline"`
+	RefData  RefData `bson:"refData" json:"refData"`
+	UserData any     `bson:"userData" json:"userData"`
+}
+
+type RefData struct {
+	Name  *transl.Localizable[string] `bson:"name,omitempty" json:"name,omitempty"`
+	Title *transl.Localizable[string] `bson:"title,omitempty" json:"title,omitempty"`
+}
+
 type ReviewPagination struct {
-	Reviews    []Review         `bson:"reviews" json:"reviews"`
+	Reviews    []ReviewRes      `bson:"reviews" json:"reviews"`
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
 

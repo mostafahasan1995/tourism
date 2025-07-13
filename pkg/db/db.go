@@ -42,6 +42,10 @@ func InitDB() (*mongo.Client, error) {
 	//SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
 	logger := log.New(os.Stdout, "mongo: ", log.LstdFlags)
 
+	bsonOpts := &options.BSONOptions{
+		DefaultDocumentM: true,
+	}
+
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetMonitor(&event.CommandMonitor{
 		Started: func(ctx context.Context, evt *event.CommandStartedEvent) {
 			logger.Println(evt.Command)
@@ -58,7 +62,7 @@ func InitDB() (*mongo.Client, error) {
 			// logger.Println("Command Name -> ", evt.CommandName)
 			// logger.Println("Duration -> ", evt.Duration)
 		},
-	}))
+	}).SetBSONOptions(bsonOpts))
 
 	if err != nil {
 		return nil, err

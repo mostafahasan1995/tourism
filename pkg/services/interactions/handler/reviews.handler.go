@@ -389,11 +389,11 @@ func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Validate review type
-	if data.Type != "agent" && data.Type != "hotel" && data.Type != "destination" && data.Type != "general" {
-		return helpers.BadRequest("Invalid review type. Must be one of: agent, hotel, destination, general")
-	}
+	// if data.Type != "agent" && data.Type != "hotel" && data.Type != "destination" && data.Type != "general" {
+	// 	return helpers.BadRequest("Invalid review type. Must be one of: agent, hotel, destination, general")
+	// }
 
-	// Handle general type with no refId
+	// // Handle general type with no refId
 	if data.Type == "general" {
 		data.Ref = primitive.NilObjectID
 	} else if data.Ref.IsZero() {
@@ -402,7 +402,7 @@ func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Reque
 	}
 
 	// Validate countries for destination type
-	if data.Type == "destination" && (data.Countries == nil || len(data.Countries) == 0) {
+	if data.Type == "destination" && (len(data.Countries) == 0) {
 		return helpers.BadRequest("countries are required for destination reviews")
 	}
 
