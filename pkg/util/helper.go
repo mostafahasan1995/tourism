@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"math/rand"
 
@@ -367,4 +368,15 @@ func StructToMap(obj any) (map[string]any, error) {
 	}
 
 	return result, nil
+}
+
+// input: "syria"
+// output: "Syria"
+func CapitalizeFirstLowerRest(s string) string {
+	if s == "" {
+		return s
+	}
+	runes := []rune(strings.ToLower(s))
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }

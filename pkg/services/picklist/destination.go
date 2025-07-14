@@ -191,6 +191,7 @@ func (d *destinationSvcs) AddManyNameOnly(ctx context.Context, countries []strin
 			countriesToSave = append(countriesToSave, dest.Name)
 			continue
 		}
+		item = util.CapitalizeFirstLowerRest(item)
 		destination := &models.Destination{
 			Id: primitive.NewObjectID(),
 			DestinationDto: models.DestinationDto{
