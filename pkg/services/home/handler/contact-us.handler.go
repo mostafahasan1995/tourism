@@ -96,7 +96,10 @@ func NewContactUsHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
-
+		r.Route("/settings", func(r chi.Router) {
+			r.Get("/", helpers.Make(h.GetSettings))
+			r.Post("/", helpers.Make(h.AddOrUpdateSettings))
+		})
 		// V2
 		r.Route("/v2", func(r chi.Router) {
 			r.Post("/", helpers.Make(h.GetV2))
@@ -292,4 +295,26 @@ func (l *ContactUsHandler) GetAllV2(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (l *ContactUsHandler) GetSettings(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	settings, err := l.contactUssvcs.GetSettings(ctx)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, settings)
+}
+
+func (l *ContactUsHandler) AddOrUpdateSettings(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var settings models.ContactUsSettingsDto
+	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
+		return err
+	}
+	err := l.contactUssvcs.AddOrUpdateSettings(ctx, &settings)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{"message": "Settings updated successfully"})
 }

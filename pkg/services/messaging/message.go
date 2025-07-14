@@ -58,7 +58,12 @@ func (m *messagesvcs) firstOrUpdate(ctx context.Context, msg *models.Message) er
 	if msg.Id == primitive.NilObjectID {
 		msg.Id = primitive.NewObjectID()
 		msg.CreatedAt = time.Now()
-		msg.CreatedBy = cfg.User.Id
+		//	Check if used is authenticated
+		if cfg.User != nil {
+			msg.CreatedBy = cfg.User.Id
+		} else {
+			msg.CreatedBy = primitive.NilObjectID
+		}
 
 		if err := m.repo.Add(ctx, msg); err != nil {
 			return err
