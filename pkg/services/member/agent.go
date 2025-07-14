@@ -86,12 +86,7 @@ func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.AgentRe
 
 	pipeline := []bson.M{{"$match": bson.M{"_id": _id, "trash": false}}}
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeAgent)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeAgent)...)
 
 	var result []models.AgentRes
 	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -634,12 +629,7 @@ func (a *agentsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.C
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeAgent)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeAgent)...)
 
 	var result []models.AgentRes
 	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {

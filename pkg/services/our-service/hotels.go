@@ -60,12 +60,7 @@ func (h *hotelsSvcs) GetOne(ctx context.Context, id string) (*models.HotelsRes, 
 		{"$match": bson.M{"_id": _id, "trash": false}},
 	}
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeHotel)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeHotel)...)
 
 	var result []models.HotelsRes
 	errAg := h.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -228,55 +223,8 @@ func (h *hotelsSvcs) GetAll(ctx context.Context, query any, page, perPage int64)
 		pipeline = append(pipeline, filterStages...)
 	}
 
-	// Add fave lookup - check if user is authenticated
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		// User is authenticated, add lookup to check favorites
-		pipeline = append(pipeline, bson.M{
-			"$lookup": bson.M{
-				"from": "tourismFavorites",
-				"let":  bson.M{"hotelId": "$_id"},
-				"pipeline": []bson.M{
-					{
-						"$match": bson.M{
-							"$expr": bson.M{
-								"$and": []bson.M{
-									{"$eq": []interface{}{"$refId", "$$hotelId"}},
-									{"$eq": []interface{}{"$type", "hotel"}},
-									{"$eq": []interface{}{"$userId", cfg.User.Id}},
-									{"$eq": []interface{}{"$isFav", true}},
-								},
-							},
-							"trash": bson.M{"$ne": true},
-						},
-					},
-				},
-				"as": "faveRecord",
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": bson.M{
-					"$gt": []interface{}{
-						bson.M{"$size": "$faveRecord"},
-						0,
-					},
-				},
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$project": bson.M{
-				"faveRecord": 0,
-			},
-		})
-	} else {
-		// User not authenticated, set isFav to false
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": false,
-			},
-		})
-	}
+	// Add favorite pipeline using shared logic
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeHotel)...)
 
 	// Count for pagination (exclude skip/limit from count pipeline)
 	countPipeline := make([]bson.M, len(pipeline))
@@ -457,16 +405,8 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 		{"$match": filter},
 	}
 
-	// Add favorite  pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		// User is authenticated - add favorite lookup
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeHotel)...)
-	} else {
-		log.Println("User not authenticated - set default favorite status")
-		// User not authenticated - set default favorite status
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	// Add favorite pipeline using shared logic
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeHotel)...)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
