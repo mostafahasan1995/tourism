@@ -17,6 +17,8 @@ import (
 	"math"
 	"time"
 
+	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
+
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -175,7 +177,13 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 	pipeline = append(pipeline, packageLookup...)
 	pipeline = append(pipeline, updatedByUserLookup...)
 	pipeline = append(pipeline, durationLookup)
-
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
@@ -212,54 +220,12 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	// Calculate duration in days between startDate and endDate
 	pipeline = append(pipeline, durationLookup)
 
-	// Add fave lookup - check if user is authenticated
+	// add favorite pipeline
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		// User is authenticated, add lookup to check favorites
-		pipeline = append(pipeline, bson.M{
-			"$lookup": bson.M{
-				"from": "tourismFavorites",
-				"let":  bson.M{"programId": "$_id"},
-				"pipeline": []bson.M{
-					{
-						"$match": bson.M{
-							"$expr": bson.M{
-								"$and": []bson.M{
-									{"$eq": []interface{}{"$refId", "$$programId"}},
-									{"$eq": []interface{}{"$type", "program"}},
-									{"$eq": []interface{}{"$userId", cfg.User.Id}},
-									{"$eq": []interface{}{"$isFav", true}},
-								},
-							},
-							"trash": bson.M{"$ne": true},
-						},
-					},
-				},
-				"as": "faveRecord",
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": bson.M{
-					"$gt": []interface{}{
-						bson.M{"$size": "$faveRecord"},
-						0,
-					},
-				},
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$project": bson.M{
-				"faveRecord": 0,
-			},
-		})
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
 	} else {
-		// User not authenticated, set isFav to false
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": false,
-			},
-		})
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
 	}
 
 	countPipeline := make([]bson.M, len(pipeline))
@@ -307,13 +273,19 @@ func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Progra
 	}
 
 	pipeline := filters.BuildPipeline(match)
-
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
+	} else {
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
+	}
 	var result []models.Program
-	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+	err = p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
-	if errAg != nil {
-		return nil, errAg
+	if err != nil {
+		return nil, err
 	}
 
 	return result, nil
@@ -608,64 +580,14 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	//
-
-	// Add customer, package, and user lookups first
-	pipeline = append(pipeline, customerLookup...)
-	pipeline = append(pipeline, packageLookup...)
-	pipeline = append(pipeline, updatedByUserLookup...)
-
-	// Calculate duration in days between startDate and endDate
-	pipeline = append(pipeline, durationLookup)
-
-	// Add fave lookup - check if user is authenticated
+	// Add favorite status using helper function
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err == nil && cfg.User != nil {
-		// User is authenticated, add lookup to check favorites
-		pipeline = append(pipeline, bson.M{
-			"$lookup": bson.M{
-				"from": "tourismFavorites",
-				"let":  bson.M{"programId": "$_id"},
-				"pipeline": []bson.M{
-					{
-						"$match": bson.M{
-							"$expr": bson.M{
-								"$and": []bson.M{
-									{"$eq": []interface{}{"$refId", "$$programId"}},
-									{"$eq": []interface{}{"$type", "program"}},
-									{"$eq": []interface{}{"$userId", cfg.User.Id}},
-									{"$eq": []interface{}{"$isFav", true}},
-								},
-							},
-							"trash": bson.M{"$ne": true},
-						},
-					},
-				},
-				"as": "faveRecord",
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": bson.M{
-					"$gt": []interface{}{
-						bson.M{"$size": "$faveRecord"},
-						0,
-					},
-				},
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$project": bson.M{
-				"faveRecord": 0,
-			},
-		})
+		// User is authenticated - add favorite lookup
+		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
 	} else {
-		// User not authenticated, set isFav to false
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": false,
-			},
-		})
+		// User not authenticated - set default favorite status
+		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
 	}
 
 	var result []models.ProgramRes
@@ -675,9 +597,6 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 	if errAg != nil {
 		return nil, errAg
 	}
-
-	// The isFav field should already be populated correctly from the pipeline
-	// No manual assignment needed as it comes directly from the aggregation
 
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
 	pagination := types.Pagination{

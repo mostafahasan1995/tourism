@@ -7,6 +7,7 @@ import (
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/interactions/filter"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
+
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
@@ -80,6 +81,12 @@ func (t *travelexpersvcs) GetTravelerStory(ctx context.Context, storyId string) 
 		},
 	}
 
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeTravelerStory)...)
+	} else {
+		pipeline = append(pipeline, models.BuildDefaultFavorite())
+	}
 	var result []models.TravelerStoryRes
 	err = t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
@@ -173,7 +180,13 @@ func (t *travelexpersvcs) GetTravelerStories(ctx context.Context, skip, limit in
 	})
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
-
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeTravelerStory)...)
+	} else {
+		pipeline = append(pipeline, models.BuildDefaultFavorite())
+	}
 	var result []models.TravelerStoryRes
 	errAg := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
@@ -381,6 +394,13 @@ func (t *travelexpersvcs) GetClientStories(ctx context.Context, skip, limit int6
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeClientStory)...)
+	} else {
+		pipeline = append(pipeline, models.BuildDefaultFavorite())
+	}
 	var result []models.ClientStory
 	errAg := t.clientStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
@@ -563,6 +583,13 @@ func (t *travelexpersvcs) GetTravelerStoriesV2(ctx context.Context, skip, limit 
 		},
 	})
 
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeTravelerStory)...)
+	} else {
+		pipeline = append(pipeline, models.BuildDefaultFavorite())
+	}
 	var result []models.TravelerStoryRes
 	errAg := t.travelerStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
@@ -614,6 +641,13 @@ func (t *travelexpersvcs) GetClientStoriesV2(ctx context.Context, skip, limit in
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
+	// add favorite pipeline
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		pipeline = append(pipeline, models.BuildFavoritePipeline(cfg.User.Id, models.FaveTypeClientStory)...)
+	} else {
+		pipeline = append(pipeline, models.BuildDefaultFavorite())
+	}
 	var result []models.ClientStory
 	errAg := t.clientStoryRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {

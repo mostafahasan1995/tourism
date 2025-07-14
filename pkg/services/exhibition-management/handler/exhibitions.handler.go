@@ -42,7 +42,7 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 		// Public routes
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/all", helpers.Make(h.GetAll))
-		r.Get("/{id}", helpers.Make(h.GetById))
+		r.With(middleware.OptionalAuth()).Get("/{id}", helpers.Make(h.GetById))
 		r.Get("/{id}/related", helpers.Make(h.GetRelatedExhibitions))
 
 		// Authenticated routes
@@ -92,7 +92,7 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 
 	// v2 routes with filter support
 	r.Route("/exhibitions/v2", func(r chi.Router) {
-		r.Post("/", helpers.Make(h.GetV2))
+		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.GetV2))
 	})
 }
 
