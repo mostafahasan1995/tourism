@@ -197,7 +197,7 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 	}
 
 	// isFav is now populated directly from the pipeline
-	result[0].IsFav = result[0].Program.IsFav
+	//result[0].IsFav = result[0].Program.IsFav
 
 	return &result[0], nil
 }
