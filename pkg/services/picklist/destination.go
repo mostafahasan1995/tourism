@@ -26,6 +26,7 @@ type DestinationSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query any) (*models.DestinationPaginationRes, error)
 	GetAll(ctx context.Context, query any) ([]models.Destination, error)
 	Add(ctx context.Context, data *models.DestinationDto) (*models.Destination, error)
+	AddManyNameOnly(ctx context.Context, data []string) (countriesToSave []string, err error)
 	Update(ctx context.Context, id string, data *models.DestinationDto) (*models.Destination, error)
 	UpdateIsFav(ctx context.Context, id string, isFav bool) error
 	Delete(ctx context.Context, id string) error
@@ -163,6 +164,54 @@ func (d *destinationSvcs) Add(ctx context.Context, data *models.DestinationDto) 
 	}
 
 	return destination, nil
+}
+
+func (d *destinationSvcs) AddManyNameOnly(ctx context.Context, countries []string) (countriesToSave []string, err error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(countries) == 0 {
+		return nil, errors.New("no data provided")
+	}
+	// The destinations to be added to the database
+	createdDests := make([]any, 0, len(countries))
+	// the countries provided updated with the case found in the db
+	countriesToSave = make([]string, 0, len(countries))
+
+	for _, item := range countries {
+		// Chcecking if the destination exists regardless of the case
+		filter := bson.M{"name": bson.M{"$regex": "^" + item + "$", "$options": "i"}, "trash": false}
+		dest, err := d.repo.GetByFilter(ctx, filter)
+		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+			return countriesToSave, err
+		}
+		if dest != nil {
+			countriesToSave = append(countriesToSave, dest.Name)
+			continue
+		}
+		destination := &models.Destination{
+			Id: primitive.NewObjectID(),
+			DestinationDto: models.DestinationDto{
+				Name: item,
+			},
+			CreatedAt: time.Now(),
+			CreatedBy: cfg.User.Id,
+		}
+		countriesToSave = append(countriesToSave, item)
+		createdDests = append(createdDests, destination)
+	}
+
+	if len(createdDests) == 0 {
+		return countriesToSave, nil
+	}
+
+	err = d.repo.AddMany(ctx, createdDests)
+	if err != nil {
+		return countriesToSave, err
+	}
+	return countriesToSave, nil
 }
 
 func (d *destinationSvcs) Update(ctx context.Context, id string, data *models.DestinationDto) (*models.Destination, error) {

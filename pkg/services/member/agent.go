@@ -211,7 +211,15 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 
 		agent.AgentId = fmt.Sprintf("AG-%d", seq)
 		agent.Security.NewPassword = ""
+		// add destinations to the database
+		countriesToSave, err := a.destinationsvcs.AddManyNameOnly(ctx, agent.Countries)
+		if err != nil {
+			return nil, err
+		}
 
+		fmt.Println("countriesToSave: ", countriesToSave)
+		// update the countries with the case found in the db
+		agent.Countries = countriesToSave
 		if err := a.repo.Add(ctx, agent); err != nil {
 			return nil, err
 		}
