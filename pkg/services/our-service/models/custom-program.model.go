@@ -197,22 +197,12 @@ func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
 		}
 		services = append(services, service)
 
-		// Map the struct into a map[string]any
-		serviceConfigs, err := util.StructToMap(des.Services)
-		// check for error
+		// Convert services to invoice services
+		destServices, err := convertServicesToInvoiceServices(des.Services)
 		if err != nil {
 			return nil, err
 		}
-		// Append services
-		for key, value := range serviceConfigs {
-			if value.(Service).Active {
-				services = append(services, InvoiceService{
-					Item:  key,
-					Price: value.(Service).Cost,
-					Qty:   1,
-				})
-			}
-		}
+		services = append(services, destServices...)
 	}
 
 	for _, des := range cp.FlightTicketRequest.Destinations {
@@ -222,6 +212,12 @@ func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
 			Qty:   1,
 		}
 		services = append(services, service)
+		// Convert services to invoice services
+		destServices, err := convertServicesToInvoiceServices(des.Services)
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, destServices...)
 	}
 
 	return services, nil
@@ -260,4 +256,25 @@ func (cp *CustomProgram) GetTotalPrice() (float64, error) {
 		total += service.Price * float64(service.Qty)
 	}
 	return total, nil
+}
+
+// convertServicesToInvoiceServices converts service configurations to invoice services
+func convertServicesToInvoiceServices(servicesConfig ProgramServices) ([]InvoiceService, error) {
+	serviceConfigs, err := util.StructToMap(servicesConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	var services []InvoiceService
+	for key, value := range serviceConfigs {
+		if value.(Service).Active {
+			services = append(services, InvoiceService{
+				Item:  key,
+				Price: value.(Service).Cost,
+				Qty:   1,
+			})
+		}
+	}
+
+	return services, nil
 }
