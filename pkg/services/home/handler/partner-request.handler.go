@@ -29,7 +29,7 @@ func NewPartnerRequestHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/partner-requests", func(r chi.Router) {
 		// Public endpoints
-		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.Add))
 
 		// Protected endpoints
 		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))

@@ -128,11 +128,15 @@ func (s *partnerRequestSvcs) Add(ctx context.Context, data *models.PartnerReques
 		UpdatedAt:         time.Now(),
 	}
 
-	// Try to get user info if authenticated
 	cfg, _ := util.GetReqAppCfg(ctx)
-
-	request.CreatedBy = cfg.User.Id
-	request.UpdatedBy = cfg.User.Id
+	var userId primitive.ObjectID
+	if cfg.User != nil {
+		userId = cfg.User.Id
+	} else {
+		userId = primitive.NilObjectID
+	}
+	request.CreatedBy = userId
+	request.UpdatedBy = userId
 
 	if err := s.repo.Add(ctx, request); err != nil {
 		return nil, err
