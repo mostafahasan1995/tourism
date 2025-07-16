@@ -3,7 +3,6 @@ package picklist
 import (
 	"context"
 	"errors"
-	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
 	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
@@ -69,13 +68,7 @@ func (d *destinationSvcs) Get(ctx context.Context, skip, limit int64, query any)
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
 	// add favorite pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
-
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeDestination)...)
 	var result []models.DestinationRes
 	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
@@ -105,12 +98,7 @@ func (d *destinationSvcs) GetOne(ctx context.Context, id string) (*models.Destin
 
 	pipeline := []bson.M{{"$match": bson.M{"_id": _id, "trash": false}}}
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeDestination)...)
 
 	var result []models.DestinationRes
 	errAg := d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -118,6 +106,10 @@ func (d *destinationSvcs) GetOne(ctx context.Context, id string) (*models.Destin
 	})
 	if errAg != nil {
 		return nil, errAg
+	}
+	// to avoid panic if no destination found
+	if len(result) == 0 {
+		return nil, mongo.ErrNoDocuments
 	}
 
 	return &result[0], nil
@@ -290,13 +282,7 @@ func (d *destinationSvcs) GetAllV2(ctx context.Context, query *query.Conditions)
 
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
 	// add favorite pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	fmt.Println("cfg", cfg.User)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeDestination)...)
 
 	var result []models.DestinationRes
 	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
@@ -337,12 +323,7 @@ func (d *destinationSvcs) GetV2(ctx context.Context, skip, limit int64, query *q
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
 	// add favorite pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeDestination)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeDestination)...)
 
 	var result []models.DestinationRes
 	err = d.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {

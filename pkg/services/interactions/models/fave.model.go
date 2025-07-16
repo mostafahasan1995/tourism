@@ -1,8 +1,11 @@
 package models
 
 import (
+	"context"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
+
+	"larsa-tourism-microservices/pkg/util"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -43,9 +46,18 @@ type FavePagination struct {
 	Pagination types.Pagination `bson:"pagination" json:"pagination"`
 }
 
-// BuildFavoritePipeline create a pipeline to add favorite to items
+func BuildFavoritePipelineWithAuth(ctx context.Context, faveType FaveType) []bson.M {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err == nil && cfg.User != nil {
+		return buildFavoritePipeline(cfg.User.Id, faveType)
+	} else {
+		return []bson.M{buildDefaultFavorite()}
+	}
+}
+
+// buildFavoritePipeline create a pipeline to add favorite to items
 // Used with any favtype (program, hotel, etc.)
-func BuildFavoritePipeline(userId primitive.ObjectID, faveType FaveType) []bson.M {
+func buildFavoritePipeline(userId primitive.ObjectID, faveType FaveType) []bson.M {
 	return []bson.M{
 		{
 			"$lookup": bson.M{
@@ -87,9 +99,9 @@ func BuildFavoritePipeline(userId primitive.ObjectID, faveType FaveType) []bson.
 	}
 }
 
-// BuildDefaultFavorite adds a default isFav field set to false
+// buildDefaultFavorite adds a default isFav field set to false
 // Use this when user is not authenticated
-func BuildDefaultFavorite() bson.M {
+func buildDefaultFavorite() bson.M {
 	return bson.M{
 		"$addFields": bson.M{
 			"isFav": false,

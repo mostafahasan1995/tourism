@@ -377,12 +377,7 @@ func (s *exhibitionSvcs) GetById(ctx context.Context, id string) (*models.Exhibi
 
 	pipeline := []bson.M{{"$match": bson.M{"_id": objID, "trash": false}}}
 
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeExhibition)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeExhibition)...)
 
 	var result []models.Exhibition
 	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
