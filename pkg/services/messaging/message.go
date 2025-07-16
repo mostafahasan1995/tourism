@@ -55,6 +55,13 @@ func (m *messagesvcs) firstOrUpdate(ctx context.Context, msg *models.Message) er
 	if err != nil {
 		return err
 	}
+
+	if cfg.User != nil {
+		msg.CreatedBy = cfg.User.Id
+	} else {
+		msg.CreatedBy = primitive.NilObjectID
+	}
+
 	if msg.Id == primitive.NilObjectID {
 		msg.Id = primitive.NewObjectID()
 		msg.CreatedAt = time.Now()

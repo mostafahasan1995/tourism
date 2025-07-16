@@ -178,12 +178,7 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 	pipeline = append(pipeline, updatedByUserLookup...)
 	pipeline = append(pipeline, durationLookup)
 	// add favorite pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
@@ -221,12 +216,7 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	pipeline = append(pipeline, durationLookup)
 
 	// add favorite pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
@@ -274,12 +264,7 @@ func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Progra
 
 	pipeline := filters.BuildPipeline(match)
 	// add favorite pipeline
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
-	} else {
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 	var result []models.Program
 	err = p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
@@ -580,15 +565,7 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	// Add favorite status using helper function
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		// User is authenticated - add favorite lookup
-		pipeline = append(pipeline, interactionsModels.BuildFavoritePipeline(cfg.User.Id, interactionsModels.FaveTypeProgram)...)
-	} else {
-		// User not authenticated - set default favorite status
-		pipeline = append(pipeline, interactionsModels.BuildDefaultFavorite())
-	}
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 
 	var result []models.ProgramRes
 	errAg := p.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {

@@ -44,6 +44,7 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 				</div>
 				`,
 	},
+
 	enums.CONTACTUS: &ContactUsTpl{
 		Subject: "New Contact Us Submission",
 		Message: `<div dir="ltr">
@@ -61,4 +62,18 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 		{{end}}
 	</div>`,
 	},
+
+	enums.WELCOME_NEWSLETTER: &NewsletterWelcomeTpl{
+		Subject: "Welcome to our Newsletter!",
+		Message: `<div dir="ltr">
+		<p>Hi,</p>
+		<p>Thank you for subscribing to our newsletter!</p>
+		<p>We're excited to keep you updated with our latest news, offers, and updates.</p>
+		<p>If you have any questions, feel free to reply to this email.</p>
+		<p><strong>Best Regards,</strong></p>
+		<p><strong>{{.CompanyName}}</strong></p>
+	</div>`,
+	},
+	//...other templates
+
 }
