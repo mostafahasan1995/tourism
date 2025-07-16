@@ -20,7 +20,7 @@ func NewReviewsRepo(i *do.Injector) (ReviewsRepo, error) {
 	return &reviewsRepo{
 		MainRepoImpl: dbrepo.MainRepoImpl[models.Review]{
 			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "unifiedReviews",
+			CollName: "tourismReviews",
 		},
 	}, nil
 }

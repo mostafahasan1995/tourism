@@ -375,7 +375,11 @@ func (t *travelrequestsvcs) getTravelRequestDepartureAgent(ctx context.Context, 
 
 	agent, err := t.agentsvcs.GetAgentByDestination(ctx, departureDestinationId.Hex())
 	if err != nil {
-		return nil, errors.New("error get departure destination agent, check if agent has destination and is active")
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return &primitive.NilObjectID, nil
+		} else {
+			return nil, errors.New("error get departure destination agent")
+		}
 	}
 
 	return &agent.Id, nil
@@ -504,6 +508,11 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 
 		request := result[0]
 
+		//Shouldn't be able to approve multiple times
+		if request.Status == enums.TravelReqStatusApproved {
+			return nil, errors.New("travel request already approved")
+		}
+
 		if request.CustomerId != cfg.User.Id {
 			return nil, errors.New("only owner of this travel request can approve it")
 		}
@@ -541,6 +550,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		}
 
 		svcss, err := program.CustomType.GetAllServicePricing()
+
 		if err != nil {
 			return nil, errors.New("error get program service list pricing")
 		}

@@ -7,10 +7,12 @@ import (
 	"math"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"math/rand"
 
@@ -325,4 +327,56 @@ func InsertAt[T any](slice []T, index int, element T) ([]T, error) {
 	newSlice := append(slice[:index], append([]T{element}, slice[index:]...)...)
 
 	return newSlice, nil
+}
+
+// StructToMap converts a struct to a map[string]any
+func StructToMap(obj any) (map[string]any, error) {
+	result := make(map[string]any)
+
+	v := reflect.ValueOf(obj)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	if v.Kind() != reflect.Struct {
+		return nil, fmt.Errorf("input must be a struct, got %v", v.Kind())
+	}
+
+	t := v.Type()
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		fieldType := t.Field(i)
+
+		// Get the JSON tag name, fallback to field name
+		jsonTag := fieldType.Tag.Get("json")
+		if jsonTag == "" || jsonTag == "-" {
+			continue // Skip fields without JSON tags
+		}
+
+		// Handle comma-separated tags (e.g., "name,omitempty")
+		if idx := strings.Index(jsonTag, ","); idx != -1 {
+			jsonTag = jsonTag[:idx]
+		}
+
+		if jsonTag == "" {
+			jsonTag = fieldType.Name
+		}
+
+		// Convert field value
+		value := field.Interface()
+		result[jsonTag] = value
+	}
+
+	return result, nil
+}
+
+// input: "syria"
+// output: "Syria"
+func CapitalizeFirstLowerRest(s string) string {
+	if s == "" {
+		return s
+	}
+	runes := []rune(strings.ToLower(s))
+	runes[0] = unicode.ToUpper(runes[0])
+	return string(runes)
 }

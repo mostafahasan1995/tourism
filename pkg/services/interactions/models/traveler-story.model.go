@@ -46,6 +46,7 @@ type TravelerStoryWithPagination struct {
 
 type TravelerStoryRes struct {
 	TravelerStory    `bson:",inline"`
+	IsFav            bool `bson:"isFav" json:"isFav"`
 	DestinationsData []picklistmodels.Destination
 	ActivitiesData   []picklistmodels.Activities
 }

@@ -44,8 +44,8 @@ type CustomerSvcs interface {
 	//
 	RegisterAsCustomer(ctx context.Context, data *models.CustomerRegisterData) (*models.Customer, error)
 	//v2
-	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CustomerWithPagination, error)
-	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Customer, error)
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CustomerWithNewsletterAndPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.CustomerWithNewsletter, error)
 }
 
 type customerSvcs struct {
@@ -402,7 +402,7 @@ func (c *customerSvcs) RegisterAsCustomer(ctx context.Context, data *models.Cust
 }
 
 // v2
-func (c *customerSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CustomerWithPagination, error) {
+func (c *customerSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.CustomerWithNewsletterAndPagination, error) {
 	if err := query.CheckValid(); err != nil {
 		return nil, err
 	}
@@ -415,21 +415,23 @@ func (c *customerSvcs) GetV2(ctx context.Context, skip, limit int64, query *quer
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false}},
 		{"$match": filter},
-	}
 
-	countPipeline := make([]bson.M, len(pipeline))
-	copy(countPipeline, pipeline)
+		{"$sort": bson.M{"_id": -1}},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+	pipeline = append(pipeline, models.BuildNewsletterPipeline()...)
+	countPipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
 
 	count, err := c.repo.Count(ctx, countPipeline)
 	if err != nil {
 		return nil, err
 	}
 
-	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
-	pipeline = append(pipeline, bson.M{"$skip": skip})
-	pipeline = append(pipeline, bson.M{"$limit": limit})
-
-	var result []models.Customer
+	var result []models.CustomerWithNewsletter
 	errAg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -444,13 +446,13 @@ func (c *customerSvcs) GetV2(ctx context.Context, skip, limit int64, query *quer
 		TotalCount: count,
 	}
 
-	return &models.CustomerWithPagination{
+	return &models.CustomerWithNewsletterAndPagination{
 		Customers:  result,
 		Pagination: pagination,
 	}, nil
 }
 
-func (c *customerSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Customer, error) {
+func (c *customerSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.CustomerWithNewsletter, error) {
 	if err := query.CheckValid(); err != nil {
 		return nil, err
 	}
@@ -465,8 +467,8 @@ func (c *customerSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([
 		{"$sort": bson.M{"_id": -1}},
 		{"$match": filter},
 	}
-
-	var result []models.Customer
+	pipeline = append(pipeline, models.BuildNewsletterPipeline()...)
+	var result []models.CustomerWithNewsletter
 	errAgg := c.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})

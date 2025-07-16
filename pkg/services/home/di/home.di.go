@@ -15,6 +15,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//do.Provide(i, home.NewOurAgentsSvcs)
 	do.Provide(i, home.NewTrustedPartnersSvcs)
 	do.Provide(i, home.NewCustomerPersonaSvcs)
+
 	do.Provide(i, home.NewContactUsSvcs)
 	do.Provide(i, home.NewPartnerRequestSvcs)
 	// Reviews system moved to interactions service - removed from here
@@ -27,6 +28,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//repos
 
 	do.Provide(i, repo.NewContactUsRepo)
+	do.Provide(i, repo.NewContactUsSettingsRepo)
 	// do.Provide(i, repo.NewOurAgentsRepo)
 	do.Provide(i, repo.NewTrustedPartnersRepo)
 	do.Provide(i, repo.NewCustomerPersonaRepo)

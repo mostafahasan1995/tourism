@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
@@ -27,6 +28,10 @@ type SpiritualGiftSvcs interface {
 	Update(ctx context.Context, id string, data *models.SpiritualGiftDto) (*models.SpiritualGift, error)
 	Toggle(ctx context.Context, id string, enabled bool) (*models.SpiritualGift, error)
 	Delete(ctx context.Context, id string) error
+
+	// V2
+	GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.SpiritualGiftWithPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.SpiritualGift, error)
 }
 
 // spiritualGiftSvcs implements the SpiritualGiftSvcs interface
@@ -236,4 +241,74 @@ func (s *spiritualGiftSvcs) Delete(ctx context.Context, id string) error {
 
 	_, err = s.repo.Patch(ctx, filter, update)
 	return err
+}
+
+// V2
+func (s *spiritualGiftSvcs) GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.SpiritualGiftWithPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.SpiritualGift
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &models.SpiritualGiftWithPagination{
+		SpiritualGifts: result,
+		Pagination: types.Pagination{
+			TotalPages: math.Ceil(float64(count) / float64(limit)),
+			PerPage:    limit,
+			TotalCount: count,
+		},
+	}, nil
+}
+
+func (s *spiritualGiftSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.SpiritualGift, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.SpiritualGift
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result, nil
 }
