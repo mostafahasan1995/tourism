@@ -37,6 +37,7 @@ func NewReviewsHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/user/{userId}", helpers.Make(h.GetByUserId))
 		r.Route("/{entityType}/{refId}", func(r chi.Router) {
 			r.Get("/", helpers.Make(h.GetEntityReviews))
+			r.Get("/stats", helpers.Make(h.GetEntityStats))
 			//wesite review
 			r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.AddEntityReview))
 		})
@@ -344,6 +345,18 @@ func (h *ReviewsHandler) GetStats(w http.ResponseWriter, r *http.Request) error 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
+func (h *ReviewsHandler) GetEntityStats(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	entityType := chi.URLParam(r, "entityType")
+	refId := chi.URLParam(r, "refId")
+
+	result, err := h.reviewsSvcs.GetEntityStats(ctx, entityType, refId)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
 func (h *ReviewsHandler) GetByStatus(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 	status := chi.URLParam(r, "status")
@@ -399,11 +412,6 @@ func (h *ReviewsHandler) AddDashboardReview(w http.ResponseWriter, r *http.Reque
 	} else if data.Ref.IsZero() {
 		// Validate refId for non-general types
 		return helpers.BadRequest("refId is required for non-general review types")
-	}
-
-	// Validate countries for destination type
-	if data.Type == "destination" && (data.Countries == nil || len(data.Countries) == 0) {
-		return helpers.BadRequest("countries are required for destination reviews")
 	}
 
 	if err := data.Validate(h.validationInstance); err != nil {
