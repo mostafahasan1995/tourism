@@ -6,4 +6,5 @@ const (
 	None MsgTyps = iota
 	INVITATION
 	ACCOUNTUPDATED
+	WELCOME_NEWSLETTER
 )
