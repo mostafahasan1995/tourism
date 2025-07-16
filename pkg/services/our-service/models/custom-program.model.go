@@ -114,10 +114,12 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		})
 	}
 
+	// quantity was 0 for each service resulting in wrong total
 	if pd.Services.Photography.Active {
 		services = append(services, InvoiceService{
 			Item:  "Photography",
 			Price: pd.Services.Photography.Cost,
+			Qty:   1,
 		})
 	}
 
@@ -125,6 +127,7 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		services = append(services, InvoiceService{
 			Item:  "Airport Meet and Greet",
 			Price: pd.Services.AirportMeetAndGreet.Cost,
+			Qty:   1,
 		})
 	}
 
@@ -132,6 +135,7 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		services = append(services, InvoiceService{
 			Item:  "Sim Card and Internet",
 			Price: pd.Services.SimCardAndInternet.Cost,
+			Qty:   1,
 		})
 	}
 	return services, nil
