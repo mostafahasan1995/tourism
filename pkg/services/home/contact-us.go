@@ -12,9 +12,14 @@ import (
 	"math"
 	"time"
 
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingenums "larsa-tourism-microservices/pkg/services/messaging/enums"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
+	"larsa-tourism-microservices/pkg/services/messaging/template"
+
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
-	//"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -28,19 +33,24 @@ type ContactUsSvcs interface {
 	Update(ctx context.Context, id string, data *models.ContactUsDto) error
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
-
+	GetSettings(ctx context.Context) (*models.ContactUsSettings, error)
+	AddOrUpdateSettings(ctx context.Context, settings *models.ContactUsSettingsDto) error
 	// V2
 	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ContactUsPagination, error)
 	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ContactUs, error)
 }
 
 type contactUssvcs struct {
-	repo repo.ContactUsRepo
+	repo         repo.ContactUsRepo
+	settingsRepo repo.ContactUsSettingsRepo
+	messagesvcs  messaging.MessageSvcs
 }
 
 func NewContactUsSvcs(i *do.Injector) (ContactUsSvcs, error) {
 	return &contactUssvcs{
-		repo: do.MustInvoke[repo.ContactUsRepo](i),
+		repo:         do.MustInvoke[repo.ContactUsRepo](i),
+		settingsRepo: do.MustInvoke[repo.ContactUsSettingsRepo](i),
+		messagesvcs:  do.MustInvoke[messaging.MessageSvcs](i),
 	}, nil
 }
 
@@ -140,6 +150,11 @@ func (l *contactUssvcs) Add(ctx context.Context, data *models.ContactUsDto) erro
 		return err
 	}
 
+	err = l.SendContactUsEmail(ctx, data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -173,6 +188,10 @@ func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto)
 			UpdatedAt:    time.Now(),
 			UpdatedBy:    userId,
 		}
+		err = l.SendContactUsEmail(ctx, &flr)
+		if err != nil {
+			return err
+		}
 		contactUsArray = append(contactUsArray, contactUs)
 	}
 
@@ -183,7 +202,39 @@ func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto)
 
 	return nil
 }
+func (l *contactUssvcs) SendContactUsEmail(ctx context.Context, data *models.ContactUsDto) error {
+	settings, err := l.GetSettings(ctx)
+	if err != nil {
+		return err
+	}
 
+	tplData := template.ContactUsTplData{
+		FullName:        data.FullName,
+		EmailAddress:    data.EmailAddress,
+		PhoneNumber:     data.PhoneNumber,
+		HowDidYouFindUs: data.HowDidYouFindUs,
+		Message:         data.Message,
+		Additional:      data.AdditionalFields,
+	}
+	body, subject, err := l.messagesvcs.GetTemplateMessage(ctx, messagingenums.CONTACTUS, &tplData)
+	if err != nil {
+		return err
+	}
+	emailMsg := &messagingmodels.Message{
+		Type:        messagingenums.CONTACTUS,
+		Email:       settings.Email,
+		Subject:     subject,
+		Message:     body,
+		MessageHtml: body,
+		Target:      "email",
+		Others:      map[string]any{},
+	}
+	err = l.messagesvcs.SendEmail(ctx, emailMsg)
+	if err != nil {
+		return err
+	}
+	return nil
+}
 func (a *contactUssvcs) Update(ctx context.Context, id string, data *models.ContactUsDto) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -319,6 +370,41 @@ func (a *contactUssvcs) Delete(ctx context.Context, id string) error {
 		return err
 	}
 
+	return nil
+}
+
+func (a *contactUssvcs) GetSettings(ctx context.Context) (*models.ContactUsSettings, error) {
+	var settings []models.ContactUsSettings
+	err := a.settingsRepo.Aggregate(ctx, []bson.M{}, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &settings)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(settings) == 0 {
+		return nil, errors.New("settings not found")
+	}
+	return &settings[0], nil
+}
+
+func (a *contactUssvcs) AddOrUpdateSettings(ctx context.Context, settings *models.ContactUsSettingsDto) error {
+	existing, err := a.GetSettings(ctx)
+
+	if existing == nil || err != nil {
+		err = a.settingsRepo.Add(ctx, &models.ContactUsSettings{
+			Id:    primitive.NewObjectID(),
+			Email: settings.Email,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		existing.Email = settings.Email
+		_, err = a.settingsRepo.Patch(ctx, bson.M{"_id": existing.Id}, bson.M{"$set": existing})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
