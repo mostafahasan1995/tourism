@@ -151,6 +151,7 @@ type ReviewsSvcs interface {
 	GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
 	GetAllWithoutPagination(ctx context.Context, query any) ([]models.ReviewRes, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
+	GetEntityStats(ctx context.Context, entityType, refId string) (*models.EntityReviewSummary, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	AddFromDashboard(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
 	Update(ctx context.Context, id string, data *models.ReviewDto) (*models.Review, error)
@@ -439,6 +440,82 @@ func (s *reviewsSvcs) GetStats(ctx context.Context) (*models.ReviewStats, error)
 	return stats, nil
 }
 
+func (s *reviewsSvcs) GetEntityStats(ctx context.Context, entityType, refId string) (*models.EntityReviewSummary, error) {
+	refObjectID, err := primitive.ObjectIDFromHex(refId)
+	if err != nil {
+		return nil, helpers.InvalidObjectId()
+	}
+
+	match := bson.M{
+		"trash":  bson.M{"$ne": true},
+		"status": "approved",
+		"type":   entityType,
+		"ref":    refObjectID,
+	}
+
+	// Count total reviews for this entity
+	countPipeline := []bson.M{{"$match": match}}
+	totalCount, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	stats := &models.EntityReviewSummary{
+		Type:            entityType,
+		RefId:           refObjectID,
+		TotalReviews:    totalCount,
+		AverageRating:   0,
+		RatingBreakdown: make(map[int]int64),
+	}
+
+	// Initialize rating breakdown
+	for i := 1; i <= 5; i++ {
+		stats.RatingBreakdown[i] = 0
+	}
+
+	if totalCount == 0 {
+		return stats, nil
+	}
+
+	// Calculate average rating and rating breakdown
+	pipeline := []bson.M{
+		{"$match": match},
+		{
+			"$group": bson.M{
+				"_id":           nil,
+				"averageRating": bson.M{"$avg": "$value"},
+				"ratings":       bson.M{"$push": "$value"},
+			},
+		},
+	}
+
+	var result []struct {
+		AverageRating float64   `bson:"averageRating"`
+		Ratings       []float64 `bson:"ratings"`
+	}
+
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if len(result) > 0 {
+		stats.AverageRating = result[0].AverageRating
+
+		// Count ratings for breakdown
+		for _, rating := range result[0].Ratings {
+			ratingInt := int(rating)
+			if ratingInt >= 1 && ratingInt <= 5 {
+				stats.RatingBreakdown[ratingInt]++
+			}
+		}
+	}
+
+	return stats, nil
+}
+
 func getTopItems(countMap map[string]int, limit int) []string {
 	type item struct {
 		name  string
@@ -544,11 +621,6 @@ func (s *reviewsSvcs) AddFromDashboard(ctx context.Context, data *models.ReviewD
 		return nil, helpers.BadRequest("invalid userId format")
 	}
 	createdBy = userObjectId
-
-	// Validate countries for destination type
-	if data.Type == "destination" && (len(data.Countries) == 0) {
-		return nil, helpers.BadRequest("countries are required for destination reviews")
-	}
 
 	if data.Status == "" {
 		data.Status = "pending"
