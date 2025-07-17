@@ -38,10 +38,10 @@ type ContactUsPagination struct {
 }
 
 type ContactUsSettingsDto struct {
-	Email string `bson:"email" json:"email" validate:"required,email"`
+	Emails []string `bson:"emails" json:"emails" validate:"required,dive,email"`
 }
 
 type ContactUsSettings struct {
-	Id    primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Email string             `bson:"email" json:"email" validate:"required,email"`
+	Id     primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Emails []string           `bson:"emails" json:"emails"`
 }

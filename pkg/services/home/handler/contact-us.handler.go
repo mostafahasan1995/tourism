@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"strconv"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/goccy/go-json"
 
 	"github.com/go-chi/chi/v5"
@@ -308,10 +309,16 @@ func (l *ContactUsHandler) GetSettings(w http.ResponseWriter, r *http.Request) e
 
 func (l *ContactUsHandler) AddOrUpdateSettings(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
+
 	var settings models.ContactUsSettingsDto
-	if err := json.NewDecoder(r.Body).Decode(&settings); err != nil {
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &settings); err != nil {
 		return err
 	}
+
+	if err := validator.New().Struct(settings); err != nil {
+		return err
+	}
+
 	err := l.contactUssvcs.AddOrUpdateSettings(ctx, &settings)
 	if err != nil {
 		return err

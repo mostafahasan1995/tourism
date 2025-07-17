@@ -3,6 +3,7 @@ package home
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home/filter"
@@ -220,18 +221,20 @@ func (l *contactUssvcs) SendContactUsEmail(ctx context.Context, data *models.Con
 	if err != nil {
 		return err
 	}
-	emailMsg := &messagingmodels.Message{
-		Type:        messagingenums.CONTACTUS,
-		Email:       settings.Email,
-		Subject:     subject,
-		Message:     body,
-		MessageHtml: body,
-		Target:      "email",
-		Others:      map[string]any{},
-	}
-	err = l.messagesvcs.SendEmail(ctx, emailMsg)
-	if err != nil {
-		return err
+	for _, email := range settings.Emails {
+		emailMsg := &messagingmodels.Message{
+			Type:        messagingenums.CONTACTUS,
+			Email:       email,
+			Subject:     subject,
+			Message:     body,
+			MessageHtml: body,
+			Target:      "email",
+			Others:      map[string]any{},
+		}
+		err = l.messagesvcs.SendEmail(ctx, emailMsg)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -389,17 +392,17 @@ func (a *contactUssvcs) GetSettings(ctx context.Context) (*models.ContactUsSetti
 
 func (a *contactUssvcs) AddOrUpdateSettings(ctx context.Context, settings *models.ContactUsSettingsDto) error {
 	existing, err := a.GetSettings(ctx)
-
+	fmt.Println("Existing: ", settings)
 	if existing == nil || err != nil {
 		err = a.settingsRepo.Add(ctx, &models.ContactUsSettings{
-			Id:    primitive.NewObjectID(),
-			Email: settings.Email,
+			Id:     primitive.NewObjectID(),
+			Emails: settings.Emails,
 		})
 		if err != nil {
 			return err
 		}
 	} else {
-		existing.Email = settings.Email
+		existing.Emails = settings.Emails
 		_, err = a.settingsRepo.Patch(ctx, bson.M{"_id": existing.Id}, bson.M{"$set": existing})
 		if err != nil {
 			return err
