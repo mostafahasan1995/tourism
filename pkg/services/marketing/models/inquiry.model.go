@@ -24,6 +24,10 @@ type InquiryReply struct {
 	Id              primitive.ObjectID  `bson:"_id,omitempty" json:"_id,omitempty"`
 	VisitorName     string              `bson:"visitorName" json:"visitorName"`
 	UserId          *primitive.ObjectID `bson:"userId,omitempty" json:"userId,omitempty"`
+	UserImg         *types.FileField    `bson:"userImg,omitempty" json:"userImg,omitempty"`
+	Date            string              `bson:"date,omitempty" json:"date,omitempty"`
+	Time            string              `bson:"time,omitempty" json:"time,omitempty"`
+	InquiryDetails  string              `bson:"inquiryDetails,omitempty" json:"inquiryDetails,omitempty"`
 	ResponseMessage string              `bson:"responseMessage" json:"responseMessage" validate:"required"`
 	Attachments     []types.FileField   `bson:"attachments" json:"attachments"`
 	FollowUpNotes   string              `bson:"followUpNotes,omitempty" json:"followUpNotes,omitempty"`
@@ -61,7 +65,7 @@ type InquiryDto struct {
 	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId"`
 	VisitorName  string                 `bson:"visitorName" json:"visitorName" validate:"required"`
 	Email        string                 `bson:"email" json:"email" validate:"required,email"`
-	Phone        string                 `bson:"phone,omitempty" json:"phone,omitempty"`
+	Phone        types.PhoneNumber      `bson:"phone,omitempty" json:"phone,omitempty"`
 	Message      string                 `bson:"message" json:"message" validate:"required"`
 	Subject      string                 `bson:"subject,omitempty" json:"subject,omitempty"`
 	Priority     string                 `bson:"priority" json:"priority" validate:"oneof=low medium high urgent"`
@@ -136,6 +140,9 @@ type InquiryPagination struct {
 }
 
 type AddInquiryReplyDto struct {
+	Date            string            `bson:"date,omitempty" json:"date,omitempty"`
+	Time            string            `bson:"time,omitempty" json:"time,omitempty"`
+	InquiryDetails  string            `bson:"inquiryDetails,omitempty" json:"inquiryDetails,omitempty"`
 	ResponseMessage string            `bson:"responseMessage" json:"responseMessage" validate:"required"`
 	Attachments     []types.FileField `bson:"attachments" json:"attachments"`
 	FollowUpNotes   string            `bson:"followUpNotes,omitempty" json:"followUpNotes,omitempty"`

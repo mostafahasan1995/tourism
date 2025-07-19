@@ -16,7 +16,7 @@ type VisitorDto struct {
 	FullName     string                 `bson:"fullName" json:"fullName" validate:"required"`
 	Nationality  string                 `bson:"nationality" json:"nationality" validate:"required"`
 	Email        string                 `bson:"email" json:"email" validate:"required,email"`
-	Phone        string                 `bson:"phone" json:"phone" validate:"required"`
+	Phone        types.PhoneNumber      `bson:"phone" json:"phone" validate:"required"`
 	Interests    []string               `bson:"interests" json:"interests"`
 	Tags         []string               `bson:"tags" json:"tags"`
 	VisitDate    time.Time              `bson:"visitDate" json:"visitDate"`

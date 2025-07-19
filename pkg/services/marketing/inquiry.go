@@ -326,6 +326,10 @@ func (s *inquirySvcs) AddReply(ctx context.Context, inquiryId string, replyData 
 		Id:              primitive.NewObjectID(),
 		VisitorName:     inquiry.VisitorName,
 		UserId:          &cfg.User.Id,
+		UserImg:         nil, // TODO: Add user image field to User model
+		Date:            replyData.Date,
+		Time:            replyData.Time,
+		InquiryDetails:  replyData.InquiryDetails,
 		ResponseMessage: replyData.ResponseMessage,
 		Attachments:     replyData.Attachments,
 		FollowUpNotes:   replyData.FollowUpNotes,
