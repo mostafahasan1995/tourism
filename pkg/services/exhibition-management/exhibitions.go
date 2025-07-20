@@ -59,16 +59,9 @@ type exhibitionSvcs struct {
 
 // NewExhibitionSvcs creates a new instance of ExhibitionSvcs
 func NewExhibitionSvcs(i *do.Injector) (ExhibitionSvcs, error) {
-	// Try to get the visitor service, but don't fail if it's not available
-	var visitorSvcs marketing.VisitorSvcs
-	if svcs, err := do.Invoke[marketing.VisitorSvcs](i); err == nil {
-		visitorSvcs = svcs
-	}
-	// If visitor service is not available, it will be nil and we'll handle gracefully
-
 	return &exhibitionSvcs{
 		repo:        do.MustInvoke[repo.ExhibitionRepo](i),
-		visitorSvcs: visitorSvcs,
+		visitorSvcs: do.MustInvoke[marketing.VisitorSvcs](i),
 	}, nil
 }
 
@@ -940,19 +933,17 @@ func (s *exhibitionSvcs) GetStats(ctx context.Context) (*models.ExhibitionStats,
 		return nil, err
 	}
 
-	// Get RegisteredVisitors count from visitor service (if available)
+	// Get RegisteredVisitors count from visitor service
 	registeredVisitors := int64(0)
 
-	// Only try to get visitor stats if visitor service is available
-	if s.visitorSvcs != nil {
-		visitorStats, err := s.visitorSvcs.GetStats(ctx, nil)
-		if err != nil {
-			// Log error but don't fail the entire stats endpoint
-			// Set to 0 as fallback
-			registeredVisitors = 0
-		} else {
-			registeredVisitors = visitorStats.TotalVisitors
-		}
+	// Get visitor stats to count registered visitors
+	visitorStats, err := s.visitorSvcs.GetStats(ctx, nil)
+	if err != nil {
+		// Log error but don't fail the entire stats endpoint
+		// Set to 0 as fallback
+		registeredVisitors = 0
+	} else {
+		registeredVisitors = visitorStats.TotalVisitors
 	}
 
 	return &models.ExhibitionStats{
@@ -970,17 +961,6 @@ func (s *exhibitionSvcs) GetExhibitionStats(ctx context.Context, exhibitionId st
 	exhibition, err := s.GetById(ctx, exhibitionId)
 	if err != nil {
 		return nil, err
-	}
-
-	// If visitor service is not available, return basic stats
-	if s.visitorSvcs == nil {
-		return &models.ExhibitionWithVisitorStats{
-			Exhibition:     *exhibition,
-			VisitorCount:   0,
-			ActiveVisitors: 0,
-			VIPVisitors:    0,
-			VisitorStats:   nil,
-		}, nil
 	}
 
 	// Convert exhibition ID to ObjectID for visitor filtering
