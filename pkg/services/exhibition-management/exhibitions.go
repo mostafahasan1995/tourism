@@ -8,7 +8,6 @@ import (
 	"larsa-tourism-microservices/pkg/services/exhibition-management/repo"
 	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/marketing"
-	"larsa-tourism-microservices/pkg/services/marketing/filter"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
@@ -60,9 +59,16 @@ type exhibitionSvcs struct {
 
 // NewExhibitionSvcs creates a new instance of ExhibitionSvcs
 func NewExhibitionSvcs(i *do.Injector) (ExhibitionSvcs, error) {
+	// Try to get the visitor service, but don't fail if it's not available
+	var visitorSvcs marketing.VisitorSvcs
+	if svcs, err := do.Invoke[marketing.VisitorSvcs](i); err == nil {
+		visitorSvcs = svcs
+	}
+	// If visitor service is not available, it will be nil and we'll handle gracefully
+
 	return &exhibitionSvcs{
 		repo:        do.MustInvoke[repo.ExhibitionRepo](i),
-		visitorSvcs: do.MustInvoke[marketing.VisitorSvcs](i),
+		visitorSvcs: visitorSvcs,
 	}, nil
 }
 
@@ -934,11 +940,19 @@ func (s *exhibitionSvcs) GetStats(ctx context.Context) (*models.ExhibitionStats,
 		return nil, err
 	}
 
-	// Get RegisteredVisitors count using visitor service
+	// Get RegisteredVisitors count from visitor service (if available)
 	registeredVisitors := int64(0)
-	visitorPagination, err := s.visitorSvcs.Get(ctx, 0, 1, filter.VisitorFilter{})
-	if err == nil && visitorPagination != nil {
-		registeredVisitors = visitorPagination.Pagination.TotalCount
+
+	// Only try to get visitor stats if visitor service is available
+	if s.visitorSvcs != nil {
+		visitorStats, err := s.visitorSvcs.GetStats(ctx, nil)
+		if err != nil {
+			// Log error but don't fail the entire stats endpoint
+			// Set to 0 as fallback
+			registeredVisitors = 0
+		} else {
+			registeredVisitors = visitorStats.TotalVisitors
+		}
 	}
 
 	return &models.ExhibitionStats{
@@ -947,6 +961,75 @@ func (s *exhibitionSvcs) GetStats(ctx context.Context) (*models.ExhibitionStats,
 		ClosedCount:        closedCount,
 		TotalCount:         totalCount,
 		RegisteredVisitors: registeredVisitors,
+	}, nil
+}
+
+// GetExhibitionStats retrieves detailed stats for a specific exhibition including visitor data
+func (s *exhibitionSvcs) GetExhibitionStats(ctx context.Context, exhibitionId string) (*models.ExhibitionWithVisitorStats, error) {
+	// Get the exhibition details
+	exhibition, err := s.GetById(ctx, exhibitionId)
+	if err != nil {
+		return nil, err
+	}
+
+	// If visitor service is not available, return basic stats
+	if s.visitorSvcs == nil {
+		return &models.ExhibitionWithVisitorStats{
+			Exhibition:     *exhibition,
+			VisitorCount:   0,
+			ActiveVisitors: 0,
+			VIPVisitors:    0,
+			VisitorStats:   nil,
+		}, nil
+	}
+
+	// Convert exhibition ID to ObjectID for visitor filtering
+	exhibitionObjectId, err := primitive.ObjectIDFromHex(exhibitionId)
+	if err != nil {
+		return nil, helpers.BadRequest("Invalid exhibition ID")
+	}
+
+	// Get visitor stats for this specific exhibition
+	visitorStats, err := s.visitorSvcs.GetV2(ctx, 0, 1000, &query.Conditions{
+		Columns: []query.Column{
+			{Name: "exhibitionId", Value: exhibitionId, Exp: "="},
+		},
+	})
+	if err != nil {
+		// Return exhibition with empty visitor stats if visitor service fails
+		return &models.ExhibitionWithVisitorStats{
+			Exhibition:     *exhibition,
+			VisitorCount:   0,
+			ActiveVisitors: 0,
+			VIPVisitors:    0,
+			VisitorStats:   nil,
+		}, nil
+	}
+
+	// Get detailed visitor stats for this exhibition
+	detailedStats, err := s.visitorSvcs.GetStats(ctx, &exhibitionObjectId)
+	if err != nil {
+		detailedStats = nil
+	}
+
+	// Count active and VIP visitors
+	activeVisitors := int64(0)
+	vipVisitors := int64(0)
+	for _, visitor := range visitorStats.Visitors {
+		if visitor.IsActive {
+			activeVisitors++
+		}
+		if visitor.IsVIP {
+			vipVisitors++
+		}
+	}
+
+	return &models.ExhibitionWithVisitorStats{
+		Exhibition:     *exhibition,
+		VisitorCount:   int64(len(visitorStats.Visitors)),
+		ActiveVisitors: activeVisitors,
+		VIPVisitors:    vipVisitors,
+		VisitorStats:   detailedStats,
 	}, nil
 }
 
