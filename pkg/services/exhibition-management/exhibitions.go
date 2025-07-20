@@ -6,10 +6,13 @@ import (
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/repo"
+	"larsa-tourism-microservices/pkg/services/marketing/filter"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
+
+	"larsa-tourism-microservices/pkg/services/marketing"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
@@ -41,6 +44,9 @@ type ExhibitionSvcs interface {
 	// Validation methods for other services
 	ValidateExhibitionExists(ctx context.Context, exhibitionId string) error
 
+	// Stats method
+	GetStats(ctx context.Context) (*models.ExhibitionStats, error)
+
 	// Debug methods - remove in production
 	DebugCount(ctx context.Context) (map[string]interface{}, error)
 	DebugRaw(ctx context.Context) ([]models.Exhibition, error)
@@ -48,13 +54,15 @@ type ExhibitionSvcs interface {
 
 // exhibitionSvcs implements the ExhibitionSvcs interface
 type exhibitionSvcs struct {
-	repo repo.ExhibitionRepo
+	repo        repo.ExhibitionRepo
+	visitorSvcs marketing.VisitorSvcs
 }
 
 // NewExhibitionSvcs creates a new instance of ExhibitionSvcs
 func NewExhibitionSvcs(i *do.Injector) (ExhibitionSvcs, error) {
 	return &exhibitionSvcs{
-		repo: do.MustInvoke[repo.ExhibitionRepo](i),
+		repo:        do.MustInvoke[repo.ExhibitionRepo](i),
+		visitorSvcs: do.MustInvoke[marketing.VisitorSvcs](i),
 	}, nil
 }
 
@@ -880,6 +888,59 @@ func (s *exhibitionSvcs) ValidateExhibitionExists(ctx context.Context, exhibitio
 	}
 
 	return nil
+}
+
+// GetStats retrieves exhibition statistics for dashboard
+func (s *exhibitionSvcs) GetStats(ctx context.Context) (*models.ExhibitionStats, error) {
+	// Count active exhibitions
+	activeCount, err := s.repo.Count(ctx, bson.M{
+		"trash":                false,
+		"exhibitiondto.status": "active",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Count upcoming exhibitions
+	upcomingCount, err := s.repo.Count(ctx, bson.M{
+		"trash":                false,
+		"exhibitiondto.status": "upcoming",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Count closed exhibitions
+	closedCount, err := s.repo.Count(ctx, bson.M{
+		"trash":                false,
+		"exhibitiondto.status": "closed",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Count total exhibitions
+	totalCount, err := s.repo.Count(ctx, bson.M{
+		"trash": false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Get RegisteredVisitors count using visitor service
+	registeredVisitors := int64(0)
+	visitorPagination, err := s.visitorSvcs.Get(ctx, 0, 1, filter.VisitorFilter{})
+	if err == nil && visitorPagination != nil {
+		registeredVisitors = visitorPagination.Pagination.TotalCount
+	}
+
+	return &models.ExhibitionStats{
+		ActiveCount:        activeCount,
+		UpcomingCount:      upcomingCount,
+		ClosedCount:        closedCount,
+		TotalCount:         totalCount,
+		RegisteredVisitors: registeredVisitors,
+	}, nil
 }
 
 // Debug methods - remove in production
