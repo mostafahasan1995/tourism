@@ -29,7 +29,7 @@ func NewHotelsHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/hotels", func(r chi.Router) {
-		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.With(middleware.OptionalAuth()).Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/", helpers.Make(h.GetAll))
 		r.Get("/all", helpers.Make(h.GetAllHotels))
 
@@ -42,8 +42,8 @@ func NewHotelsHandler(i *do.Injector, r *chi.Mux) {
 	})
 
 	r.Route("/hotels/v2", func(r chi.Router) {
-		r.Post("/", helpers.Make(h.GetV2))
-		r.Post("/all", helpers.Make(h.GetAllV2))
+		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.GetV2))
+		r.With(middleware.OptionalAuth()).Post("/all", helpers.Make(h.GetAllV2))
 	})
 }
 

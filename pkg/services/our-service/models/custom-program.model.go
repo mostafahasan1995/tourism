@@ -2,6 +2,7 @@ package models
 
 import (
 	"larsa-tourism-microservices/pkg/transl"
+	"larsa-tourism-microservices/pkg/util"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -113,10 +114,12 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		})
 	}
 
+	// quantity was 0 for each service resulting in wrong total
 	if pd.Services.Photography.Active {
 		services = append(services, InvoiceService{
 			Item:  "Photography",
 			Price: pd.Services.Photography.Cost,
+			Qty:   1,
 		})
 	}
 
@@ -124,6 +127,7 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		services = append(services, InvoiceService{
 			Item:  "Airport Meet and Greet",
 			Price: pd.Services.AirportMeetAndGreet.Cost,
+			Qty:   1,
 		})
 	}
 
@@ -131,6 +135,7 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		services = append(services, InvoiceService{
 			Item:  "Sim Card and Internet",
 			Price: pd.Services.SimCardAndInternet.Cost,
+			Qty:   1,
 		})
 	}
 	return services, nil
@@ -191,6 +196,13 @@ func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
 			Qty:   1,
 		}
 		services = append(services, service)
+
+		// Convert services to invoice services
+		destServices, err := convertServicesToInvoiceServices(des.Services)
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, destServices...)
 	}
 
 	for _, des := range cp.FlightTicketRequest.Destinations {
@@ -200,6 +212,12 @@ func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
 			Qty:   1,
 		}
 		services = append(services, service)
+		// Convert services to invoice services
+		destServices, err := convertServicesToInvoiceServices(des.Services)
+		if err != nil {
+			return nil, err
+		}
+		services = append(services, destServices...)
 	}
 
 	return services, nil
@@ -238,4 +256,25 @@ func (cp *CustomProgram) GetTotalPrice() (float64, error) {
 		total += service.Price * float64(service.Qty)
 	}
 	return total, nil
+}
+
+// convertServicesToInvoiceServices converts service configurations to invoice services
+func convertServicesToInvoiceServices(servicesConfig ProgramServices) ([]InvoiceService, error) {
+	serviceConfigs, err := util.StructToMap(servicesConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	var services []InvoiceService
+	for key, value := range serviceConfigs {
+		if value.(Service).Active {
+			services = append(services, InvoiceService{
+				Item:  key,
+				Price: value.(Service).Cost,
+				Qty:   1,
+			})
+		}
+	}
+
+	return services, nil
 }

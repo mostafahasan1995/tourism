@@ -3,6 +3,7 @@ package models
 import (
 	"encoding/json"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 	"time"
 
@@ -11,22 +12,22 @@ import (
 )
 
 type HeroSection struct {
-	HotelName    string            `bson:"hotelName" json:"hotelName" validate:"required"`
-	Rating       float64           `bson:"rating" json:"rating" validate:"min=0,max=5"`
-	PropertyType string            `bson:"propertyType" json:"propertyType" validate:"required"`
-	Overview     string            `bson:"overview" json:"overview" validate:"required"`
-	Logo         *types.FileField  `bson:"logo,omitempty" json:"logo,omitempty"`
-	Images       []types.FileField `bson:"images" json:"images"`
+	HotelName    transl.Localizable[string] `bson:"hotelName" json:"hotelName" validate:"required"`
+	Rating       float64                    `bson:"rating" json:"rating" validate:"min=0,max=5"`
+	PropertyType transl.Localizable[string] `bson:"propertyType" json:"propertyType" validate:"required"`
+	Overview     transl.Localizable[string] `bson:"overview" json:"overview" validate:"required"`
+	Logo         *types.FileField           `bson:"logo,omitempty" json:"logo,omitempty"`
+	Images       []types.FileField          `bson:"images" json:"images"`
 }
 
 type FacilityOption struct {
-	Id          string `bson:"id" json:"id"`
-	Label       string `bson:"label" json:"label"`
-	Type        string `bson:"type" json:"type"` // "checkbox" or "radio"
-	Category    string `bson:"category" json:"category"`
-	IsSelected  bool   `bson:"isSelected" json:"isSelected"`
-	Description string `bson:"description,omitempty" json:"description,omitempty"`
-	Icon        string `bson:"icon,omitempty" json:"icon,omitempty"`
+	Id          string                     `bson:"id" json:"id"`
+	Label       transl.Localizable[string] `bson:"label" json:"label"`
+	Type        string                     `bson:"type" json:"type"` // "checkbox" or "radio"
+	Category    string                     `bson:"category" json:"category"`
+	IsSelected  bool                       `bson:"isSelected" json:"isSelected"`
+	Description transl.Localizable[string] `bson:"description,omitempty" json:"description,omitempty"`
+	Icon        string                     `bson:"icon,omitempty" json:"icon,omitempty"`
 }
 
 type FacilitiesSection struct {
@@ -40,11 +41,11 @@ type FacilitiesSection struct {
 }
 
 type DynamicSection struct {
-	Id       primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Title    string             `bson:"title" json:"title" validate:"required"`
-	Overview string             `bson:"overview" json:"overview" validate:"required"`
-	Images   []types.FileField  `bson:"images" json:"images"`
-	Order    int                `bson:"order" json:"order"`
+	Id       primitive.ObjectID         `bson:"_id,omitempty" json:"_id,omitempty"`
+	Title    transl.Localizable[string] `bson:"title" json:"title" validate:"required"`
+	Overview transl.Localizable[string] `bson:"overview" json:"overview" validate:"required"`
+	Images   []types.FileField          `bson:"images" json:"images"`
+	Order    int                        `bson:"order" json:"order"`
 }
 
 type ExhibitorProfileDto struct {
@@ -115,9 +116,9 @@ type ExhibitorProfilePagination struct {
 }
 
 type AddDynamicSectionDto struct {
-	Title    string            `bson:"title" json:"title" validate:"required"`
-	Overview string            `bson:"overview" json:"overview" validate:"required"`
-	Images   []types.FileField `bson:"images" json:"images"`
+	Title    transl.Localizable[string] `bson:"title" json:"title" validate:"required"`
+	Overview transl.Localizable[string] `bson:"overview" json:"overview" validate:"required"`
+	Images   []types.FileField          `bson:"images" json:"images"`
 }
 
 func (a *AddDynamicSectionDto) Validate(v *validator.Validate) error {
@@ -125,10 +126,10 @@ func (a *AddDynamicSectionDto) Validate(v *validator.Validate) error {
 }
 
 type UpdateDynamicSectionDto struct {
-	Title    *string            `bson:"title,omitempty" json:"title,omitempty"`
-	Overview *string            `bson:"overview,omitempty" json:"overview,omitempty"`
-	Images   *[]types.FileField `bson:"images,omitempty" json:"images,omitempty"`
-	Order    *int               `bson:"order,omitempty" json:"order,omitempty"`
+	Title    *transl.Localizable[string] `bson:"title,omitempty" json:"title,omitempty"`
+	Overview *transl.Localizable[string] `bson:"overview,omitempty" json:"overview,omitempty"`
+	Images   *[]types.FileField          `bson:"images,omitempty" json:"images,omitempty"`
+	Order    *int                        `bson:"order,omitempty" json:"order,omitempty"`
 }
 
 type FacilityUpdateDto struct {
@@ -146,17 +147,18 @@ type PhoneDto struct {
 	Content string `bson:"content" json:"content"`
 }
 
+// FOUND
 type ExhibitorRequestDto struct {
 	ExhibitionId primitive.ObjectID `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
 	HotelId      primitive.ObjectID `bson:"hotelId" json:"hotelId" validate:"required"`
 
-	HotelWebsite string   `bson:"hotelWebsite" json:"hotelWebsite"`
-	Phone        PhoneDto `bson:"phone" json:"phone"`
-	Email        string   `bson:"email" json:"email"`
-	Location     string   `bson:"location" json:"location"`
+	HotelWebsite string                     `bson:"hotelWebsite" json:"hotelWebsite"`
+	Phone        PhoneDto                   `bson:"phone" json:"phone"`
+	Email        string                     `bson:"email" json:"email"`
+	Location     transl.Localizable[string] `bson:"location" json:"location"`
 
-	Overview string `bson:"overview" json:"overview" validate:"required"`
-	Status   string `bson:"status" json:"status" validate:"omitempty,oneof=Pending Replied Closed"`
+	Overview transl.Localizable[string] `bson:"overview" json:"overview" validate:"required"`
+	Status   string                     `bson:"status" json:"status" validate:"omitempty,oneof=Pending Replied Closed"`
 }
 
 func (e *ExhibitorRequestDto) Validate(v *validator.Validate) error {

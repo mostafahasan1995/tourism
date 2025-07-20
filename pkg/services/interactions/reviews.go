@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/interactions/filter"
 	"larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/interactions/repo"
@@ -18,12 +19,137 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+var refLookup = []bson.M{
+	{
+		"$facet": bson.M{
+			"hotelRef": []bson.M{
+				{
+					"$match": bson.M{"type": "hotel"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismHotels",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"destinationRef": []bson.M{
+				{
+					"$match": bson.M{"type": "destination"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismDestinations",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"programRef": []bson.M{
+				{
+					"$match": bson.M{"type": "program"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismPrograms",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"agentRef": []bson.M{
+				{
+					"$match": bson.M{"type": "agent"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismAgents",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+		},
+	},
+	{
+		"$project": bson.M{
+			"result": bson.M{
+				"$concatArrays": []interface{}{
+					"$hotelRef",
+					"$destinationRef",
+					"$programRef",
+					"$agentRef",
+				},
+			},
+		},
+	},
+	{
+		"$unwind": "$result",
+	},
+	{
+		"$replaceRoot": bson.M{
+			"newRoot": "$result",
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"refData": bson.M{
+				"$arrayElemAt": []interface{}{"$refData", 0},
+			},
+		},
+	},
+}
+
+var userLookup = []bson.M{
+	{
+		"$addFields": bson.M{
+			"userObjectId": bson.M{
+				"$cond": bson.M{
+					"if": bson.M{
+						"$and": []interface{}{
+							bson.M{"$ne": []interface{}{"$userId", nil}},
+							bson.M{"$ne": []interface{}{"$userId", ""}},
+							bson.M{"$ne": []interface{}{"$userId", "000000000000000000000000"}},
+						},
+					},
+					"then": bson.M{"$toObjectId": "$userId"},
+					"else": nil,
+				},
+			},
+		},
+	},
+	{
+		"$lookup": bson.M{
+			"from":         "users",
+			"localField":   "userObjectId",
+			"foreignField": "_id",
+			"as":           "userData",
+		},
+	},
+	{
+		"$unwind": bson.M{
+			"path":                       "$userData",
+			"preserveNullAndEmptyArrays": true,
+		},
+	},
+	{
+		"$project": bson.M{
+			"userObjectId": 0,
+		},
+	},
+}
+
 type ReviewsSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.Review, error)
 	Get(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
-	GetAllApproved(ctx context.Context) ([]models.Review, error)
+	GetAllApproved(ctx context.Context) ([]models.ReviewRes, error)
 	GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error)
-	GetAllWithoutPagination(ctx context.Context, query any) ([]models.Review, error)
+	GetAllWithoutPagination(ctx context.Context, query any) ([]models.ReviewRes, error)
 	GetStats(ctx context.Context) (*models.ReviewStats, error)
 	GetEntityStats(ctx context.Context, entityType, refId string) (*models.EntityReviewSummary, error)
 	Add(ctx context.Context, data *models.ReviewDto) (*models.Review, error)
@@ -36,6 +162,10 @@ type ReviewsSvcs interface {
 	ApproveReview(ctx context.Context, reviewId string) (*models.Review, error)
 	RejectReview(ctx context.Context, reviewId string) (*models.Review, error)
 	Count(ctx context.Context, filter any) (int64, error)
+
+	//v2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ReviewPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ReviewRes, error)
 }
 
 type reviewsSvcs struct {
@@ -48,13 +178,19 @@ func NewReviewsSvcs(i *do.Injector) (ReviewsSvcs, error) {
 	}, nil
 }
 
-func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.Review, error) {
+// deprecated
+func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.ReviewRes, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"trash": false, "status": "approved"}},
-		{"$sort": bson.M{"date": -1, "createdAt": -1}},
 	}
 
-	var result []models.Review
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+
+	var result []models.ReviewRes
 	err := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		if err := cur.All(ctx, &result); err != nil {
 			return err
@@ -68,7 +204,8 @@ func (s *reviewsSvcs) GetAllApproved(ctx context.Context) ([]models.Review, erro
 	return result, nil
 }
 
-func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([]models.Review, error) {
+// deprecated
+func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([]models.ReviewRes, error) {
 	match := bson.M{}
 
 	filters, err := helpers.ParseFilters[filter.ReviewsFilter](query)
@@ -78,9 +215,14 @@ func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([
 
 	// Don't filter by status - get all reviews regardless of status
 	pipeline := filters.BuildPipeline(match)
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
 
-	var result []models.Review
+	var result []models.ReviewRes
 	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -91,6 +233,7 @@ func (s *reviewsSvcs) GetAllWithoutPagination(ctx context.Context, query any) ([
 	return result, nil
 }
 
+// deprecated
 func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int64, query any) (*models.ReviewPagination, error) {
 	match := bson.M{}
 
@@ -114,7 +257,11 @@ func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int6
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Review
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	var result []models.ReviewRes
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -134,6 +281,8 @@ func (s *reviewsSvcs) GetAllWithPagination(ctx context.Context, skip, limit int6
 		Pagination: pagination,
 	}, nil
 }
+
+//
 
 func (s *reviewsSvcs) GetOne(ctx context.Context, id string) (*models.Review, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
@@ -166,7 +315,11 @@ func (s *reviewsSvcs) Get(ctx context.Context, skip, limit int64, query any) (*m
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Review
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	var result []models.ReviewRes
 	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -697,4 +850,91 @@ func (s *reviewsSvcs) RejectReview(ctx context.Context, reviewId string) (*model
 
 func (s *reviewsSvcs) Count(ctx context.Context, filter any) (int64, error) {
 	return s.repo.Count(ctx, filter)
+}
+
+//v2
+
+func (s *reviewsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ReviewPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	var result []models.ReviewRes
+	errAg := s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pagination := types.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.ReviewPagination{
+		Reviews:    result,
+		Pagination: pagination,
+	}, nil
+
+}
+
+func (s *reviewsSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ReviewRes, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	// Add reference lookup
+	pipeline = append(pipeline, refLookup...)
+	pipeline = append(pipeline, userLookup...)
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"date": -1, "createdAt": -1}})
+
+	var result []models.ReviewRes
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

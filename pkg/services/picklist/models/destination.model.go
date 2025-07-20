@@ -22,12 +22,12 @@ type DestinationDto struct {
 type Destination struct {
 	Id             primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	DestinationDto `bson:",inline"`
-	IsFav          bool               `bson:"isFav" json:"isFav"`
-	Trash          bool               `bson:"trash" json:"trash"`
-	CreatedBy      primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	CreatedAt      time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	UpdatedBy      primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
-	UpdatedAt      time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	// IsFav          bool               `bson:"isFav" json:"isFav"`
+	Trash     bool               `bson:"trash" json:"trash"`
+	CreatedBy primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	CreatedAt time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	UpdatedBy primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+	UpdatedAt time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
 }
 
 type DestinationRes struct {

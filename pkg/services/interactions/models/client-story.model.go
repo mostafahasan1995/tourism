@@ -25,6 +25,7 @@ type ClientStory struct {
 	CreatedBy      primitive.ObjectID `bson:"created_by,omitempty" json:"created_by,omitempty"`
 	UpdatedAt      time.Time          `bson:"updated_at,omitempty" json:"updated_at,omitempty"`
 	UpdatedBy      primitive.ObjectID `bson:"updated_by,omitempty" json:"updated_by,omitempty"`
+	IsFav          bool               `bson:"isFav" json:"isFav"`
 }
 
 type ClientStoryWithPagination struct {

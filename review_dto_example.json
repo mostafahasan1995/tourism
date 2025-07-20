@@ -1,0 +1,61 @@
+{
+  "type": "hotel",
+  "ref": "507f1f77bcf86cd799439011",
+  "userId": "user123",
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "username": "johndoe",
+  "userImg": {
+    "_id": "507f1f77bcf86cd799439012",
+    "originalName": "profile.jpg",
+    "path": "/uploads/profiles/profile.jpg",
+    "service": "file-service",
+    "expire": "2024-12-31T23:59:59Z",
+    "variants": ["thumbnail", "medium", "large"]
+  },
+  "destination": "Paris",
+  "countries": ["France", "Italy"],
+  "description": "Amazing hotel with great service and beautiful views. The staff was very helpful and the location was perfect for exploring the city.",
+  "adviceForTravelers": "Book early during peak season and try the breakfast buffet - it's excellent!",
+  "value": 4.5,
+  "images": [
+    {
+      "_id": "507f1f77bcf86cd799439013",
+      "originalName": "hotel_room.jpg",
+      "path": "/uploads/reviews/hotel_room.jpg",
+      "service": "file-service",
+      "expire": "2024-12-31T23:59:59Z",
+      "variants": ["thumbnail", "medium", "large"]
+    },
+    {
+      "_id": "507f1f77bcf86cd799439014",
+      "originalName": "hotel_view.jpg",
+      "path": "/uploads/reviews/hotel_view.jpg",
+      "service": "file-service",
+      "expire": "2024-12-31T23:59:59Z",
+      "variants": ["thumbnail", "medium", "large"]
+    }
+  ],
+  "status": "approved",
+  "date": "2024-01-15T10:30:00Z",
+  "replies": [
+    {
+      "text": "Thank you for your wonderful review! We're delighted you enjoyed your stay.",
+      "date": "2024-01-16T09:00:00Z"
+    },
+    {
+      "text": "We've noted your feedback about the breakfast and will continue to maintain our high standards.",
+      "date": "2024-01-16T14:15:00Z"
+    }
+  ],
+  "customer": "premium",
+  "metadata": {
+    "source": "mobile_app",
+    "device": "iPhone",
+    "location": "on_site",
+    "language": "en",
+    "verified_booking": true
+  },
+  "text": "This hotel exceeded all my expectations. The room was clean, comfortable, and had an amazing view of the city."
+} 

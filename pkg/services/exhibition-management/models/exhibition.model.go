@@ -5,6 +5,7 @@ import (
 
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/enums"
+	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 
 	"github.com/go-playground/validator/v10"
@@ -13,11 +14,11 @@ import (
 
 // AdDto for creating/updating ads
 type AdDto struct {
-	Title       string            `json:"title" validate:"required"`
-	Description string            `json:"description"`
-	Tags        []string          `json:"tags"`
-	Images      []types.FileField `json:"images" bson:"images"` // Store as ObjectIDs in DB
-	WebsiteUrl  string            `json:"websiteUrl"`
+	Title       transl.Localizable[string]   `json:"title" validate:"required"`
+	Description transl.Localizable[string]   `json:"description"`
+	Tags        []transl.Localizable[string] `json:"tags"`
+	Images      []types.FileField            `json:"images" bson:"images"` // Store as ObjectIDs in DB
+	WebsiteUrl  string                       `json:"websiteUrl"`
 	// Payment & Activation
 	PackageType    string    `json:"packageType" validate:"required,oneof=basic premium gold"` // basic, premium, gold
 	Duration       int       `json:"duration" validate:"required,min=1"`                       // in days
@@ -31,12 +32,12 @@ type AdDto struct {
 
 // Ad represents an advertisement within an exhibition
 type Ad struct {
-	Id          primitive.ObjectID `bson:"_id" json:"_id"`
-	Title       string             `bson:"title" json:"title"`
-	Description string             `bson:"description" json:"description"`
-	Tags        []string           `bson:"tags" json:"tags"`
-	Images      []types.FileField  `bson:"images" json:"images"` // Store as ObjectIDs in DB
-	WebsiteUrl  string             `bson:"websiteUrl" json:"websiteUrl"`
+	Id          primitive.ObjectID           `bson:"_id" json:"_id"`
+	Title       transl.Localizable[string]   `bson:"title" json:"title"`
+	Description transl.Localizable[string]   `bson:"description" json:"description"`
+	Tags        []transl.Localizable[string] `bson:"tags" json:"tags"`
+	Images      []types.FileField            `bson:"images" json:"images"` // Store as ObjectIDs in DB
+	WebsiteUrl  string                       `bson:"websiteUrl" json:"websiteUrl"`
 	// Payment & Activation
 	PackageType    string    `bson:"packageType" json:"packageType"`
 	Duration       int       `bson:"duration" json:"duration"`
@@ -55,18 +56,18 @@ type Ad struct {
 
 // ExhibitionDto for API requests and updates
 type ExhibitionDto struct {
-	Title              string               `json:"title" bson:"title" validate:"required"`
-	Description        string               `json:"description" bson:"description" validate:"required"`
-	LocationType       string               `json:"locationType" bson:"locationType" validate:"required"`
-	LocationAddress    string               `json:"locationAddress" bson:"locationAddress"`
-	StartDate          time.Time            `json:"startDate" bson:"startDate" validate:"required"`
-	EndDate            time.Time            `json:"endDate" bson:"endDate" validate:"required"`
-	Images             []types.FileField    `json:"images" bson:"images"`
-	RelatedExhibitions []primitive.ObjectID `json:"relatedExhibitions" bson:"relatedExhibitions"`
-	Tags               []string             `json:"tags" bson:"tags"`
-	Status             string               `json:"status" bson:"status" validate:"required,oneof=active closed upcoming"`
-	IsActive           bool                 `json:"isActive" bson:"isActive"`
-	Ads                []AdDto              `json:"ads" bson:"ads"` // Ads can be included in exhibition creation
+	Title              transl.Localizable[string]   `json:"title" bson:"title" validate:"required"`
+	Description        transl.Localizable[string]   `json:"description" bson:"description" validate:"required"`
+	LocationType       transl.Localizable[string]   `json:"locationType" bson:"locationType" validate:"required"`
+	LocationAddress    transl.Localizable[string]   `json:"locationAddress" bson:"locationAddress"`
+	StartDate          time.Time                    `json:"startDate" bson:"startDate" validate:"required"`
+	EndDate            time.Time                    `json:"endDate" bson:"endDate" validate:"required"`
+	Images             []types.FileField            `json:"images" bson:"images"`
+	RelatedExhibitions []primitive.ObjectID         `json:"relatedExhibitions" bson:"relatedExhibitions"`
+	Tags               []transl.Localizable[string] `json:"tags" bson:"tags"`
+	IsActive           bool                         `json:"isActive" bson:"isActive"`
+	Ads                []AdDto                      `json:"ads" bson:"ads"` // Ads can be included in exhibition creation
+	Status             string                       `json:"status" bson:"status" validate:"required,oneof=active closed upcoming"`
 }
 
 // Exhibition main model with nested ads

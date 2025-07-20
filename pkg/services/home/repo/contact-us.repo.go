@@ -24,3 +24,20 @@ func NewContactUsRepo(i *do.Injector) (ContactUsRepo, error) {
 		},
 	}, nil
 }
+
+type ContactUsSettingsRepo interface {
+	dbrepo.MainRepo[models.ContactUsSettings]
+}
+
+type contactUsSettingsRepo struct {
+	dbrepo.MainRepoImpl[models.ContactUsSettings]
+}
+
+func NewContactUsSettingsRepo(i *do.Injector) (ContactUsSettingsRepo, error) {
+	return &contactUsSettingsRepo{
+		MainRepoImpl: dbrepo.MainRepoImpl[models.ContactUsSettings]{
+			Db:       do.MustInvoke[*mongo.Client](i),
+			CollName: "tourismContactUsSettings",
+		},
+	}, nil
+}

@@ -20,10 +20,12 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+
+	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
 )
 
 type HotelsSvcs interface {
-	GetOne(ctx context.Context, id string) (*models.Hotels, error)
+	GetOne(ctx context.Context, id string) (*models.HotelsRes, error)
 	GetAll(ctx context.Context, query any, page, perPage int64) (*models.HotelsPaginationRes, error)
 	GetAllHotels(ctx context.Context, query any) ([]models.Hotels, error)
 	GetAuth(ctx context.Context, query any, page, perPage int64) (*models.HotelsPaginationRes, error)
@@ -48,31 +50,31 @@ func NewHotelsSvcs(i *do.Injector) (HotelsSvcs, error) {
 	}, nil
 }
 
-// Helper method to convert Hotels to HotelsRes with isFav populated
-func (h *hotelsSvcs) convertToHotelsRes(ctx context.Context, hotels []models.Hotels) ([]models.HotelsRes, error) {
-	if len(hotels) == 0 {
-		return []models.HotelsRes{}, nil
-	}
-
-	// Convert to HotelsRes - isFav is now stored directly in the entity
-	result := make([]models.HotelsRes, len(hotels))
-	for i, hotel := range hotels {
-		result[i] = models.HotelsRes{
-			Hotels: hotel,
-			IsFav:  hotel.IsFav, // Use the isFav field directly from the entity
-		}
-	}
-
-	return result, nil
-}
-
-func (h *hotelsSvcs) GetOne(ctx context.Context, id string) (*models.Hotels, error) {
+func (h *hotelsSvcs) GetOne(ctx context.Context, id string) (*models.HotelsRes, error) {
 	_id, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return nil, helpers.InvalidObjectId()
 	}
 
-	return h.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+	pipeline := []bson.M{
+		{"$match": bson.M{"_id": _id, "trash": false}},
+	}
+
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeHotel)...)
+
+	var result []models.HotelsRes
+	errAg := h.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	if len(result) == 0 {
+		return nil, helpers.NotFoundError("Hotel not found")
+	}
+
+	return &result[0], nil
 }
 
 func (h *hotelsSvcs) GetAllHotels(ctx context.Context, query any) ([]models.Hotels, error) {
@@ -221,55 +223,8 @@ func (h *hotelsSvcs) GetAll(ctx context.Context, query any, page, perPage int64)
 		pipeline = append(pipeline, filterStages...)
 	}
 
-	// Add fave lookup - check if user is authenticated
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		// User is authenticated, add lookup to check favorites
-		pipeline = append(pipeline, bson.M{
-			"$lookup": bson.M{
-				"from": "tourismFavorites",
-				"let":  bson.M{"hotelId": "$_id"},
-				"pipeline": []bson.M{
-					{
-						"$match": bson.M{
-							"$expr": bson.M{
-								"$and": []bson.M{
-									{"$eq": []interface{}{"$refId", "$$hotelId"}},
-									{"$eq": []interface{}{"$type", "hotel"}},
-									{"$eq": []interface{}{"$userId", cfg.User.Id}},
-									{"$eq": []interface{}{"$isFav", true}},
-								},
-							},
-							"trash": bson.M{"$ne": true},
-						},
-					},
-				},
-				"as": "faveRecord",
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": bson.M{
-					"$gt": []interface{}{
-						bson.M{"$size": "$faveRecord"},
-						0,
-					},
-				},
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$project": bson.M{
-				"faveRecord": 0,
-			},
-		})
-	} else {
-		// User not authenticated, set isFav to false
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": false,
-			},
-		})
-	}
+	// Add favorite pipeline using shared logic
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeHotel)...)
 
 	// Count for pagination (exclude skip/limit from count pipeline)
 	countPipeline := make([]bson.M, len(pipeline))
@@ -298,7 +253,7 @@ func (h *hotelsSvcs) GetAll(ctx context.Context, query any, page, perPage int64)
 	for i, hotel := range hotels {
 		hotelsRes[i] = models.HotelsRes{
 			Hotels: hotel,
-			IsFav:  hotel.IsFav,
+			// IsFav:  hotel.IsFav,
 		}
 	}
 
@@ -450,55 +405,8 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 		{"$match": filter},
 	}
 
-	// Add fave lookup - check if user is authenticated
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err == nil && cfg.User != nil {
-		// User is authenticated, add lookup to check favorites
-		pipeline = append(pipeline, bson.M{
-			"$lookup": bson.M{
-				"from": "tourismFavorites",
-				"let":  bson.M{"hotelId": "$_id"},
-				"pipeline": []bson.M{
-					{
-						"$match": bson.M{
-							"$expr": bson.M{
-								"$and": []bson.M{
-									{"$eq": []interface{}{"$refId", "$$hotelId"}},
-									{"$eq": []interface{}{"$type", "hotel"}},
-									{"$eq": []interface{}{"$userId", cfg.User.Id}},
-									{"$eq": []interface{}{"$isFav", true}},
-								},
-							},
-							"trash": bson.M{"$ne": true},
-						},
-					},
-				},
-				"as": "faveRecord",
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": bson.M{
-					"$gt": []interface{}{
-						bson.M{"$size": "$faveRecord"},
-						0,
-					},
-				},
-			},
-		})
-		pipeline = append(pipeline, bson.M{
-			"$project": bson.M{
-				"faveRecord": 0,
-			},
-		})
-	} else {
-		// User not authenticated, set isFav to false
-		pipeline = append(pipeline, bson.M{
-			"$addFields": bson.M{
-				"isFav": false,
-			},
-		})
-	}
+	// Add favorite pipeline using shared logic
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeHotel)...)
 
 	countPipeline := make([]bson.M, len(pipeline))
 	copy(countPipeline, pipeline)
@@ -512,7 +420,7 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Hotels
+	var result []models.HotelsRes
 	errAg := h.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -524,15 +432,6 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 		result[i].CalculateAverageRating()
 	}
 
-	// Convert to HotelsRes with isFav populated from pipeline
-	hotelsRes := make([]models.HotelsRes, len(result))
-	for i, hotel := range result {
-		hotelsRes[i] = models.HotelsRes{
-			Hotels: hotel,
-			IsFav:  hotel.IsFav,
-		}
-	}
-
 	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
 	pagination := types.Pagination{
 		TotalPages: totalPages,
@@ -541,7 +440,7 @@ func (h *hotelsSvcs) GetV2(ctx context.Context, skip, limit int64, query *query.
 	}
 
 	return &models.HotelsPaginationRes{
-		Hotels:     hotelsRes,
+		Hotels:     result,
 		Pagination: pagination,
 	}, nil
 }

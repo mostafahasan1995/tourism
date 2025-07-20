@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"strings"
 	"time"
 
@@ -30,6 +32,10 @@ type FaqPageSvcs interface {
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
 	InitializeStaticPages(ctx context.Context) error
+
+	// V2
+	GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.FaqPagePagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.FaqPageWithStats, error)
 }
 
 // FAQ Group Service Interface
@@ -43,6 +49,10 @@ type FaqGroupSvcs interface {
 	Update(ctx context.Context, id string, data *models.FaqGroupDto) error
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
+
+	// V2
+	GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.FaqGroupPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.FaqGroup, error)
 }
 
 // FAQ Question Service Interface
@@ -54,6 +64,10 @@ type FaqQuestionSvcs interface {
 	Update(ctx context.Context, id string, data *models.FaqQuestionDto) error
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
+
+	// V2
+	GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.FaqQuestionPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.FaqQuestion, error)
 }
 
 // Service implementations
@@ -659,6 +673,133 @@ func (s *faqPageSvcs) InitializeStaticPages(ctx context.Context) error {
 	return nil
 }
 
+// V2
+func (s *faqPageSvcs) GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.FaqPagePagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	count, err := s.repo.Count(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	totalPages := math.Ceil(float64(count) / float64(limit))
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"sortOrder": 1, "createdAt": 1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	// Get FAQ Pages
+	var pages []models.FaqPage
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &pages)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to FaqPageWithStats and calculate counts
+	var pagesWithStats []models.FaqPageWithStats
+	for _, page := range pages {
+		// Count Groups
+		groupCount, err := s.groupRepo.Count(ctx, bson.M{
+			"faqPageId": page.Id,
+			"trash":     bson.M{"$ne": true},
+		})
+		if err != nil {
+			groupCount = 0
+		}
+
+		// Count Questions
+		questionCount, err := s.questionRepo.Count(ctx, bson.M{
+			"faqPageId": page.Id,
+			"trash":     bson.M{"$ne": true},
+		})
+		if err != nil {
+			questionCount = 0
+		}
+
+		pagesWithStats = append(pagesWithStats, models.FaqPageWithStats{
+			FaqPage:       page,
+			GroupCount:    int(groupCount),
+			QuestionCount: int(questionCount),
+		})
+	}
+
+	return &models.FaqPagePagination{
+		FaqPages: pagesWithStats,
+		Pagination: common.Pagination{
+			TotalPages: totalPages,
+			PerPage:    limit,
+			TotalCount: count,
+		},
+	}, nil
+}
+
+func (s *faqPageSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.FaqPageWithStats, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.FaqPage
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to FaqPageWithStats and calculate counts
+	var pagesWithStats []models.FaqPageWithStats
+	for _, page := range result {
+		// Count Groups
+		groupCount, err := s.groupRepo.Count(ctx, bson.M{
+			"faqPageId": page.Id,
+			"trash":     bson.M{"$ne": true},
+		})
+		if err != nil {
+			groupCount = 0
+		}
+
+		// Count Questions
+		questionCount, err := s.questionRepo.Count(ctx, bson.M{
+			"faqPageId": page.Id,
+			"trash":     bson.M{"$ne": true},
+		})
+		if err != nil {
+			questionCount = 0
+		}
+
+		pagesWithStats = append(pagesWithStats, models.FaqPageWithStats{
+			FaqPage:       page,
+			GroupCount:    int(groupCount),
+			QuestionCount: int(questionCount),
+		})
+	}
+	return pagesWithStats, nil
+}
+
 // =============================================================================
 // FAQ GROUP SERVICE IMPLEMENTATION
 // =============================================================================
@@ -1256,6 +1397,76 @@ func (s *faqGroupSvcs) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// V2
+func (s *faqGroupSvcs) GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.FaqGroupPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.FaqGroup
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+	pg := common.Pagination{
+		TotalPages: math.Ceil(float64(count) / float64(limit)),
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.FaqGroupPagination{
+		FaqGroups:  result,
+		Pagination: pg,
+	}, nil
+}
+
+func (s *faqGroupSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.FaqGroup, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+	pipline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.FaqGroup
+	err = s.repo.Aggregate(ctx, pipline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 // =============================================================================
 // FAQ QUESTION SERVICE IMPLEMENTATION
 // =============================================================================
@@ -1542,4 +1753,74 @@ func (s *faqQuestionSvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (s *faqQuestionSvcs) GetV2(ctx context.Context, skip int64, limit int64, query *query.Conditions) (*models.FaqQuestionPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+	count, err := s.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.FaqQuestion
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+	pg := common.Pagination{
+		TotalPages: math.Ceil(float64(count) / float64(limit)),
+		PerPage:    limit,
+		TotalCount: count,
+	}
+
+	return &models.FaqQuestionPagination{
+		FaqQuestions: result,
+		Pagination:   pg,
+	}, nil
+}
+
+func (s *faqQuestionSvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.FaqQuestion, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+	pipline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.FaqQuestion
+	err = s.repo.Aggregate(ctx, pipline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

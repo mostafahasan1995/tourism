@@ -28,7 +28,7 @@ func NewDestinationHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/destinations", func(r chi.Router) {
-		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.With(middleware.OptionalAuth()).Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
@@ -37,7 +37,7 @@ func NewDestinationHandler(i *do.Injector, r *chi.Mux) {
 	})
 
 	r.Route("/destinations/v2", func(r chi.Router) {
-		r.Post("/all", helpers.Make(h.GetAllV2))
+		r.With(middleware.OptionalAuth()).Post("/all", helpers.Make(h.GetAllV2))
 	})
 }
 

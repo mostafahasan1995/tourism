@@ -5,6 +5,7 @@ import (
 
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/util"
@@ -34,6 +35,12 @@ func NewCustomerPersonaHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Patch))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+
+		// V2
+		r.Route("/v2", func(r chi.Router) {
+			r.Post("/", helpers.Make(h.GetV2))
+			r.Post("/all", helpers.Make(h.GetAllV2))
+		})
 	})
 }
 
@@ -176,4 +183,35 @@ func (h *CustomerPersonaHandler) Delete(w http.ResponseWriter, r *http.Request) 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{
 		"message": "Customer persona deleted successfully",
 	})
+}
+
+func (h *CustomerPersonaHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &query); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	result, err := h.personaSvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *CustomerPersonaHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &query); err != nil {
+		return helpers.InvalidJSON()
+	}
+	result, err := h.personaSvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
