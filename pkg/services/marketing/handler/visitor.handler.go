@@ -8,7 +8,6 @@ import (
 	"larsa-tourism-microservices/pkg/services/marketing/models"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
-	"strconv"
 
 	"github.com/goccy/go-json"
 
@@ -75,46 +74,29 @@ func (h *VisitorHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	// Initialize filter with default values
-	filterQuery := filter.VisitorFilter{
-		Page: 1,
-		Size: int(limit),
-	}
-
-	// Parse query parameters (GET requests typically use query params, not body)
-	if fullName := r.URL.Query().Get("fullName"); fullName != "" {
-		filterQuery.FullName = fullName
-	}
-	if nationality := r.URL.Query().Get("nationality"); nationality != "" {
-		filterQuery.Nationality = nationality
-	}
-	if email := r.URL.Query().Get("email"); email != "" {
-		filterQuery.Email = email
-	}
-	if phone := r.URL.Query().Get("phone"); phone != "" {
-		filterQuery.Phone = phone
-	}
-	if searchText := r.URL.Query().Get("search"); searchText != "" {
-		filterQuery.SearchText = searchText
-	}
-	if source := r.URL.Query().Get("source"); source != "" {
-		filterQuery.Source = source
-	}
-	if hotelId := r.URL.Query().Get("hotelId"); hotelId != "" {
-		if objId, err := primitive.ObjectIDFromHex(hotelId); err == nil {
-			filterQuery.HotelId = objId
+	// Parse filter parameters
+	var filterQuery filter.VisitorFilter
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &filterQuery); err != nil {
+		// If no body or invalid JSON, use query parameters
+		filterQuery = filter.VisitorFilter{
+			Page: 1,
+			Size: int(limit),
 		}
-	}
 
-	// Handle boolean filters
-	if isActive := r.URL.Query().Get("isActive"); isActive != "" {
-		if active, err := strconv.ParseBool(isActive); err == nil {
-			filterQuery.IsActive = &active
+		if fullName := r.URL.Query().Get("fullName"); fullName != "" {
+			filterQuery.FullName = fullName
 		}
-	}
-	if isVIP := r.URL.Query().Get("isVIP"); isVIP != "" {
-		if vip, err := strconv.ParseBool(isVIP); err == nil {
-			filterQuery.IsVIP = &vip
+		if nationality := r.URL.Query().Get("nationality"); nationality != "" {
+			filterQuery.Nationality = nationality
+		}
+		if email := r.URL.Query().Get("email"); email != "" {
+			filterQuery.Email = email
+		}
+		if phone := r.URL.Query().Get("phone"); phone != "" {
+			filterQuery.Phone = phone
+		}
+		if searchText := r.URL.Query().Get("search"); searchText != "" {
+			filterQuery.SearchText = searchText
 		}
 	}
 
