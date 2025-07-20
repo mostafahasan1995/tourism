@@ -6,13 +6,13 @@ import (
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/repo"
+	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
+	"larsa-tourism-microservices/pkg/services/marketing"
 	"larsa-tourism-microservices/pkg/services/marketing/filter"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
-
-	"larsa-tourism-microservices/pkg/services/marketing"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
