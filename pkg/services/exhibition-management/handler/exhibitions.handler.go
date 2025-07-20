@@ -45,7 +45,6 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/stats", helpers.Make(h.GetStats))
 		r.Get("/{id}", helpers.Make(h.GetById))
 		r.Get("/{id}/related", helpers.Make(h.GetRelatedExhibitions))
-		r.Get("/{id}/stats", helpers.Make(h.GetExhibitionStats))
 
 		// Authenticated routes
 		r.With(middleware.Auth("authenticate")).Get("/auth", helpers.Make(h.GetAuth))
@@ -713,18 +712,6 @@ func (h *ExhibitionHandler) GetExhibitionMarketingStats(w http.ResponseWriter, r
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
-}
-
-func (h *ExhibitionHandler) GetExhibitionStats(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
-	id := chi.URLParam(r, "id")
-
-	result, err := h.exhibitionSvcs.GetExhibitionStats(ctx, id)
-	if err != nil {
-		return err
-	}
-
-	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *ExhibitionHandler) GetStats(w http.ResponseWriter, r *http.Request) error {
