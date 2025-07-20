@@ -214,6 +214,7 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 		// add destinations to the database
 		countriesToSave, err := a.destinationsvcs.AddManyNameOnly(ctx, agent.Countries)
 		if err != nil {
+			fmt.Println("error adding destinations: ", err)
 			return nil, err
 		}
 

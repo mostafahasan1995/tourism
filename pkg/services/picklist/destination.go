@@ -181,6 +181,10 @@ func (d *destinationSvcs) AddManyNameOnly(ctx context.Context, countries []strin
 	countriesToSave = make([]string, 0, len(countries))
 
 	for _, item := range countries {
+		icon, ok := util.CountryIconsMap[item]
+		if !ok {
+			return nil, errors.New("invalid country")
+		}
 		// Chcecking if the destination exists regardless of the case
 		filter := bson.M{"name": bson.M{"$regex": "^" + item + "$", "$options": "i"}, "trash": false}
 		dest, err := d.repo.GetByFilter(ctx, filter)
@@ -191,11 +195,15 @@ func (d *destinationSvcs) AddManyNameOnly(ctx context.Context, countries []strin
 			countriesToSave = append(countriesToSave, dest.Name)
 			continue
 		}
-		item = util.CapitalizeFirstLowerRest(item)
+
 		destination := &models.Destination{
 			Id: primitive.NewObjectID(),
 			DestinationDto: models.DestinationDto{
 				Name: item,
+				Icon: types.FileField{
+					Path:         icon,
+					OriginalName: item,
+				},
 			},
 			CreatedAt: time.Now(),
 			CreatedBy: cfg.User.Id,
