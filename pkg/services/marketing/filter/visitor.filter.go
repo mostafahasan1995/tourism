@@ -159,44 +159,7 @@ func (f *VisitorFilter) ParseQueryParams(q url.Values) {
 }
 
 func (f VisitorFilter) ToBsonFilter() bson.M {
+	// Keep it super simple - just exclude trashed items
 	filter := bson.M{"trash": false}
-
-	if f.Name != nil && *f.Name != "" {
-		filter["name"] = bson.M{"$regex": *f.Name, "$options": "i"}
-	}
-
-	if f.Email != "" {
-		filter["email"] = bson.M{"$regex": f.Email, "$options": "i"}
-	}
-
-	if f.Phone != "" {
-		filter["phone"] = bson.M{"$regex": f.Phone, "$options": "i"}
-	}
-
-	if f.Country != nil && *f.Country != "" {
-		filter["country"] = bson.M{"$regex": *f.Country, "$options": "i"}
-	}
-
-	if f.RegistrationId != nil && *f.RegistrationId != "" {
-		filter["registrationId"] = bson.M{"$regex": *f.RegistrationId, "$options": "i"}
-	}
-
-	if f.Status != nil && *f.Status != "" {
-		filter["status"] = *f.Status
-	}
-
-	dateFilter := bson.M{}
-	if f.DateFrom != nil {
-		dateFilter["$gte"] = f.DateFrom
-	}
-
-	if f.DateTo != nil {
-		dateFilter["$lte"] = f.DateTo
-	}
-
-	if len(dateFilter) > 0 {
-		filter["createdAt"] = dateFilter
-	}
-
 	return filter
 }

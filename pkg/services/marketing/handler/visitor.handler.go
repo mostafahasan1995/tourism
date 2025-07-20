@@ -32,6 +32,7 @@ func NewVisitorHandler(i *do.Injector, r *chi.Mux) {
 
 	r.Route("/marketing/visitors", func(r chi.Router) {
 		r.Get("/", helpers.Make(h.Get))
+		r.Get("/all", helpers.Make(h.GetAll))
 		r.Get("/stats", helpers.Make(h.GetStats))
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/{id}/activities", helpers.Make(h.GetVisitorActivities))
@@ -74,30 +75,10 @@ func (h *VisitorHandler) Get(w http.ResponseWriter, r *http.Request) error {
 		return err
 	}
 
-	// Parse filter parameters
-	var filterQuery filter.VisitorFilter
-	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &filterQuery); err != nil {
-		// If no body or invalid JSON, use query parameters
-		filterQuery = filter.VisitorFilter{
-			Page: 1,
-			Size: int(limit),
-		}
-
-		if fullName := r.URL.Query().Get("fullName"); fullName != "" {
-			filterQuery.FullName = fullName
-		}
-		if nationality := r.URL.Query().Get("nationality"); nationality != "" {
-			filterQuery.Nationality = nationality
-		}
-		if email := r.URL.Query().Get("email"); email != "" {
-			filterQuery.Email = email
-		}
-		if phone := r.URL.Query().Get("phone"); phone != "" {
-			filterQuery.Phone = phone
-		}
-		if searchText := r.URL.Query().Get("search"); searchText != "" {
-			filterQuery.SearchText = searchText
-		}
+	// Simple filter - just basic pagination, no complex filtering
+	filterQuery := filter.VisitorFilter{
+		Page: 1,
+		Size: int(limit),
 	}
 
 	result, err := h.visitorSvcs.Get(ctx, skip, limit, filterQuery)
@@ -106,6 +87,50 @@ func (h *VisitorHandler) Get(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *VisitorHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	// Get all visitors without pagination
+	filterQuery := filter.VisitorFilter{
+		Page: 1,
+		Size: 1000000, // Large number to get all
+	}
+
+	// Parse query parameters for filtering
+	if name := r.URL.Query().Get("name"); name != "" {
+		filterQuery.Name = &name
+	}
+	if fullName := r.URL.Query().Get("fullName"); fullName != "" {
+		filterQuery.Name = &fullName
+	}
+	if country := r.URL.Query().Get("country"); country != "" {
+		filterQuery.Country = &country
+	}
+	if nationality := r.URL.Query().Get("nationality"); nationality != "" {
+		filterQuery.Country = &nationality
+	}
+	if email := r.URL.Query().Get("email"); email != "" {
+		filterQuery.Email = email
+	}
+	if phone := r.URL.Query().Get("phone"); phone != "" {
+		filterQuery.Phone = phone
+	}
+	if registrationId := r.URL.Query().Get("registrationId"); registrationId != "" {
+		filterQuery.RegistrationId = &registrationId
+	}
+	if status := r.URL.Query().Get("status"); status != "" {
+		filterQuery.Status = &status
+	}
+
+	result, err := h.visitorSvcs.Get(ctx, 0, 1000000, filterQuery)
+	if err != nil {
+		return err
+	}
+
+	// Return just the visitors array without pagination info
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result.Visitors)
 }
 
 func (h *VisitorHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
