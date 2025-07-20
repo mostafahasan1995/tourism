@@ -10,31 +10,30 @@ import (
 )
 
 type VisitorFilter struct {
-	Page           int                `bson:"page" json:"page"`
-	Size           int                `bson:"size" json:"size"`
-	HotelId        primitive.ObjectID `bson:"hotelId,omitempty" json:"hotelId,omitempty"`
-	FullName       string             `bson:"fullName" json:"fullName"`
-	Nationality    string             `bson:"nationality" json:"nationality"`
-	Email          string             `bson:"email" json:"email"`
-	Phone          string             `bson:"phone" json:"phone"`
-	Interests      []string           `bson:"interests" json:"interests"`
-	Tags           []string           `bson:"tags" json:"tags"`
-	Source         string             `bson:"source" json:"source"`
-	IsActive       *bool              `bson:"isActive,omitempty" json:"isActive,omitempty"`
-	IsVIP          *bool              `bson:"isVIP,omitempty" json:"isVIP,omitempty"`
-	VisitDateFrom  *time.Time         `bson:"visitDateFrom,omitempty" json:"visitDateFrom,omitempty"`
-	VisitDateTo    *time.Time         `bson:"visitDateTo,omitempty" json:"visitDateTo,omitempty"`
-	MinVisitCount  *int               `bson:"minVisitCount,omitempty" json:"minVisitCount,omitempty"`
-	MaxVisitCount  *int               `bson:"maxVisitCount,omitempty" json:"maxVisitCount,omitempty"`
-	MinTotalSpent  *float64           `bson:"minTotalSpent,omitempty" json:"minTotalSpent,omitempty"`
-	MaxTotalSpent  *float64           `bson:"maxTotalSpent,omitempty" json:"maxTotalSpent,omitempty"`
-	SearchText     string             `bson:"searchText" json:"searchText"`
-	Name           *string            `json:"name,omitempty"`
-	Country        *string            `json:"country,omitempty"`
-	RegistrationId *string            `json:"registrationId,omitempty"`
-	Status         *string            `json:"status,omitempty"`
-	DateFrom       *time.Time         `json:"dateFrom,omitempty"`
-	DateTo         *time.Time         `json:"dateTo,omitempty"`
+	Page          int                `bson:"page" json:"page"`
+	Size          int                `bson:"size" json:"size"`
+	HotelId       primitive.ObjectID `bson:"hotelId,omitempty" json:"hotelId,omitempty"`
+	FullName      string             `bson:"fullName" json:"fullName"`
+	Nationality   string             `bson:"nationality" json:"nationality"`
+	Email         string             `bson:"email" json:"email"`
+	Phone         string             `bson:"phone" json:"phone"`
+	Interests     []string           `bson:"interests" json:"interests"`
+	Tags          []string           `bson:"tags" json:"tags"`
+	Source        string             `bson:"source" json:"source"`
+	IsActive      *bool              `bson:"isActive,omitempty" json:"isActive,omitempty"`
+	IsVIP         *bool              `bson:"isVIP,omitempty" json:"isVIP,omitempty"`
+	VisitDateFrom *time.Time         `bson:"visitDateFrom,omitempty" json:"visitDateFrom,omitempty"`
+	VisitDateTo   *time.Time         `bson:"visitDateTo,omitempty" json:"visitDateTo,omitempty"`
+	MinVisitCount *int               `bson:"minVisitCount,omitempty" json:"minVisitCount,omitempty"`
+	MaxVisitCount *int               `bson:"maxVisitCount,omitempty" json:"maxVisitCount,omitempty"`
+	MinTotalSpent *float64           `bson:"minTotalSpent,omitempty" json:"minTotalSpent,omitempty"`
+	MaxTotalSpent *float64           `bson:"maxTotalSpent,omitempty" json:"maxTotalSpent,omitempty"`
+	SearchText    string             `bson:"searchText" json:"searchText"`
+	// Legacy fields for backward compatibility (mapped to correct fields in ToBsonFilter)
+	Name     *string    `json:"name,omitempty"`     // Maps to fullName
+	Country  *string    `json:"country,omitempty"`  // Maps to nationality
+	DateFrom *time.Time `json:"dateFrom,omitempty"` // Maps to createdAt range
+	DateTo   *time.Time `json:"dateTo,omitempty"`   // Maps to createdAt range
 }
 
 func (f VisitorFilter) BuildPipeline(m bson.M) []bson.M {
@@ -48,7 +47,7 @@ func (f VisitorFilter) BuildPipeline(m bson.M) []bson.M {
 	var ands bson.A
 
 	if f.Name != nil && *f.Name != "" {
-		ands = append(ands, bson.M{"name": bson.M{"$regex": *f.Name, "$options": "i"}})
+		ands = append(ands, bson.M{"fullName": bson.M{"$regex": *f.Name, "$options": "i"}})
 	}
 
 	if f.Email != "" {
@@ -60,15 +59,7 @@ func (f VisitorFilter) BuildPipeline(m bson.M) []bson.M {
 	}
 
 	if f.Country != nil && *f.Country != "" {
-		ands = append(ands, bson.M{"country": bson.M{"$regex": *f.Country, "$options": "i"}})
-	}
-
-	if f.RegistrationId != nil && *f.RegistrationId != "" {
-		ands = append(ands, bson.M{"registrationId": bson.M{"$regex": *f.RegistrationId, "$options": "i"}})
-	}
-
-	if f.Status != nil && *f.Status != "" {
-		ands = append(ands, bson.M{"status": *f.Status})
+		ands = append(ands, bson.M{"nationality": bson.M{"$regex": *f.Country, "$options": "i"}})
 	}
 
 	dateFilter := bson.M{}
@@ -117,15 +108,7 @@ func (f *VisitorFilter) ParseQueryParams(q url.Values) {
 		f.Country = &country
 	}
 
-	// Registration ID filter
-	if regId := q.Get("registrationId"); regId != "" {
-		f.RegistrationId = &regId
-	}
-
-	// Status filter
-	if status := q.Get("status"); status != "" {
-		f.Status = &status
-	}
+	// Note: registrationId and status fields removed as they don't exist in visitor model
 
 	// Date filters
 	if from := q.Get("dateFrom"); from != "" {
@@ -161,8 +144,14 @@ func (f *VisitorFilter) ParseQueryParams(q url.Values) {
 func (f VisitorFilter) ToBsonFilter() bson.M {
 	filter := bson.M{"trash": false}
 
+	// Fix field name: use 'fullName' instead of 'name'
 	if f.Name != nil && *f.Name != "" {
-		filter["name"] = bson.M{"$regex": *f.Name, "$options": "i"}
+		filter["fullName"] = bson.M{"$regex": *f.Name, "$options": "i"}
+	}
+
+	// Use correct field name for full name filter
+	if f.FullName != "" {
+		filter["fullName"] = bson.M{"$regex": f.FullName, "$options": "i"}
 	}
 
 	if f.Email != "" {
@@ -173,28 +162,104 @@ func (f VisitorFilter) ToBsonFilter() bson.M {
 		filter["phone"] = bson.M{"$regex": f.Phone, "$options": "i"}
 	}
 
+	// Fix field name: use 'nationality' instead of 'country'
 	if f.Country != nil && *f.Country != "" {
-		filter["country"] = bson.M{"$regex": *f.Country, "$options": "i"}
+		filter["nationality"] = bson.M{"$regex": *f.Country, "$options": "i"}
 	}
 
-	if f.RegistrationId != nil && *f.RegistrationId != "" {
-		filter["registrationId"] = bson.M{"$regex": *f.RegistrationId, "$options": "i"}
+	// Use correct field name for nationality filter
+	if f.Nationality != "" {
+		filter["nationality"] = bson.M{"$regex": f.Nationality, "$options": "i"}
 	}
 
-	if f.Status != nil && *f.Status != "" {
-		filter["status"] = *f.Status
+	// Handle hotelId filter
+	if !f.HotelId.IsZero() {
+		filter["hotelId"] = f.HotelId
 	}
 
-	dateFilter := bson.M{}
-	if f.DateFrom != nil {
-		dateFilter["$gte"] = f.DateFrom
+	// Handle interests filter
+	if len(f.Interests) > 0 {
+		filter["interests"] = bson.M{"$in": f.Interests}
 	}
 
-	if f.DateTo != nil {
-		dateFilter["$lte"] = f.DateTo
+	// Handle tags filter
+	if len(f.Tags) > 0 {
+		filter["tags"] = bson.M{"$in": f.Tags}
 	}
 
-	if len(dateFilter) > 0 {
+	// Handle source filter
+	if f.Source != "" {
+		filter["source"] = bson.M{"$regex": f.Source, "$options": "i"}
+	}
+
+	// Handle active status filter
+	if f.IsActive != nil {
+		filter["isActive"] = *f.IsActive
+	}
+
+	// Handle VIP status filter
+	if f.IsVIP != nil {
+		filter["isVIP"] = *f.IsVIP
+	}
+
+	// Handle visit date range
+	if f.VisitDateFrom != nil || f.VisitDateTo != nil {
+		visitDateFilter := bson.M{}
+		if f.VisitDateFrom != nil {
+			visitDateFilter["$gte"] = *f.VisitDateFrom
+		}
+		if f.VisitDateTo != nil {
+			visitDateFilter["$lte"] = *f.VisitDateTo
+		}
+		filter["visitDate"] = visitDateFilter
+	}
+
+	// Handle visit count range
+	if f.MinVisitCount != nil || f.MaxVisitCount != nil {
+		visitCountFilter := bson.M{}
+		if f.MinVisitCount != nil {
+			visitCountFilter["$gte"] = *f.MinVisitCount
+		}
+		if f.MaxVisitCount != nil {
+			visitCountFilter["$lte"] = *f.MaxVisitCount
+		}
+		filter["visitCount"] = visitCountFilter
+	}
+
+	// Handle total spent range
+	if f.MinTotalSpent != nil || f.MaxTotalSpent != nil {
+		totalSpentFilter := bson.M{}
+		if f.MinTotalSpent != nil {
+			totalSpentFilter["$gte"] = *f.MinTotalSpent
+		}
+		if f.MaxTotalSpent != nil {
+			totalSpentFilter["$lte"] = *f.MaxTotalSpent
+		}
+		filter["totalSpent"] = totalSpentFilter
+	}
+
+	// Handle search text (search across multiple fields)
+	if f.SearchText != "" {
+		searchRegex := bson.M{"$regex": f.SearchText, "$options": "i"}
+		filter["$or"] = []bson.M{
+			{"fullName": searchRegex},
+			{"email": searchRegex},
+			{"phone": searchRegex},
+			{"nationality": searchRegex},
+			{"source": searchRegex},
+			{"notes": searchRegex},
+		}
+	}
+
+	// Handle creation date range
+	if f.DateFrom != nil || f.DateTo != nil {
+		dateFilter := bson.M{}
+		if f.DateFrom != nil {
+			dateFilter["$gte"] = *f.DateFrom
+		}
+		if f.DateTo != nil {
+			dateFilter["$lte"] = *f.DateTo
+		}
 		filter["createdAt"] = dateFilter
 	}
 

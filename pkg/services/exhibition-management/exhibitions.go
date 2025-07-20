@@ -6,7 +6,6 @@ import (
 	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/models"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/repo"
-	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/marketing"
 	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
@@ -43,8 +42,9 @@ type ExhibitionSvcs interface {
 	// Validation methods for other services
 	ValidateExhibitionExists(ctx context.Context, exhibitionId string) error
 
-	// Stats method
+	// Stats methods
 	GetStats(ctx context.Context) (*models.ExhibitionStats, error)
+	GetExhibitionStats(ctx context.Context, exhibitionId string) (*models.ExhibitionWithVisitorStats, error)
 
 	// Debug methods - remove in production
 	DebugCount(ctx context.Context) (map[string]interface{}, error)
