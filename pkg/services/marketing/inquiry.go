@@ -191,6 +191,11 @@ func (s *inquirySvcs) Add(ctx context.Context, data *models.InquiryDto) (*models
 		data.Source = "chat"
 	}
 
+	// Set user image if user is authenticated
+	if cfg.User != nil {
+		data.UserImg = nil // TODO: Set to cfg.User.Image when User model has image field
+	}
+
 	inquiry := &models.Inquiry{
 		InquiryDto: *data,
 		Id:         primitive.NewObjectID(),

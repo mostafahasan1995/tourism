@@ -43,12 +43,3 @@ type CapabilityCheck struct {
 	Capability string
 	IsAllowed  bool
 }
-
-type Role struct {
-	Id   primitive.ObjectID `json:"_id"`
-	Name string             `json:"name"`
-}
-
-type RoleList struct {
-	Roles []Role `json:"roles"`
-}

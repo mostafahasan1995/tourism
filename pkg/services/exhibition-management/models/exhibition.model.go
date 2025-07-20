@@ -89,6 +89,15 @@ type ExhibitionWithPagination struct {
 	Pagination  types.Pagination `json:"pagination"`
 }
 
+// ExhibitionStats for dashboard statistics
+type ExhibitionStats struct {
+	ActiveCount        int64 `json:"activeCount"`
+	UpcomingCount      int64 `json:"upcomingCount"`
+	ClosedCount        int64 `json:"closedCount"`
+	TotalCount         int64 `json:"totalCount"`
+	RegisteredVisitors int64 `json:"registeredVisitors"`
+}
+
 // Validation methods
 func (e *ExhibitionDto) Validate(v *validator.Validate) error {
 	if err := v.Struct(e); err != nil {

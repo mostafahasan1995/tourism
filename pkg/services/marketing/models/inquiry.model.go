@@ -64,8 +64,8 @@ type InquiryDto struct {
 	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
 	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId"`
 	VisitorName  string                 `bson:"visitorName" json:"visitorName" validate:"required"`
-	Email        string                 `bson:"email" json:"email" validate:"required,email"`
-	Phone        types.PhoneNumber      `bson:"phone,omitempty" json:"phone,omitempty"`
+	Email        string                 `bson:"email" json:"email" `
+	UserImg      *types.FileField       `bson:"userImg,omitempty" json:"userImg,omitempty"`
 	Message      string                 `bson:"message" json:"message" validate:"required"`
 	Subject      string                 `bson:"subject,omitempty" json:"subject,omitempty"`
 	Priority     string                 `bson:"priority" json:"priority" validate:"oneof=low medium high urgent"`

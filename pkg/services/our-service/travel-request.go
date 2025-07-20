@@ -375,11 +375,7 @@ func (t *travelrequestsvcs) getTravelRequestDepartureAgent(ctx context.Context, 
 
 	agent, err := t.agentsvcs.GetAgentByDestination(ctx, departureDestinationId.Hex())
 	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return &primitive.NilObjectID, nil
-		} else {
-			return nil, errors.New("error get departure destination agent")
-		}
+		return nil, errors.New("error get departure destination agent, check if agent has destination and is active")
 	}
 
 	return &agent.Id, nil
