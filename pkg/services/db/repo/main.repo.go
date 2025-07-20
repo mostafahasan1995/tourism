@@ -18,11 +18,26 @@ type MainRepo[T any] interface {
 	Patch(ctx context.Context, filter, update bson.M, ops ...*options.FindOneAndUpdateOptions) (*T, error)
 	BulkWrite(ctx context.Context, writeOps []mongo.WriteModel) (*mongo.BulkWriteResult, error)
 	Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error)
+	DeleteMain(ctx context.Context, filter bson.M) error
 }
 
 type MainRepoImpl[T any] struct {
 	Db       *mongo.Client
 	CollName string
+}
+
+func (m *MainRepoImpl[T]) DeleteMain(ctx context.Context, filter bson.M) error {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return err
+	}
+	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+
+	_, err = coll.DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (m *MainRepoImpl[T]) Add(ctx context.Context, data *T, opts ...*options.InsertOneOptions) error {

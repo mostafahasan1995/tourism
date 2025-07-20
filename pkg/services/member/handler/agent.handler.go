@@ -30,7 +30,7 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/agents", func(r chi.Router) {
 		r.Get("/all", helpers.Make(h.GetAll))
 		r.Get("/", helpers.Make(h.Get))
-		r.Get("/{id}", helpers.Make(h.GetOne))
+		r.With(middleware.OptionalAuth()).Get("/{id}", helpers.Make(h.GetOne))
 		r.Get("/destinations", helpers.Make(h.GetDestinationAgents))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
@@ -39,8 +39,8 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 	})
 
 	r.Route("/agents/v2", func(r chi.Router) {
-		r.Post("/", helpers.Make(h.GetV2))
-		r.Post("/all", helpers.Make(h.GetAllV2))
+		r.With(middleware.OptionalAuth()).Post("/", helpers.Make(h.GetV2))
+		r.With(middleware.OptionalAuth()).Post("/all", helpers.Make(h.GetAllV2))
 	})
 
 	r.Route("/agent-joins", func(r chi.Router) {

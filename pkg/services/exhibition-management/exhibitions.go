@@ -378,19 +378,26 @@ func (s *exhibitionSvcs) GetV2(ctx context.Context, skip, limit int64, filters *
 func (s *exhibitionSvcs) GetById(ctx context.Context, id string) (*models.Exhibition, error) {
 	objID, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
-		return nil, helpers.BadRequest("Invalid exhibition ID")
+		return nil, helpers.InvalidObjectId()
 	}
 
-	filter := bson.M{"_id": objID, "trash": false}
-	exhibition, err := s.repo.GetByFilter(ctx, filter)
+	pipeline := []bson.M{{"$match": bson.M{"_id": objID, "trash": false}}}
+
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeExhibition)...)
+
+	var result []models.Exhibition
+	err = s.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
-			return nil, helpers.NotFoundError("Exhibition not found")
-		}
 		return nil, err
 	}
 
-	return exhibition, nil
+	if len(result) == 0 {
+		return nil, helpers.NotFoundError("Exhibition not found")
+	}
+
+	return &result[0], nil
 }
 
 // Save creates a new exhibition with ads

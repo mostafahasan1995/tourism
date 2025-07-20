@@ -504,6 +504,11 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 
 		request := result[0]
 
+		//Shouldn't be able to approve multiple times
+		if request.Status == enums.TravelReqStatusApproved {
+			return nil, errors.New("travel request already approved")
+		}
+
 		if request.CustomerId != cfg.User.Id {
 			return nil, errors.New("only owner of this travel request can approve it")
 		}
@@ -541,6 +546,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		}
 
 		svcss, err := program.CustomType.GetAllServicePricing()
+
 		if err != nil {
 			return nil, errors.New("error get program service list pricing")
 		}

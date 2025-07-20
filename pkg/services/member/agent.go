@@ -8,6 +8,7 @@ import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	interactionsModels "larsa-tourism-microservices/pkg/services/interactions/models"
 	"larsa-tourism-microservices/pkg/services/member/enums"
 	"larsa-tourism-microservices/pkg/services/member/filters"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -30,7 +31,7 @@ import (
 
 type AgentSvcs interface {
 	GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error)
-	GetOne(ctx context.Context, agentId string) (*models.Agent, error)
+	GetOne(ctx context.Context, agentId string) (*models.AgentRes, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.AgentWithPagination, error)
 	GetAll(ctx context.Context, query string) ([]models.Agent, error)
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
@@ -49,7 +50,7 @@ type AgentSvcs interface {
 	GetDestinationAgents(ctx context.Context, query string) ([]models.Agent, error)
 
 	//v2
-	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentWithPagination, error)
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentV2Pagination, error)
 	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.Agent, error)
 	GetJoinRequestsV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentJoinPagination, error)
 }
@@ -77,13 +78,29 @@ func NewAgentSvcs(i *do.Injector) (AgentSvcs, error) {
 }
 
 // agent
-func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.Agent, error) {
+func (a *agentsvcs) GetOne(ctx context.Context, agentId string) (*models.AgentRes, error) {
 	_id, err := primitive.ObjectIDFromHex(agentId)
 	if err != nil {
 		return nil, err
 	}
 
-	return a.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+	pipeline := []bson.M{{"$match": bson.M{"_id": _id, "trash": false}}}
+
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeAgent)...)
+
+	var result []models.AgentRes
+	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if errAg != nil {
+		return nil, errAg
+	}
+
+	if len(result) == 0 {
+		return nil, helpers.NotFoundError("Agent not found")
+	}
+
+	return &result[0], nil
 }
 
 func (a *agentsvcs) GetByFilter(ctx context.Context, filter bson.M) (*models.Agent, error) {
@@ -189,7 +206,16 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 
 		agent.AgentId = fmt.Sprintf("AG-%d", seq)
 		agent.Security.NewPassword = ""
+		// add destinations to the database
+		countriesToSave, err := a.destinationsvcs.AddManyNameOnly(ctx, agent.Countries)
+		if err != nil {
+			fmt.Println("error adding destinations: ", err)
+			return nil, err
+		}
 
+		fmt.Println("countriesToSave: ", countriesToSave)
+		// update the countries with the case found in the db
+		agent.Countries = countriesToSave
 		if err := a.repo.Add(ctx, agent); err != nil {
 			return nil, err
 		}
@@ -580,7 +606,7 @@ func (a *agentsvcs) GetDestinationAgents(ctx context.Context, query string) ([]m
 }
 
 // v2
-func (a *agentsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentWithPagination, error) {
+func (a *agentsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.AgentV2Pagination, error) {
 	if err := query.CheckValid(); err != nil {
 		return nil, err
 	}
@@ -607,7 +633,9 @@ func (a *agentsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.C
 	pipeline = append(pipeline, bson.M{"$skip": skip})
 	pipeline = append(pipeline, bson.M{"$limit": limit})
 
-	var result []models.Agent
+	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeAgent)...)
+
+	var result []models.AgentRes
 	errAg := a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
 		return cur.All(ctx, &result)
 	})
@@ -622,7 +650,7 @@ func (a *agentsvcs) GetV2(ctx context.Context, skip, limit int64, query *query.C
 		TotalCount: count,
 	}
 
-	return &models.AgentWithPagination{
+	return &models.AgentV2Pagination{
 		Agents:     result,
 		Pagination: pagination,
 	}, nil

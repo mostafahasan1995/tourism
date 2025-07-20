@@ -3,16 +3,24 @@ package home
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/query"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
 	"larsa-tourism-microservices/pkg/util"
+	"math"
 	"time"
 
+	"larsa-tourism-microservices/pkg/services/messaging"
+	messagingenums "larsa-tourism-microservices/pkg/services/messaging/enums"
+	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
+	"larsa-tourism-microservices/pkg/services/messaging/template"
+
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
-	//"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/samber/do"
+
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -26,15 +34,24 @@ type ContactUsSvcs interface {
 	Update(ctx context.Context, id string, data *models.ContactUsDto) error
 	Patch(ctx context.Context, id string, updates map[string]interface{}) error
 	Delete(ctx context.Context, id string) error
+	GetSettings(ctx context.Context) (*models.ContactUsSettings, error)
+	AddOrUpdateSettings(ctx context.Context, settings *models.ContactUsSettingsDto) error
+	// V2
+	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ContactUsPagination, error)
+	GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ContactUs, error)
 }
 
 type contactUssvcs struct {
-	repo repo.ContactUsRepo
+	repo         repo.ContactUsRepo
+	settingsRepo repo.ContactUsSettingsRepo
+	messagesvcs  messaging.MessageSvcs
 }
 
 func NewContactUsSvcs(i *do.Injector) (ContactUsSvcs, error) {
 	return &contactUssvcs{
-		repo: do.MustInvoke[repo.ContactUsRepo](i),
+		repo:         do.MustInvoke[repo.ContactUsRepo](i),
+		settingsRepo: do.MustInvoke[repo.ContactUsSettingsRepo](i),
+		messagesvcs:  do.MustInvoke[messaging.MessageSvcs](i),
 	}, nil
 }
 
@@ -134,6 +151,11 @@ func (l *contactUssvcs) Add(ctx context.Context, data *models.ContactUsDto) erro
 		return err
 	}
 
+	err = l.SendContactUsEmail(ctx, data)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -167,6 +189,10 @@ func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto)
 			UpdatedAt:    time.Now(),
 			UpdatedBy:    userId,
 		}
+		err = l.SendContactUsEmail(ctx, &flr)
+		if err != nil {
+			return err
+		}
 		contactUsArray = append(contactUsArray, contactUs)
 	}
 
@@ -177,7 +203,41 @@ func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto)
 
 	return nil
 }
+func (l *contactUssvcs) SendContactUsEmail(ctx context.Context, data *models.ContactUsDto) error {
+	settings, err := l.GetSettings(ctx)
+	if err != nil {
+		return err
+	}
 
+	tplData := template.ContactUsTplData{
+		FullName:        data.FullName,
+		EmailAddress:    data.EmailAddress,
+		PhoneNumber:     data.PhoneNumber,
+		HowDidYouFindUs: data.HowDidYouFindUs,
+		Message:         data.Message,
+		Additional:      data.AdditionalFields,
+	}
+	body, subject, err := l.messagesvcs.GetTemplateMessage(ctx, messagingenums.CONTACTUS, &tplData)
+	if err != nil {
+		return err
+	}
+	for _, email := range settings.Emails {
+		emailMsg := &messagingmodels.Message{
+			Type:        messagingenums.CONTACTUS,
+			Email:       email,
+			Subject:     subject,
+			Message:     body,
+			MessageHtml: body,
+			Target:      "email",
+			Others:      map[string]any{},
+		}
+		err = l.messagesvcs.SendEmail(ctx, emailMsg)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func (a *contactUssvcs) Update(ctx context.Context, id string, data *models.ContactUsDto) error {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -314,4 +374,112 @@ func (a *contactUssvcs) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+func (a *contactUssvcs) GetSettings(ctx context.Context) (*models.ContactUsSettings, error) {
+	var settings []models.ContactUsSettings
+	err := a.settingsRepo.Aggregate(ctx, []bson.M{}, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &settings)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if len(settings) == 0 {
+		return nil, errors.New("settings not found")
+	}
+	return &settings[0], nil
+}
+
+func (a *contactUssvcs) AddOrUpdateSettings(ctx context.Context, settings *models.ContactUsSettingsDto) error {
+	existing, err := a.GetSettings(ctx)
+	fmt.Println("Existing: ", settings)
+	if existing == nil || err != nil {
+		err = a.settingsRepo.Add(ctx, &models.ContactUsSettings{
+			Id:     primitive.NewObjectID(),
+			Emails: settings.Emails,
+		})
+		if err != nil {
+			return err
+		}
+	} else {
+		existing.Emails = settings.Emails
+		_, err = a.settingsRepo.Patch(ctx, bson.M{"_id": existing.Id}, bson.M{"$set": existing})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// V2
+func (a *contactUssvcs) GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.ContactUsPagination, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+	count, err := a.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
+	pipeline = append(pipeline, bson.M{"$skip": skip})
+	pipeline = append(pipeline, bson.M{"$limit": limit})
+
+	var result []models.ContactUs
+	err = a.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+	var totalPages float64 = math.Ceil(float64(count) / float64(limit))
+	pg := common.Pagination{
+		TotalPages: totalPages,
+		PerPage:    limit,
+		TotalCount: count,
+	}
+	return &models.ContactUsPagination{
+		ContactUs:  result,
+		Pagination: pg,
+	}, nil
+}
+
+func (a *contactUssvcs) GetAllV2(ctx context.Context, query *query.Conditions) ([]models.ContactUs, error) {
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+	pipline := []bson.M{
+		{"$match": bson.M{"trash": false}},
+		{"$match": filter},
+	}
+
+	var result []models.ContactUs
+	err = a.repo.Aggregate(ctx, pipline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

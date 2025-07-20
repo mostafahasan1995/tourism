@@ -36,3 +36,12 @@ type ContactUsPagination struct {
 
 	Pagination common.Pagination `bson:"pagination" json:"pagination"`
 }
+
+type ContactUsSettingsDto struct {
+	Emails []string `bson:"emails" json:"emails" validate:"required,dive,email"`
+}
+
+type ContactUsSettings struct {
+	Id     primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Emails []string           `bson:"emails" json:"emails"`
+}
