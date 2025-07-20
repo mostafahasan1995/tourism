@@ -1,11 +1,11 @@
 package models
 
 import (
-	"time"
-
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/exhibition-management/enums"
+	marketingModels "larsa-tourism-microservices/pkg/services/marketing/models"
 	"larsa-tourism-microservices/pkg/types"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -95,6 +95,15 @@ type ExhibitionStats struct {
 	ClosedCount        int64 `json:"closedCount"`
 	TotalCount         int64 `json:"totalCount"`
 	RegisteredVisitors int64 `json:"registeredVisitors"`
+}
+
+// ExhibitionWithVisitorStats for detailed exhibition statistics including visitor data
+type ExhibitionWithVisitorStats struct {
+	Exhibition     Exhibition                    `json:"exhibition"`
+	VisitorCount   int64                         `json:"visitorCount"`
+	ActiveVisitors int64                         `json:"activeVisitors"`
+	VIPVisitors    int64                         `json:"vipVisitors"`
+	VisitorStats   *marketingModels.VisitorStats `json:"visitorStats,omitempty"`
 }
 
 // Validation methods
