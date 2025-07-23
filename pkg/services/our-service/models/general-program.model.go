@@ -22,10 +22,11 @@ type GeneralProgramDestination struct {
 }
 
 type Includes struct {
-	Accommodation  []string `bson:"accommodation" json:"accommodation"`
-	Transportation []string `bson:"transportation" json:"transportation"`
-	Meals          []string `bson:"meals" json:"meals"`
-	Details        string   `bson:"details" json:"details"`
+	Accommodation      []string `bson:"accommodation" json:"accommodation"`
+	Transportation     []string `bson:"transportation" json:"transportation"`
+	Meals              []string `bson:"meals" json:"meals"`
+	IncludedDetails    string   `bson:"includedDetails" json:"includedDetails"`
+	NotIncludedDetails string   `bson:"notIncludedDetails" json:"notIncludedDetails"`
 }
 
 type DailyItinerary struct {
