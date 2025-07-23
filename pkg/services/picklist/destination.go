@@ -163,10 +163,6 @@ func (d *destinationSvcs) AddManyNameOnly(ctx context.Context, countries []strin
 	if err != nil {
 		return nil, err
 	}
-
-	if len(countries) == 0 {
-		return nil, errors.New("no data provided")
-	}
 	// The destinations to be added to the database
 	createdDests := make([]any, 0, len(countries))
 	// the countries provided updated with the case found in the db
