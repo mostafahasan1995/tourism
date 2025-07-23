@@ -272,8 +272,6 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 		pass := data.Security.NewPassword
 		agent.Security.NewPassword = ""
 		if len(agent.Countries) > 0 {
-			fmt.Println("--------------------------------")
-			fmt.Println("countries: ", agent.Countries)
 			// add destinations to the database
 			countriesToSave, err := a.destinationsvcs.AddManyNameOnly(ctx, agent.Countries)
 			if err != nil {
