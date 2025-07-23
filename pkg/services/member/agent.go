@@ -217,8 +217,6 @@ func (a *agentsvcs) Add(ctx context.Context, data *models.AgentDto) (*models.Age
 			fmt.Println("error adding destinations: ", err)
 			return nil, err
 		}
-
-		fmt.Println("countriesToSave: ", countriesToSave)
 		// update the countries with the case found in the db
 		agent.Countries = countriesToSave
 		if err := a.repo.Add(ctx, agent); err != nil {
@@ -273,6 +271,21 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 
 		pass := data.Security.NewPassword
 		agent.Security.NewPassword = ""
+		if len(agent.Countries) > 0 {
+			fmt.Println("--------------------------------")
+			fmt.Println("countries: ", agent.Countries)
+			// add destinations to the database
+			countriesToSave, err := a.destinationsvcs.AddManyNameOnly(ctx, agent.Countries)
+			if err != nil {
+				return nil, err
+			}
+			// update the countries with the case found in the db
+			if countriesToSave != nil {
+				agent.Countries = countriesToSave
+			}
+		} else {
+			agent.Countries = []string{}
+		}
 
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": agent}
