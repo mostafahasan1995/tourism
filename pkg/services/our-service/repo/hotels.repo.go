@@ -214,6 +214,7 @@ func (l *hotelsrepo) Update(ctx context.Context, id primitive.ObjectID, data *mo
 			RatingObjects:                 data.RatingObjects,
 			OfferAndDiscount:              data.OfferAndDiscount,
 			PoliciesPage:                  data.PoliciesPage,
+			Country:                       data.Country,
 			AmenitiesAndFacilitiesPageV2:  data.AmenitiesAndFacilitiesPageV2,
 		},
 
