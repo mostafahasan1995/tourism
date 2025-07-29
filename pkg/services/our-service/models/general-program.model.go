@@ -13,12 +13,20 @@ type GeneralProgram struct {
 	Includes       Includes                    `bson:"includes" json:"includes"`
 	Activities     []primitive.ObjectID        `bson:"activities" json:"activities"`
 	DailyItinerary []DailyItinerary            `bson:"dailyItinerary" json:"dailyItinerary"`
+	Notes          GPNotes                     `bson:"notes" json:"notes"`
 	Pricing        GPPricing                   `bson:"pricing" json:"pricing"`
 }
 
+type GPNotes struct {
+	SutableFor     transl.Localizable[string] `bson:"sutableFor" json:"sutableFor"`
+	ImportantNotes transl.Localizable[string] `bson:"importantNotes" json:"importantNotes"`
+}
+
 type GeneralProgramDestination struct {
-	From   primitive.ObjectID `bson:"from" json:"from"`
-	Images []types.FileField  `bson:"images" json:"images"`
+	From        primitive.ObjectID         `bson:"from" json:"from"`
+	Images      []types.FileField          `bson:"images" json:"images"`
+	Duration    int                        `bson:"duration" json:"duration"`
+	Description transl.Localizable[string] `bson:"description" json:"description"`
 }
 
 type Includes struct {
