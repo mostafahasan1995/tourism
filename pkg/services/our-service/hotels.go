@@ -330,7 +330,24 @@ func (h *hotelsSvcs) Update(ctx context.Context, id string, data *models.HotelsD
 		return nil, helpers.InvalidObjectId()
 	}
 
-	return h.repo.Update(ctx, _id, data)
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	hotel := &models.Hotels{
+		Id:        _id,
+		HotelsDto: *data,
+		UpdatedAt: time.Now(),
+		UpdatedBy: cfg.User.Id,
+	}
+
+	updatedHotel, err := h.repo.Patch(ctx, bson.M{"_id": _id}, bson.M{"$set": hotel})
+	if err != nil {
+		return nil, err
+	}
+
+	return updatedHotel, nil
 }
 
 func (h *hotelsSvcs) UpdateIsFav(ctx context.Context, id string, isFav bool) error {
