@@ -3,6 +3,7 @@ package caching
 import (
 	"fmt"
 	"os"
+
 	// "larsa-hr-microservice/pkg/util"
 	"strconv"
 	"strings"
@@ -10,12 +11,7 @@ import (
 	"git.larsa.io/mahdawi/microservices-commons.git/cache"
 )
 
-
-
-
 var Rdb cache.Cache
-
-
 
 func Getenv(key, defaultValue string) string {
 	value := os.Getenv(key)
@@ -25,7 +21,6 @@ func Getenv(key, defaultValue string) string {
 	return value
 }
 
-
 func InitRedis() {
 	host := Getenv("REDIS_HOST", "localhost")
 	port := Getenv("REDIS_PORT", "6379")
@@ -34,7 +29,7 @@ func InitRedis() {
 	valKeyMasterName := Getenv("VALKEY_MASTER_NAME", "")
 	db, err := strconv.Atoi(Getenv("REDIS_DB", "0"))
 	if err != nil {
-		return 
+		return
 	}
 	uri := host + ":" + port
 	var redisCache cache.Cache
@@ -43,7 +38,7 @@ func InitRedis() {
 		redisCache = cache.NewRedisClusterCache()
 		errCache := redisCache.Connect(uri, password, db, []string{})
 		if errCache != nil {
-			return 
+			return
 		}
 	} else {
 		var host []string = []string{}
@@ -55,10 +50,13 @@ func InitRedis() {
 		}
 		errCache := redisCache.Connect(uri, password, db, host)
 		if errCache != nil {
-			return 
+			return
 		}
+
 	}
 
-	Rdb =redisCache
+	fmt.Println("redis connection success ")
+
+	Rdb = redisCache
 
 }
