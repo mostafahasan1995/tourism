@@ -1,6 +1,6 @@
 package enums
 
-//travl request service type
+// travl request service type
 type ServiceType string
 
 const (
@@ -35,7 +35,7 @@ const (
 	ProgramServiceTypeHotelBooking   ProgramServiceType = "hotel-booking"
 )
 
-//travel type
+// travel type
 type TravelType string
 
 const (
@@ -48,6 +48,23 @@ const (
 	TravelTypeBusinessTrip        TravelType = "business-trip"            // Business Trip (رحلة عمل)
 	TravelTypeShoppingTrip        TravelType = "shopping-trip"            // Shopping Trip (رحلة تسوق)
 	TravelTypeWellnessMedicalTrip TravelType = "wellness-medical-tourism" // Wellness or Medical Tourism (رحلة صحية أو استشفائية)
+
+	// Additional Travel Types
+	TravelTypeLeisureTravel        TravelType = "leisure-travel"         // Leisure Travel
+	TravelTypeAdventureTravel      TravelType = "adventure-travel"       // Adventure Travel
+	TravelTypeLuxuryTravel         TravelType = "luxury-travel"          // Luxury Travel
+	TravelTypeCulturalTravel       TravelType = "cultural-travel"        // Cultural Travel
+	TravelTypeNatureWildlifeTravel TravelType = "nature-wildlife-travel" // Nature & Wildlife Travel
+	TravelTypeReligiousTravel      TravelType = "religious-travel"       // Religious Travel
+	TravelTypeRomanticTravel       TravelType = "romantic-travel"        // Romantic Travel
+	TravelTypeFamilyTravel         TravelType = "family-travel"          // Family Travel
+	TravelTypeEcoTravel            TravelType = "eco-travel"             // Eco Travel
+	TravelTypeCruiseTravel         TravelType = "cruise-travel"          // Cruise Travel
+	TravelTypeMultiCountryTravel   TravelType = "multi-country-travel"   // Multi-Country Travel
+	TravelTypeCityBreakTravel      TravelType = "city-break-travel"      // City Break Travel
+	TravelTypeWellnessTravel       TravelType = "wellness-travel"        // Wellness Travel
+	TravelTypeEventBasedTravel     TravelType = "event-based-travel"     // Event-Based Travel
+	TravelTypeVipCelebrityTravel   TravelType = "vip-celebrity-travel"   // VIP / Celebrity Travel
 )
 
 //program type

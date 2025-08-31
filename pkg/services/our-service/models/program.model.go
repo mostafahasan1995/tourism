@@ -48,7 +48,7 @@ type ProgramDto struct {
 	Status      string                     `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
 	Package     primitive.ObjectID         `bson:"package" json:"package" `
 	ProgramType enums.ProgramType          `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
-	TravelType  enums.TravelType           `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism"`
+	TravelType  enums.TravelType           `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism leisure-travel adventure-travel luxury-travel cultural-travel nature-wildlife-travel religious-travel romantic-travel family-travel eco-travel cruise-travel multi-country-travel city-break-travel wellness-travel event-based-travel vip-celebrity-travel"`
 	//
 	Source      transl.Localizable[string] `bson:"source" json:"source"`
 	Company     transl.Localizable[string] `bson:"company" json:"company"`         // todo: maybe we need id here
