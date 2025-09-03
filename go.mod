@@ -3,7 +3,7 @@ module larsa-tourism-microservices
 go 1.22.0
 
 require (
-	git.larsa.io/mahdawi/microservices-commons.git v0.2.3
+	git.larsa.io/mahdawi/microservices-commons.git v0.2.9
 	github.com/goccy/go-json v0.10.5
 	github.com/stretchr/testify v1.8.4
 )
