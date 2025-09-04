@@ -4,6 +4,7 @@ import (
 
 	// "context"
 	"fmt"
+	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/caching"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/nats"
@@ -17,6 +18,7 @@ import (
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 	exhibitionmanagement "larsa-tourism-microservices/pkg/services/exhibition-management/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
+	liteapi "larsa-tourism-microservices/pkg/services/liteapi/di"
 	marketing "larsa-tourism-microservices/pkg/services/marketing/di"
 	member "larsa-tourism-microservices/pkg/services/member/di"
 	picklist "larsa-tourism-microservices/pkg/services/picklist/di"
@@ -93,6 +95,10 @@ func Start() error {
 	// validator
 	do.ProvideValue(injector, validateInstance)
 
+	apiKey := util.GetEnv("LITEAPI_API_KEY", "")
+
+	do.ProvideValue(injector, liteApiSdk.NewLiteApiSdk(apiKey))
+
 	//messaging
 	messaging.Init(injector, r)
 	//getway
@@ -111,6 +117,7 @@ func Start() error {
 	exhibitionmanagement.Init(injector, r)
 	statistics.Init(injector, r)
 	transtest.Init(injector, r)
+	liteapi.Init(injector, r)
 
 	fmt.Println("start server")
 

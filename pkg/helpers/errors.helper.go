@@ -123,3 +123,12 @@ func BulkValidationErrors(errors map[string][]string) APIError {
 		Message:    errors,
 	}
 }
+
+//liteapi errors
+
+func LiteApiError(statusCode int, data any) APIError {
+	return APIError{
+		StatusCode: statusCode,
+		Message:    data,
+	}
+}
