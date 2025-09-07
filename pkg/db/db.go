@@ -48,7 +48,7 @@ func InitDB() (*mongo.Client, error) {
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri).SetMonitor(&event.CommandMonitor{
 		Started: func(ctx context.Context, evt *event.CommandStartedEvent) {
-			logger.Println(evt.Command)
+			//logger.Println(evt.Command)
 		},
 		Succeeded: func(ctx context.Context, evt *event.CommandSucceededEvent) {
 			logger.Println("Succeeded")

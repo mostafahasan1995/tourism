@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"larsa-tourism-microservices/pkg/enums"
@@ -379,4 +380,20 @@ func CapitalizeFirstLowerRest(s string) string {
 	runes := []rune(strings.ToLower(s))
 	runes[0] = unicode.ToUpper(runes[0])
 	return string(runes)
+}
+
+func Converter[To any, From any](from From) (To, error) {
+
+	var to To
+
+	b, err := json.Marshal(from)
+	if err != nil {
+		return to, err
+	}
+
+	if err := json.Unmarshal(b, &to); err != nil {
+		return to, err
+	}
+
+	return to, nil
 }

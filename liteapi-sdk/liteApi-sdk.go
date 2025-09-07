@@ -22,9 +22,10 @@ type LiteApiSdk struct {
 
 // APIResponse represents a standard API response
 type APIResponse struct {
-	Status string         `json:"status"`         // success or failed
-	Code   int            `json:"code"`           // http status code
-	Data   map[string]any `json:"data,omitempty"` // response data for either data or response error
+	Status string          `json:"status"` // success or failed
+	Code   int             `json:"code"`   // http status code
+	Data   json.RawMessage `json:"data"`   //response data on success
+	Err    map[string]any  `json:"error"`  // response error on failure
 
 }
 
@@ -74,23 +75,22 @@ func (sdk *LiteApiSdk) makeRequest(method, url string, body any) (*APIResponse, 
 		return nil, fmt.Errorf("failed to read response: %v", err)
 	}
 
-	var result map[string]any
-	if err := json.Unmarshal(responseBody, &result); err != nil {
-		return nil, fmt.Errorf("failed to parse response: %v", err)
-	}
-
 	// We have a valid response (either success or API error)
 	if resp.StatusCode == http.StatusOK {
 		return &APIResponse{
 			Status: "success",
 			Code:   resp.StatusCode,
-			Data:   result,
+			Data:   responseBody, // Success data goes into Data field as json.RawMessage
 		}, nil
 	} else {
+		var result map[string]any
+		if err := json.Unmarshal(responseBody, &result); err != nil {
+			return nil, fmt.Errorf("failed to parse response: %v", err)
+		}
 		return &APIResponse{
 			Status: "failed",
 			Code:   resp.StatusCode,
-			Data:   result, // API error response goes into Data field
+			Err:    result, // API error response goes into Err field
 		}, nil
 	}
 }
@@ -146,7 +146,7 @@ func (sdk *LiteApiSdk) PreBook(data map[string]interface{}) (*APIResponse, error
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -172,7 +172,7 @@ func (sdk *LiteApiSdk) Book(data map[string]interface{}) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -200,7 +200,7 @@ func (sdk *LiteApiSdk) RetrieveBooking(bookingId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -221,7 +221,7 @@ func (sdk *LiteApiSdk) CancelBooking(bookingId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -242,7 +242,7 @@ func (sdk *LiteApiSdk) GetCitiesByCountryCode(countryCode string) (*APIResponse,
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -333,7 +333,19 @@ func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, language string, 
 	}
 
 	if resp.Status == "failed" {
-		if resp.Code == 429 || (resp.Data != nil && resp.Data["error"] != nil && resp.Data["error"].(map[string]any)["code"] == 4290) {
+		// var code int
+		// if data, ok := resp.Data.(map[string]any); ok {
+		// 	if code , ok := data["error"].(map[string]any)["code"]; ok {
+		// 		code = code.(int)
+		// 	}
+		// }
+
+		// if resp.Code == 429 || code == 4290 {
+
+		// }
+
+		// Check for rate limiting
+		if resp.Code == 429 || (resp.Err != nil && resp.Err["code"] == 4290) {
 			if retries > 0 {
 				time.Sleep(delay)
 				return sdk.GetHotels(parameters, language, retries-1, delay*2)
@@ -341,7 +353,7 @@ func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, language string, 
 				return &APIResponse{
 					Status: "failed",
 					Code:   resp.Code,
-					Data: map[string]any{
+					Err: map[string]any{
 						"error": "Rate limit exceeded",
 					},
 				}, nil
@@ -379,7 +391,7 @@ func (sdk *LiteApiSdk) GetHotelDetails(hotelId, language string) (*APIResponse, 
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -411,7 +423,7 @@ func (sdk *LiteApiSdk) GetDataReviews(hotelId string, limit int, getSentiment bo
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -431,20 +443,26 @@ func (sdk *LiteApiSdk) GetDataReviews(hotelId string, limit int, getSentiment bo
 
 	// Handle the special response structure for reviews
 	if resp.Status == "success" && resp.Data != nil {
-		result := &APIResponse{
-			Status: "success",
-			Code:   resp.Code,
-			Data:   make(map[string]any),
-		}
+		// Parse the raw data
+		var reviewData map[string]any
+		if err := json.Unmarshal(resp.Data, &reviewData); err == nil {
+			resultData := make(map[string]any)
 
-		// Add sentiment analysis if present
-		if sentiment, exists := resp.Data["sentimentAnalysis"]; exists {
-			result.Data["data"] = resp.Data["data"]
-			result.Data["sentimentAnalysis"] = sentiment
-		} else {
-			result.Data = resp.Data
+			// Add sentiment analysis if present
+			if sentiment, exists := reviewData["sentimentAnalysis"]; exists {
+				resultData["data"] = reviewData["data"]
+				resultData["sentimentAnalysis"] = sentiment
+			} else {
+				resultData = reviewData
+			}
+
+			resultBytes, _ := json.Marshal(resultData)
+			return &APIResponse{
+				Status: "success",
+				Code:   resp.Code,
+				Data:   resultBytes,
+			}, nil
 		}
-		return result, nil
 	}
 
 	return resp, nil
@@ -461,7 +479,7 @@ func (sdk *LiteApiSdk) GetGuestsIds(guestId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -482,7 +500,7 @@ func (sdk *LiteApiSdk) GetGuestsBookings(guestId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -502,7 +520,7 @@ func (sdk *LiteApiSdk) GetVoucherById(voucherID string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
-			Data: map[string]any{
+			Err: map[string]any{
 				"errors": errors,
 			},
 		}, nil
@@ -577,13 +595,13 @@ func (sdk *LiteApiSdk) makeDashboardRequest(method, path string, body interface{
 		return &APIResponse{
 			Status: "success",
 			Code:   resp.StatusCode,
-			Data:   result,
+			Data:   responseBody, // Success data goes into Data field as json.RawMessage
 		}, nil
 	} else {
 		return &APIResponse{
 			Status: "failed",
 			Code:   resp.StatusCode,
-			Data:   result, // API error response goes into Data field
+			Err:    result, // API error response goes into Err field
 		}, nil
 	}
 }

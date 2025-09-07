@@ -45,6 +45,7 @@ import (
 
 func Start() error {
 	port := util.GetEnv("PORT", "3277")
+	host := util.GetEnv("HOST", "")
 
 	fmt.Println("start server on port:", port)
 
@@ -121,7 +122,7 @@ func Start() error {
 
 	fmt.Println("start server")
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	if err := http.ListenAndServe(host+":"+port, r); err != nil {
 		log.Fatal(err)
 	}
 
