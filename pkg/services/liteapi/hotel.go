@@ -14,11 +14,11 @@ import (
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type HotelSvcs interface {
-	SearchHotels(ctx context.Context, query map[string]string) (any, error)
+	GetHotels(ctx context.Context, query map[string]string) (any, error)
 	TestStreaming(ctx context.Context, w http.ResponseWriter, query map[string]string) error
 	TestStreaming2(ctx context.Context, w io.Writer, query map[string]string) error
 }
@@ -35,7 +35,7 @@ func NewHotelSvcs(i *do.Injector) (HotelSvcs, error) {
 	}, nil
 }
 
-func (h *hotelssvcs) SearchHotels(ctx context.Context, query map[string]string) (any, error) {
+func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (any, error) {
 
 	resp, err := h.liteApiSdk.GetHotels(query, "en", 3, 1*time.Second)
 	if err != nil {
@@ -56,28 +56,18 @@ func (h *hotelssvcs) SearchHotels(ctx context.Context, query map[string]string) 
 		return nil, err
 	}
 
+	go func(ctx context.Context, hotels []models.Hotel) {
+		writeOps := []mongo.WriteModel{}
+		for _, hotel := range hotels {
+			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
+			writeOps = append(writeOps, updateOp)
+		}
+
+		h.repo.BulkWrite(ctx, writeOps)
+
+	}(context.WithoutCancel(ctx), result.Data)
+
 	return result, nil
-
-}
-
-func (h *hotelssvcs) SaveHotels(ctx context.Context, hotels []models.Hotel) error {
-	for _, hotel := range hotels {
-		filter := bson.M{"id": hotel.Id}
-		update := bson.M{"$set": hotel}
-
-		upsert := true
-		after := options.After
-		opts := &options.FindOneAndUpdateOptions{
-			Upsert:         &upsert,
-			ReturnDocument: &after,
-		}
-
-		if _, err := h.repo.Patch(ctx, filter, update, opts); err != nil {
-			return err
-		}
-	}
-
-	return nil
 
 }
 

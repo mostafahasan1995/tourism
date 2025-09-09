@@ -29,7 +29,7 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/cities", helpers.Make(h.GetCities))
 		r.Get("/countries", helpers.Make(h.GetCountries))
 		r.Get("/currencies", helpers.Make(h.GetCurrencies))
-		r.Get("/iatas", helpers.Make(h.GetIatas))
+		r.Get("/iataCodes", helpers.Make(h.GetIatas))
 		r.Get("/hotel-chains", helpers.Make(h.GetHotelChains))
 		r.Get("/hotel-types", helpers.Make(h.GetHotelTypes))
 	})
@@ -46,7 +46,7 @@ func (h *DataHandler) GetHotels(w http.ResponseWriter, r *http.Request) error {
 		query[key] = value[0]
 	}
 
-	result, err := h.hotelsvcs.SearchHotels(ctx, query)
+	result, err := h.hotelsvcs.GetHotels(ctx, query)
 	if err != nil {
 		return err
 	}
