@@ -3,6 +3,7 @@ package liteapi
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
@@ -15,12 +16,12 @@ import (
 )
 
 type ReferenceDataSvcs interface {
-	GetCitiesByCountryCode(ctx context.Context, countryCode string) ([]models.City, error)
-	GetCountries(ctx context.Context) ([]models.Country, error)
-	GetCurrencies(ctx context.Context) ([]models.Currency, error)
-	GetIatas(ctx context.Context) ([]models.Iata, error)
-	GetHotelChains(ctx context.Context) ([]models.HotelChain, error)
-	GetHotelTypes(ctx context.Context) ([]models.HotelType, error)
+	GetCitiesByCountryCode(ctx context.Context, countryCode string) (*models.CityList, error)
+	GetCountries(ctx context.Context) (*models.CountryList, error)
+	GetCurrencies(ctx context.Context) (*models.CurrencyList, error)
+	GetIatas(ctx context.Context) (*models.IataList, error)
+	GetHotelChains(ctx context.Context) (*models.HotelChainList, error)
+	GetHotelTypes(ctx context.Context) (*models.HotelTypeList, error)
 }
 
 type referencedatasvcs struct {
@@ -45,7 +46,9 @@ func NewReferenceDataSvcs(i *do.Injector) (ReferenceDataSvcs, error) {
 	}, nil
 }
 
-func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryCode string) ([]models.City, error) {
+const ExpireTime = 20 * time.Second
+
+func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryCode string) (*models.CityList, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"country": countryCode, "expiresAt": bson.M{"$gt": time.Now().UTC()}}},
 	}
@@ -54,6 +57,7 @@ func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryC
 		return cursor.All(ctx, &result)
 	})
 	if err != nil || len(result) == 0 {
+		fmt.Printf("fetch form liteapi\n")
 		resp, err := r.liteApiSdk.GetCitiesByCountryCode(countryCode)
 		if err != nil {
 			return nil, err
@@ -61,10 +65,8 @@ func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryC
 		if resp.Status == "failed" {
 			return nil, helpers.LiteApiError(resp.Code, resp.Err)
 		}
-		type aux struct {
-			Data []models.City `json:"data"`
-		}
-		var result aux
+
+		var result models.CityList
 		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			return nil, err
 		}
@@ -74,11 +76,11 @@ func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryC
 			cities = append(cities, models.City{
 				City:      city.City,
 				Country:   countryCode,
-				ExpiresAt: time.Now().Add(20 * time.Second),
+				ExpiresAt: time.Now().Add(ExpireTime),
 			})
 		}
 
-		go func(ctx context.Context) {
+		go func(ctx context.Context, cities []models.City) {
 			writeOps := []mongo.WriteModel{}
 			deleteOp := mongo.NewDeleteManyModel().SetFilter(bson.M{"country": countryCode})
 			writeOps = append(writeOps, deleteOp)
@@ -87,15 +89,19 @@ func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryC
 				writeOps = append(writeOps, insertOp)
 			}
 			r.cityrepo.BulkWrite(ctx, writeOps)
-		}(context.WithoutCancel(ctx))
+		}(context.WithoutCancel(ctx), cities)
 
-		return cities, nil
+		return &result, nil
 
 	}
-	return result, nil
+
+	fmt.Printf("fetch from db\n")
+	return &models.CityList{
+		Data: result,
+	}, nil
 }
 
-func (r *referencedatasvcs) GetCountries(ctx context.Context) ([]models.Country, error) {
+func (r *referencedatasvcs) GetCountries(ctx context.Context) (*models.CountryList, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"expiresAt": bson.M{"$gt": time.Now().UTC()}}},
 	}
@@ -105,6 +111,7 @@ func (r *referencedatasvcs) GetCountries(ctx context.Context) ([]models.Country,
 		return cursor.All(ctx, &result)
 	})
 	if err != nil || len(result) == 0 {
+		fmt.Printf("fetch form liteapi\n")
 		resp, err := r.liteApiSdk.GetCountries()
 		if err != nil {
 			return nil, err
@@ -112,19 +119,18 @@ func (r *referencedatasvcs) GetCountries(ctx context.Context) ([]models.Country,
 		if resp.Status == "failed" {
 			return nil, helpers.LiteApiError(resp.Code, resp.Err)
 		}
-		type aux struct {
-			Data []models.Country `json:"data"`
-		}
-		var result aux
+
+		var result models.CountryList
 		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			return nil, err
 		}
 
 		var countries []models.Country
 		for _, country := range result.Data {
-			country.ExpiresAt = time.Now().Add(20 * time.Second)
+			country.ExpiresAt = time.Now().Add(ExpireTime)
 			countries = append(countries, country)
 		}
+
 		go func(ctx context.Context, countries []models.Country) {
 			writeOps := []mongo.WriteModel{}
 			deleteOp := mongo.NewDeleteManyModel().SetFilter(bson.M{})
@@ -136,12 +142,14 @@ func (r *referencedatasvcs) GetCountries(ctx context.Context) ([]models.Country,
 			r.countryrepo.BulkWrite(ctx, writeOps)
 		}(context.WithoutCancel(ctx), countries)
 
-		return result.Data, nil
+		return &result, nil
 	}
-	return result, nil
+	return &models.CountryList{
+		Data: result,
+	}, nil
 }
 
-func (r *referencedatasvcs) GetCurrencies(ctx context.Context) ([]models.Currency, error) {
+func (r *referencedatasvcs) GetCurrencies(ctx context.Context) (*models.CurrencyList, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"expiresAt": bson.M{"$gt": time.Now().UTC()}}},
 	}
@@ -158,17 +166,15 @@ func (r *referencedatasvcs) GetCurrencies(ctx context.Context) ([]models.Currenc
 		if resp.Status == "failed" {
 			return nil, helpers.LiteApiError(resp.Code, resp.Err)
 		}
-		type aux struct {
-			Data []models.Currency `json:"data"`
-		}
-		var result aux
+
+		var result models.CurrencyList
 		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			return nil, err
 		}
 
 		var currencies []models.Currency
 		for _, currency := range result.Data {
-			currency.ExpiresAt = time.Now().Add(20 * time.Second)
+			currency.ExpiresAt = time.Now().Add(ExpireTime)
 			currencies = append(currencies, currency)
 		}
 
@@ -183,13 +189,15 @@ func (r *referencedatasvcs) GetCurrencies(ctx context.Context) ([]models.Currenc
 			r.currencyrepo.BulkWrite(ctx, writeOps)
 		}(context.WithoutCancel(ctx), currencies)
 
-		return result.Data, nil
+		return &result, nil
 	}
 
-	return result, nil
+	return &models.CurrencyList{
+		Data: result,
+	}, nil
 }
 
-func (r *referencedatasvcs) GetIatas(ctx context.Context) ([]models.Iata, error) {
+func (r *referencedatasvcs) GetIatas(ctx context.Context) (*models.IataList, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"expiresAt": bson.M{"$gt": time.Now().UTC()}}},
 	}
@@ -207,17 +215,15 @@ func (r *referencedatasvcs) GetIatas(ctx context.Context) ([]models.Iata, error)
 		if resp.Status == "failed" {
 			return nil, helpers.LiteApiError(resp.Code, resp.Err)
 		}
-		type aux struct {
-			Data []models.Iata `json:"data"`
-		}
-		var result aux
+
+		var result models.IataList
 		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			return nil, err
 		}
 
 		var iatas []models.Iata
 		for _, iata := range result.Data {
-			iata.ExpiresAt = time.Now().Add(20 * time.Second)
+			iata.ExpiresAt = time.Now().Add(ExpireTime)
 			iatas = append(iatas, iata)
 		}
 
@@ -232,13 +238,15 @@ func (r *referencedatasvcs) GetIatas(ctx context.Context) ([]models.Iata, error)
 			r.iatarepo.BulkWrite(ctx, writeOps)
 		}(context.WithoutCancel(ctx), iatas)
 
-		return iatas, nil
+		return &result, nil
 	}
 
-	return result, nil
+	return &models.IataList{
+		Data: result,
+	}, nil
 }
 
-func (r *referencedatasvcs) GetHotelChains(ctx context.Context) ([]models.HotelChain, error) {
+func (r *referencedatasvcs) GetHotelChains(ctx context.Context) (*models.HotelChainList, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"expiresAt": bson.M{"$gt": time.Now().UTC()}}},
 	}
@@ -255,16 +263,15 @@ func (r *referencedatasvcs) GetHotelChains(ctx context.Context) ([]models.HotelC
 		if resp.Status == "failed" {
 			return nil, helpers.LiteApiError(resp.Code, resp.Err)
 		}
-		type aux struct {
-			Data []models.HotelChain `json:"data"`
-		}
-		var result aux
+
+		var result models.HotelChainList
 		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			return nil, err
 		}
+
 		var hotelChains []models.HotelChain
 		for _, hotelChain := range result.Data {
-			hotelChain.ExpiresAt = time.Now().Add(20 * time.Second)
+			hotelChain.ExpiresAt = time.Now().Add(ExpireTime)
 			hotelChains = append(hotelChains, hotelChain)
 		}
 
@@ -279,13 +286,15 @@ func (r *referencedatasvcs) GetHotelChains(ctx context.Context) ([]models.HotelC
 			r.hotelchainrepo.BulkWrite(ctx, writeOps)
 		}(context.WithoutCancel(ctx), hotelChains)
 
-		return hotelChains, nil
+		return &result, nil
 	}
 
-	return result, nil
+	return &models.HotelChainList{
+		Data: result,
+	}, nil
 }
 
-func (r *referencedatasvcs) GetHotelTypes(ctx context.Context) ([]models.HotelType, error) {
+func (r *referencedatasvcs) GetHotelTypes(ctx context.Context) (*models.HotelTypeList, error) {
 	pipeline := []bson.M{
 		{"$match": bson.M{"expiresAt": bson.M{"$gt": time.Now().UTC()}}},
 	}
@@ -302,16 +311,14 @@ func (r *referencedatasvcs) GetHotelTypes(ctx context.Context) ([]models.HotelTy
 		if resp.Status == "failed" {
 			return nil, helpers.LiteApiError(resp.Code, resp.Err)
 		}
-		type aux struct {
-			Data []models.HotelType `json:"data"`
-		}
-		var result aux
+
+		var result models.HotelTypeList
 		if err := json.Unmarshal(resp.Data, &result); err != nil {
 			return nil, err
 		}
 		var hotelTypes []models.HotelType
 		for _, hotelType := range result.Data {
-			hotelType.ExpiresAt = time.Now().Add(20 * time.Second)
+			hotelType.ExpiresAt = time.Now().Add(ExpireTime)
 			hotelTypes = append(hotelTypes, hotelType)
 		}
 
@@ -326,8 +333,10 @@ func (r *referencedatasvcs) GetHotelTypes(ctx context.Context) ([]models.HotelTy
 			r.hoteltyperepo.BulkWrite(ctx, writeOps)
 		}(context.WithoutCancel(ctx), hotelTypes)
 
-		return hotelTypes, nil
+		return &result, nil
 	}
 
-	return result, nil
+	return &models.HotelTypeList{
+		Data: result,
+	}, nil
 }

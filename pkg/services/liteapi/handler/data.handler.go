@@ -30,8 +30,8 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/countries", helpers.Make(h.GetCountries))
 		r.Get("/currencies", helpers.Make(h.GetCurrencies))
 		r.Get("/iataCodes", helpers.Make(h.GetIatas))
-		r.Get("/hotel-chains", helpers.Make(h.GetHotelChains))
-		r.Get("/hotel-types", helpers.Make(h.GetHotelTypes))
+		r.Get("/chains", helpers.Make(h.GetHotelChains))
+		r.Get("/hotelTypes", helpers.Make(h.GetHotelTypes))
 	})
 
 }
