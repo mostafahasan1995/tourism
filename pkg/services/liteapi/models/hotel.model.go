@@ -37,4 +37,8 @@ type Hotel struct {
 	DeletedAt               any                     `bson:"deletedAt" json:"deletedAt"`
 }
 
-//
+type HotelListRes struct {
+	Data     []Hotel  `json:"data"`
+	HotelIds []string `json:"hotelIds"`
+	Total    int      `json:"total"`
+}

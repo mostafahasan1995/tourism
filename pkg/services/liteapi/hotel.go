@@ -18,7 +18,7 @@ import (
 )
 
 type HotelSvcs interface {
-	GetHotels(ctx context.Context, query map[string]string) (any, error)
+	GetHotels(ctx context.Context, query map[string]string) (*models.HotelListRes, error)
 	TestStreaming(ctx context.Context, w http.ResponseWriter, query map[string]string) error
 	TestStreaming2(ctx context.Context, w io.Writer, query map[string]string) error
 }
@@ -35,9 +35,13 @@ func NewHotelSvcs(i *do.Injector) (HotelSvcs, error) {
 	}, nil
 }
 
-func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (any, error) {
+func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (*models.HotelListRes, error) {
+	lang := "en"
+	if query["language"] != "" {
+		lang = query["language"]
+	}
 
-	resp, err := h.liteApiSdk.GetHotels(query, "en", 3, 1*time.Second)
+	resp, err := h.liteApiSdk.GetHotels(query, lang, 3, 1*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -45,13 +49,7 @@ func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (an
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	type aux struct {
-		Data     []models.Hotel `json:"data"`
-		HotelIds []string       `json:"hotelIds"`
-		Total    int            `json:"total"`
-	}
-
-	var result aux
+	var result models.HotelListRes
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
 		return nil, err
 	}
@@ -63,11 +61,13 @@ func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (an
 			writeOps = append(writeOps, updateOp)
 		}
 
-		h.repo.BulkWrite(ctx, writeOps)
+		if _, err := h.repo.BulkWrite(ctx, writeOps); err != nil {
+			fmt.Printf("error bulk writing hotels: %v", err)
+		}
 
 	}(context.WithoutCancel(ctx), result.Data)
 
-	return result, nil
+	return &result, nil
 
 }
 
