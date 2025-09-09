@@ -13,6 +13,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
 	do.Provide(i, liteapi.NewHotelSvcs)
 	do.Provide(i, liteapi.NewReferenceDataSvcs)
+	do.Provide(i, liteapi.NewRatesSvcs)
 
 	//repos
 	do.Provide(i, repo.NewHotelRepo)
@@ -25,6 +26,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 
 	//handlers
 	handler.NewDataHandler(i, r)
+	handler.NewRatesHandler(i, r)
 
 	return i
 }

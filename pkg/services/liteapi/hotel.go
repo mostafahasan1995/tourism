@@ -24,14 +24,14 @@ type HotelSvcs interface {
 }
 
 type hotelssvcs struct {
-	repo       repo.HotelRepo
-	liteApiSdk *liteApiSdk.LiteApiSdk
+	repo            repo.HotelRepo
+	liteApiInitFunc liteApiSdk.LiteApiInitFunc
 }
 
 func NewHotelSvcs(i *do.Injector) (HotelSvcs, error) {
 	return &hotelssvcs{
-		repo:       do.MustInvoke[repo.HotelRepo](i),
-		liteApiSdk: do.MustInvoke[*liteApiSdk.LiteApiSdk](i),
+		repo:            do.MustInvoke[repo.HotelRepo](i),
+		liteApiInitFunc: do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
 	}, nil
 }
 
@@ -41,7 +41,12 @@ func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (*m
 		lang = query["language"]
 	}
 
-	resp, err := h.liteApiSdk.GetHotels(query, lang, 3, 1*time.Second)
+	liteApiSdk, err := h.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := liteApiSdk.GetHotels(query, lang, 3, 1*time.Second)
 	if err != nil {
 		return nil, err
 	}

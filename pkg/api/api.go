@@ -35,7 +35,6 @@ import (
 	"reflect"
 	"strings"
 
-	"git.larsa.io/mahdawi/microservices-commons.git/common"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -85,7 +84,7 @@ func Start() error {
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
 
-	r.Use(common.ClientSubscriptionInstance.CheckSubscription)
+	//r.Use(common.ClientSubscriptionInstance.CheckSubscription)
 
 	//ORDER MATTERS . DO NOT CHANGE
 
@@ -96,9 +95,7 @@ func Start() error {
 	// validator
 	do.ProvideValue(injector, validateInstance)
 
-	apiKey := util.GetEnv("LITEAPI_API_KEY", "")
-
-	do.ProvideValue(injector, liteApiSdk.NewLiteApiSdk(apiKey))
+	do.ProvideValue(injector, liteApiSdk.LiteApiSdkInit())
 
 	//messaging
 	messaging.Init(injector, r)

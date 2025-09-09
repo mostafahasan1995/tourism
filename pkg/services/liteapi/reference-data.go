@@ -25,24 +25,24 @@ type ReferenceDataSvcs interface {
 }
 
 type referencedatasvcs struct {
-	cityrepo       repo.CityRepo
-	countryrepo    repo.CountryRepo
-	currencyrepo   repo.CurrencyRepo
-	iatarepo       repo.IataRepo
-	hotelchainrepo repo.HotelChainRepo
-	hoteltyperepo  repo.HotelTypeRepo
-	liteApiSdk     *liteApiSdk.LiteApiSdk
+	cityrepo        repo.CityRepo
+	countryrepo     repo.CountryRepo
+	currencyrepo    repo.CurrencyRepo
+	iatarepo        repo.IataRepo
+	hotelchainrepo  repo.HotelChainRepo
+	hoteltyperepo   repo.HotelTypeRepo
+	liteApiInitFunc liteApiSdk.LiteApiInitFunc
 }
 
 func NewReferenceDataSvcs(i *do.Injector) (ReferenceDataSvcs, error) {
 	return &referencedatasvcs{
-		cityrepo:       do.MustInvoke[repo.CityRepo](i),
-		countryrepo:    do.MustInvoke[repo.CountryRepo](i),
-		currencyrepo:   do.MustInvoke[repo.CurrencyRepo](i),
-		iatarepo:       do.MustInvoke[repo.IataRepo](i),
-		hotelchainrepo: do.MustInvoke[repo.HotelChainRepo](i),
-		hoteltyperepo:  do.MustInvoke[repo.HotelTypeRepo](i),
-		liteApiSdk:     do.MustInvoke[*liteApiSdk.LiteApiSdk](i),
+		cityrepo:        do.MustInvoke[repo.CityRepo](i),
+		countryrepo:     do.MustInvoke[repo.CountryRepo](i),
+		currencyrepo:    do.MustInvoke[repo.CurrencyRepo](i),
+		iatarepo:        do.MustInvoke[repo.IataRepo](i),
+		hotelchainrepo:  do.MustInvoke[repo.HotelChainRepo](i),
+		hoteltyperepo:   do.MustInvoke[repo.HotelTypeRepo](i),
+		liteApiInitFunc: do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
 	}, nil
 }
 
@@ -58,7 +58,11 @@ func (r *referencedatasvcs) GetCitiesByCountryCode(ctx context.Context, countryC
 	})
 	if err != nil || len(result) == 0 {
 		fmt.Printf("fetch form liteapi\n")
-		resp, err := r.liteApiSdk.GetCitiesByCountryCode(countryCode)
+		liteApiSdk, err := r.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := liteApiSdk.GetCitiesByCountryCode(countryCode)
 		if err != nil {
 			return nil, err
 		}
@@ -112,7 +116,11 @@ func (r *referencedatasvcs) GetCountries(ctx context.Context) (*models.CountryLi
 	})
 	if err != nil || len(result) == 0 {
 		fmt.Printf("fetch form liteapi\n")
-		resp, err := r.liteApiSdk.GetCountries()
+		liteApiSdk, err := r.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := liteApiSdk.GetCountries()
 		if err != nil {
 			return nil, err
 		}
@@ -159,7 +167,11 @@ func (r *referencedatasvcs) GetCurrencies(ctx context.Context) (*models.Currency
 		return cursor.All(ctx, &result)
 	})
 	if err != nil || len(result) == 0 {
-		resp, err := r.liteApiSdk.GetCurrencies()
+		liteApiSdk, err := r.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := liteApiSdk.GetCurrencies()
 		if err != nil {
 			return nil, err
 		}
@@ -207,7 +219,11 @@ func (r *referencedatasvcs) GetIatas(ctx context.Context) (*models.IataList, err
 		return cursor.All(ctx, &result)
 	})
 	if err != nil || len(result) == 0 {
-		resp, err := r.liteApiSdk.GetIataCodes()
+		liteApiSdk, err := r.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := liteApiSdk.GetIataCodes()
 		if err != nil {
 			return nil, err
 		}
@@ -256,7 +272,11 @@ func (r *referencedatasvcs) GetHotelChains(ctx context.Context) (*models.HotelCh
 		return cursor.All(ctx, &result)
 	})
 	if err != nil || len(result) == 0 {
-		resp, err := r.liteApiSdk.GetHotelChains()
+		liteApiSdk, err := r.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := liteApiSdk.GetHotelChains()
 		if err != nil {
 			return nil, err
 		}
@@ -304,7 +324,11 @@ func (r *referencedatasvcs) GetHotelTypes(ctx context.Context) (*models.HotelTyp
 		return cursor.All(ctx, &result)
 	})
 	if err != nil || len(result) == 0 {
-		resp, err := r.liteApiSdk.GetHotelTypes()
+		liteApiSdk, err := r.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		resp, err := liteApiSdk.GetHotelTypes()
 		if err != nil {
 			return nil, err
 		}
