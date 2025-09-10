@@ -95,26 +95,6 @@ func (sdk *LiteApiSdk) makeRequest(method, url string, body any) (*APIResponse, 
 	}
 }
 
-// makeRequestWithRetry handles requests with retry logic for rate limiting
-// func (sdk *LiteApiSdk) makeRequestWithRetry(method, url string, body interface{}, retries int, delay time.Duration) (*APIResponse, error) {
-// 	resp, err := sdk.makeRequest(method, url, body)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	// Check for rate limit errors
-// 	if resp.Status == "failed" && retries > 0 && resp.Data != nil {
-// 		if code, exists := resp.Data["code"]; exists {
-// 			if codeFloat, ok := code.(float64); ok && codeFloat == 4290 {
-// 				time.Sleep(delay)
-// 				return sdk.makeRequestWithRetry(method, url, body, retries-1, delay*2)
-// 			}
-// 		}
-// 	}
-
-// 	return resp, nil
-// }
-
 // GetFullRates searches and returns all available rooms along with rates and cancellation policies
 // The Full Rates API is to search and return all available rooms along with its rates, cancellation policies for a list of hotel ID's based on the search dates.
 // For each hotel ID, all available room information is returned.
@@ -146,6 +126,7 @@ func (sdk *LiteApiSdk) PreBook(data map[string]interface{}) (*APIResponse, error
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -172,6 +153,7 @@ func (sdk *LiteApiSdk) Book(data map[string]interface{}) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -200,6 +182,7 @@ func (sdk *LiteApiSdk) RetrieveBooking(bookingId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -221,6 +204,7 @@ func (sdk *LiteApiSdk) CancelBooking(bookingId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -242,6 +226,7 @@ func (sdk *LiteApiSdk) GetCitiesByCountryCode(countryCode string) (*APIResponse,
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -333,17 +318,6 @@ func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, language string, 
 	}
 
 	if resp.Status == "failed" {
-		// var code int
-		// if data, ok := resp.Data.(map[string]any); ok {
-		// 	if code , ok := data["error"].(map[string]any)["code"]; ok {
-		// 		code = code.(int)
-		// 	}
-		// }
-
-		// if resp.Code == 429 || code == 4290 {
-
-		// }
-
 		// Check for rate limiting
 		if resp.Code == 429 || (resp.Err != nil && resp.Err["code"] == 4290) {
 			if retries > 0 {
@@ -365,32 +339,18 @@ func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, language string, 
 
 }
 
-// GetHotelsWithRetry returns a list of hotels with retry logic for rate limiting
-// func (sdk *LiteApiSdk) GetHotelsWithRetry(parameters map[string]string, language string, retries int, delay time.Duration) (*APIResponse, error) {
-// 	params := url.Values{}
-// 	for key, value := range parameters {
-// 		params.Add(key, value)
-// 	}
-
-// 	if language != "" {
-// 		params.Add("language", language)
-// 	}
-
-// 	url := fmt.Sprintf("%s/data/hotels?%s", sdk.ServiceURL, params.Encode())
-// 	return sdk.makeRequestWithRetry("GET", url, nil, retries, delay)
-// }
-
 // GetHotelDetails returns all the static content details of a hotel or property
 // The hotel details API returns all the static contents details of a hotel or property if the hotel ID is provided. The static content include name, description, address, amenities, cancellation policies, images and more.
-func (sdk *LiteApiSdk) GetHotelDetails(hotelId, language string) (*APIResponse, error) {
+func (sdk *LiteApiSdk) GetHotelDetails(hotelId, language, advancedAccessibilityOnly string) (*APIResponse, error) {
 	var errors []string
 	if hotelId == "" {
-		errors = append(errors, "The Hotel code is required")
+		errors = append(errors, "The Hotel id is required")
 	}
 
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -401,6 +361,9 @@ func (sdk *LiteApiSdk) GetHotelDetails(hotelId, language string) (*APIResponse, 
 	params.Add("hotelId", hotelId)
 	if language != "" {
 		params.Add("language", language)
+	}
+	if advancedAccessibilityOnly != "" {
+		params.Add("advancedAccessibilityOnly", advancedAccessibilityOnly)
 	}
 
 	url := fmt.Sprintf("%s/data/hotel?%s", sdk.ServiceURL, params.Encode())
@@ -417,12 +380,13 @@ func (sdk *LiteApiSdk) GetHotelReviews(hotelId string, limit int, getSentiment b
 func (sdk *LiteApiSdk) GetDataReviews(hotelId string, limit int, getSentiment bool) (*APIResponse, error) {
 	var errors []string
 	if hotelId == "" {
-		errors = append(errors, "The Hotel code is required")
+		errors = append(errors, "The Hotel id is required")
 	}
 
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -479,6 +443,7 @@ func (sdk *LiteApiSdk) GetGuestsIds(guestId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -500,6 +465,7 @@ func (sdk *LiteApiSdk) GetGuestsBookings(guestId string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},
@@ -520,6 +486,7 @@ func (sdk *LiteApiSdk) GetVoucherById(voucherID string) (*APIResponse, error) {
 	if len(errors) > 0 {
 		return &APIResponse{
 			Status: "failed",
+			Code:   http.StatusBadRequest,
 			Err: map[string]any{
 				"errors": errors,
 			},

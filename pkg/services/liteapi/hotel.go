@@ -19,19 +19,22 @@ import (
 
 type HotelSvcs interface {
 	GetHotels(ctx context.Context, query map[string]string) (*models.HotelListRes, error)
+	GetHotelDetails(ctx context.Context, id, language, advancedAccessibilityOnly string) (*models.HotelDetailsData, error)
 	TestStreaming(ctx context.Context, w http.ResponseWriter, query map[string]string) error
 	TestStreaming2(ctx context.Context, w io.Writer, query map[string]string) error
 }
 
 type hotelssvcs struct {
-	repo            repo.HotelRepo
-	liteApiInitFunc liteApiSdk.LiteApiInitFunc
+	repo             repo.HotelRepo
+	hotelDetailsRepo repo.HotelDetailsRepo
+	liteApiInitFunc  liteApiSdk.LiteApiInitFunc
 }
 
 func NewHotelSvcs(i *do.Injector) (HotelSvcs, error) {
 	return &hotelssvcs{
-		repo:            do.MustInvoke[repo.HotelRepo](i),
-		liteApiInitFunc: do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
+		repo:             do.MustInvoke[repo.HotelRepo](i),
+		hotelDetailsRepo: do.MustInvoke[repo.HotelDetailsRepo](i),
+		liteApiInitFunc:  do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
 	}, nil
 }
 
@@ -73,6 +76,54 @@ func (h *hotelssvcs) GetHotels(ctx context.Context, query map[string]string) (*m
 	}(context.WithoutCancel(ctx), result.Data)
 
 	return &result, nil
+
+}
+
+func (h *hotelssvcs) GetHotelDetails(ctx context.Context, id, language, advancedAccessibilityOnly string) (*models.HotelDetailsData, error) {
+	filter := bson.M{
+		"id":        id,
+		"expiresAt": bson.M{"$gt": time.Now()},
+	}
+
+	result, err := h.hotelDetailsRepo.GetByFilter(ctx, filter)
+	if err != nil {
+		liteApiSdk, err := h.liteApiInitFunc(ctx)
+		if err != nil {
+			return nil, err
+		}
+		lang := "en"
+		if language != "" {
+			lang = language
+		}
+
+		resp, err := liteApiSdk.GetHotelDetails(id, lang, advancedAccessibilityOnly)
+		if err != nil {
+			return nil, err
+		}
+		if resp.Status == "failed" {
+			return nil, helpers.LiteApiError(resp.Code, resp.Err)
+		}
+
+		var result models.HotelDetailsData
+		if err := json.Unmarshal(resp.Data, &result); err != nil {
+			return nil, err
+		}
+
+		go func(ctx context.Context, data models.HotelDetails) {
+			data["expiresAt"] = time.Now().Add(ExpireTime)
+			writeOps := []mongo.WriteModel{}
+			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": data["id"]}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
+			writeOps = append(writeOps, updateOp)
+
+			h.hotelDetailsRepo.BulkWrite(ctx, writeOps)
+		}(context.WithoutCancel(ctx), result.Data)
+
+		return &result, nil
+	}
+
+	return &models.HotelDetailsData{
+		Data: *result,
+	}, nil
 
 }
 

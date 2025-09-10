@@ -22,6 +22,7 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/liteapi/data", func(r chi.Router) {
+		r.Get("/hotel", helpers.Make(h.GetHotelDetails))
 		r.Get("/hotels", helpers.Make(h.GetHotels))
 		r.Get("/hotels/streaming", helpers.Make(h.TestStreaming))
 		r.Get("/hotels/streaming2", helpers.Make(h.TestStreaming2))
@@ -47,6 +48,22 @@ func (h *DataHandler) GetHotels(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.hotelsvcs.GetHotels(ctx, query)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *DataHandler) GetHotelDetails(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	params := r.URL.Query()
+
+	id := params.Get("hotelId")
+	language := params.Get("language")
+	advancedAccessibilityOnly := params.Get("advancedAccessibilityOnly")
+
+	result, err := h.hotelsvcs.GetHotelDetails(ctx, id, language, advancedAccessibilityOnly)
 	if err != nil {
 		return err
 	}
