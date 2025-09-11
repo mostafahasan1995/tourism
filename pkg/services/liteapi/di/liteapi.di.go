@@ -24,6 +24,8 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewHotelChainRepo)
 	do.Provide(i, repo.NewHotelTypeRepo)
 	do.Provide(i, repo.NewHotelDetailsRepo)
+	do.Provide(i, repo.NewPreBookRepo)
+	do.Provide(i, repo.NewBookingRepo)
 
 	//handlers
 	handler.NewDataHandler(i, r)

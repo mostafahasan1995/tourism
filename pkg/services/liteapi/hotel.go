@@ -109,8 +109,9 @@ func (h *hotelssvcs) GetHotelDetails(ctx context.Context, id, language, advanced
 			return nil, err
 		}
 
+		result.Data["expiresAt"] = time.Now().Add(ExpireTime)
+
 		go func(ctx context.Context, data models.HotelDetails) {
-			data["expiresAt"] = time.Now().Add(ExpireTime)
 			writeOps := []mongo.WriteModel{}
 			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": data["id"]}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
 			writeOps = append(writeOps, updateOp)

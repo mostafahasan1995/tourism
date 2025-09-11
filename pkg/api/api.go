@@ -119,7 +119,7 @@ func Start() error {
 
 	fmt.Println("start server")
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:"+port, r); err != nil {
 		log.Fatal(err)
 	}
 

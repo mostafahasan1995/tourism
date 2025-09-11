@@ -15,6 +15,17 @@ type APIFunc func(w http.ResponseWriter, r *http.Request) error
 
 func Make(h APIFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		//recover from panic
+		defer func() {
+			if rec := recover(); rec != nil {
+				fmt.Println("panic", rec)
+				WriteJsonCtx(r.Context(), w, http.StatusInternalServerError, map[string]any{
+					"statusCode": http.StatusInternalServerError,
+					"message":    "Internal Server Error",
+				})
+			}
+		}()
+
 		err := h(w, r)
 		if err != nil {
 			if apiErr, ok := err.(APIError); ok {

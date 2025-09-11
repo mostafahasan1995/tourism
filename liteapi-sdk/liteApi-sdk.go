@@ -115,7 +115,7 @@ func (sdk *LiteApiSdk) GetMinRates(data interface{}) (*APIResponse, error) {
 // PreBook confirms if the room and rates for the search criterion
 // This API is used to confirm if the room and rates for the search criterion. The input to the endpoint is an array of rate Ids coming from the GET hotel full rates availability API.
 // In response, the API generates a prebook Id, a new rate Id and contains information if price, cancellation policy or boarding information has changed.
-func (sdk *LiteApiSdk) PreBook(data map[string]interface{}) (*APIResponse, error) {
+func (sdk *LiteApiSdk) PreBook(data map[string]any) (*APIResponse, error) {
 	var errors []string
 
 	// Validate offerId
@@ -142,7 +142,7 @@ func (sdk *LiteApiSdk) PreBook(data map[string]interface{}) (*APIResponse, error
 // The guest information is an object that should include the guest first name, last name and email.
 // The payment information is an object that should include the name, credit card number, expiry and CVC number.
 // The response will confirm the booking along with a booking Id and a hotel confirmation code. It will also include the booking details including the dates, price and the cancellation policies.
-func (sdk *LiteApiSdk) Book(data map[string]interface{}) (*APIResponse, error) {
+func (sdk *LiteApiSdk) Book(data map[string]any) (*APIResponse, error) {
 	var errors []string
 
 	// Validate prebookId
