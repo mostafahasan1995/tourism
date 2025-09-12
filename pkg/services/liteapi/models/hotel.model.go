@@ -38,7 +38,7 @@ type Hotel struct {
 }
 
 type HotelListRes struct {
-	Data     []Hotel  `json:"data"`
-	HotelIds []string `json:"hotelIds"`
-	Total    int      `json:"total"`
+	Data     []Hotel `json:"data"`
+	HotelIds any     `json:"hotelIds"` // []string but can be ""  when no hotels found
+	Total    int     `json:"total"`
 }

@@ -130,11 +130,11 @@ func (d *datasvcs) GetHotelDetails(ctx context.Context, id, language, advancedAc
 			return nil, err
 		}
 
-		result.Data["expiresAt"] = time.Now().Add(ExpireTime)
+		result.Data.ExpiresAt = time.Now().Add(ExpireTime)
 
 		go func(ctx context.Context, data models.HotelDetails) {
 			writeOps := []mongo.WriteModel{}
-			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": data["id"]}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
+			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": data.Id}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
 			writeOps = append(writeOps, updateOp)
 
 			if _, err := d.hoteldetailsrepo.BulkWrite(ctx, writeOps); err != nil {
