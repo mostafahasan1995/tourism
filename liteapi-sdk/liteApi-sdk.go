@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -40,6 +41,29 @@ func NewLiteApiSdk(apiKey string) *LiteApiSdk {
 			Timeout: 30 * time.Second,
 		},
 	}
+}
+
+func (sdk *LiteApiSdk) getBaseUrl(url string) string {
+	urlMap := map[string]string{
+		"data":                 sdk.ServiceURL,
+		"hotels":               sdk.ServiceURL,
+		"rates":                sdk.BookServiceURL,
+		"bookings":             sdk.BookServiceURL,
+		"guests":               sdk.ServiceURL,
+		"loyalties":            sdk.ServiceURL,
+		"vouchers":             sdk.DashboardURL,
+		"analytics":            sdk.DashboardURL,
+		"supply-customization": sdk.ServiceURL,
+	}
+
+	for key, val := range urlMap {
+		if strings.HasPrefix(url, key) {
+			return val
+		}
+	}
+
+	return ""
+
 }
 
 // makeRequest handles HTTP requests with common headers and error handling
@@ -611,4 +635,15 @@ func (sdk *LiteApiSdk) RetrieveMarketAnalytics(data interface{}) (*APIResponse, 
 // RetrieveMostBookedHotels fetches hotel analytics data for most booked hotels in the specified date range
 func (sdk *LiteApiSdk) RetrieveMostBookedHotels(data interface{}) (*APIResponse, error) {
 	return sdk.makeDashboardRequest("POST", "/analytics/hotels", data)
+}
+
+func (sdk *LiteApiSdk) Request(method, url string, body any) (*APIResponse, error) {
+
+	url = strings.TrimPrefix(url, "/liteapi/")
+
+	baseUrl := sdk.getBaseUrl(url)
+
+	completeUrl := fmt.Sprintf("%s/%s", baseUrl, url)
+
+	return sdk.makeRequest(method, completeUrl, body)
 }

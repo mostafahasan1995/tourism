@@ -11,21 +11,17 @@ import (
 )
 
 type DataHandler struct {
-	hotelsvcs         liteapi.HotelSvcs
-	referencedatasvcs liteapi.ReferenceDataSvcs
+	datasvcs liteapi.DataSvcs
 }
 
 func NewDataHandler(i *do.Injector, r *chi.Mux) {
 	h := &DataHandler{
-		hotelsvcs:         do.MustInvoke[liteapi.HotelSvcs](i),
-		referencedatasvcs: do.MustInvoke[liteapi.ReferenceDataSvcs](i),
+		datasvcs: do.MustInvoke[liteapi.DataSvcs](i),
 	}
 
 	r.Route("/liteapi/data", func(r chi.Router) {
-		r.Get("/hotel", helpers.Make(h.GetHotelDetails))
 		r.Get("/hotels", helpers.Make(h.GetHotels))
-		r.Get("/hotels/streaming", helpers.Make(h.TestStreaming))
-		r.Get("/hotels/streaming2", helpers.Make(h.TestStreaming2))
+		r.Get("/hotel", helpers.Make(h.GetHotelDetails))
 		//
 		r.Get("/cities", helpers.Make(h.GetCities))
 		r.Get("/countries", helpers.Make(h.GetCountries))
@@ -33,6 +29,8 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/iataCodes", helpers.Make(h.GetIatas))
 		r.Get("/chains", helpers.Make(h.GetHotelChains))
 		r.Get("/hotelTypes", helpers.Make(h.GetHotelTypes))
+		r.Get("/facilities", helpers.Make(h.GetHotelFacilities))
+
 	})
 
 }
@@ -47,7 +45,7 @@ func (h *DataHandler) GetHotels(w http.ResponseWriter, r *http.Request) error {
 		query[key] = value[0]
 	}
 
-	result, err := h.hotelsvcs.GetHotels(ctx, query)
+	result, err := h.datasvcs.GetHotels(ctx, query)
 	if err != nil {
 		return err
 	}
@@ -63,47 +61,11 @@ func (h *DataHandler) GetHotelDetails(w http.ResponseWriter, r *http.Request) er
 	language := params.Get("language")
 	advancedAccessibilityOnly := params.Get("advancedAccessibilityOnly")
 
-	result, err := h.hotelsvcs.GetHotelDetails(ctx, id, language, advancedAccessibilityOnly)
+	result, err := h.datasvcs.GetHotelDetails(ctx, id, language, advancedAccessibilityOnly)
 	if err != nil {
 		return err
 	}
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
-}
-
-func (h *DataHandler) TestStreaming(w http.ResponseWriter, r *http.Request) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Transfer-Encoding", "chunked")
-	ctx, _ := util.AddCtxAppCfg(r)
-
-	params := r.URL.Query()
-	query := make(map[string]string)
-	for key, value := range params {
-		query[key] = value[0]
-	}
-
-	err := h.hotelsvcs.TestStreaming(ctx, w, query)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (h *DataHandler) TestStreaming2(w http.ResponseWriter, r *http.Request) error {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Transfer-Encoding", "chunked")
-	ctx, _ := util.AddCtxAppCfg(r)
-
-	params := r.URL.Query()
-	query := make(map[string]string)
-	for key, value := range params {
-		query[key] = value[0]
-	}
-
-	err := h.hotelsvcs.TestStreaming2(ctx, w, query)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (h *DataHandler) GetCities(w http.ResponseWriter, r *http.Request) error {
@@ -112,7 +74,7 @@ func (h *DataHandler) GetCities(w http.ResponseWriter, r *http.Request) error {
 	params := r.URL.Query()
 	countryCode := params.Get("countryCode")
 
-	result, err := h.referencedatasvcs.GetCitiesByCountryCode(ctx, countryCode)
+	result, err := h.datasvcs.GetCitiesByCountryCode(ctx, countryCode)
 	if err != nil {
 		return err
 	}
@@ -123,7 +85,7 @@ func (h *DataHandler) GetCities(w http.ResponseWriter, r *http.Request) error {
 func (h *DataHandler) GetCountries(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.referencedatasvcs.GetCountries(ctx)
+	result, err := h.datasvcs.GetCountries(ctx)
 	if err != nil {
 		return err
 	}
@@ -134,7 +96,7 @@ func (h *DataHandler) GetCountries(w http.ResponseWriter, r *http.Request) error
 func (h *DataHandler) GetCurrencies(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.referencedatasvcs.GetCurrencies(ctx)
+	result, err := h.datasvcs.GetCurrencies(ctx)
 	if err != nil {
 		return err
 	}
@@ -145,7 +107,7 @@ func (h *DataHandler) GetCurrencies(w http.ResponseWriter, r *http.Request) erro
 func (h *DataHandler) GetIatas(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.referencedatasvcs.GetIatas(ctx)
+	result, err := h.datasvcs.GetIatas(ctx)
 	if err != nil {
 		return err
 	}
@@ -156,7 +118,7 @@ func (h *DataHandler) GetIatas(w http.ResponseWriter, r *http.Request) error {
 func (h *DataHandler) GetHotelChains(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.referencedatasvcs.GetHotelChains(ctx)
+	result, err := h.datasvcs.GetHotelChains(ctx)
 	if err != nil {
 		return err
 	}
@@ -167,7 +129,18 @@ func (h *DataHandler) GetHotelChains(w http.ResponseWriter, r *http.Request) err
 func (h *DataHandler) GetHotelTypes(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	result, err := h.referencedatasvcs.GetHotelTypes(ctx)
+	result, err := h.datasvcs.GetHotelTypes(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *DataHandler) GetHotelFacilities(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.datasvcs.GetHotelFacilities(ctx)
 	if err != nil {
 		return err
 	}

@@ -11,9 +11,10 @@ import (
 
 func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	//services
-	do.Provide(i, liteapi.NewHotelSvcs)
-	do.Provide(i, liteapi.NewReferenceDataSvcs)
+	// do.Provide(i, liteapi.NewHotelSvcs)
+	// do.Provide(i, liteapi.NewReferenceDataSvcs)
 	do.Provide(i, liteapi.NewRatesSvcs)
+	do.Provide(i, liteapi.NewDataSvcs)
 
 	//repos
 	do.Provide(i, repo.NewHotelRepo)
@@ -26,6 +27,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewHotelDetailsRepo)
 	do.Provide(i, repo.NewPreBookRepo)
 	do.Provide(i, repo.NewBookingRepo)
+	do.Provide(i, repo.NewFacilityRepo)
 
 	//handlers
 	handler.NewDataHandler(i, r)

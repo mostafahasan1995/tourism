@@ -35,6 +35,8 @@ import (
 	"reflect"
 	"strings"
 
+	middlewares "larsa-tourism-microservices/pkg/middleware"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -74,6 +76,9 @@ func Start() error {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Compress(5))
+	r.Use(middlewares.LiteApiMatcher(r, injector))
+
+	//r.Match(chi.RouteContext(),"","")
 
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"*"},
