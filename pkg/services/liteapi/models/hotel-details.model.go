@@ -43,6 +43,7 @@ type HotelDetails struct {
 	SentimentUpdatedAt        string               `json:"sentiment_updated_at" bson:"sentiment_updated_at"`
 	DeletedAt                 any                  `json:"deletedAt" bson:"deletedAt,omitempty"`
 	ExpiresAt                 time.Time            `bson:"expiresAt" json:"-"`
+	Langauge                  string               `bson:"langauge" json:"-"`
 }
 
 type CheckinCheckoutTimes struct {

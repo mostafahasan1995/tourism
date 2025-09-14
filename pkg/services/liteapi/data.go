@@ -99,22 +99,22 @@ func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*mod
 }
 
 func (d *datasvcs) GetHotelDetails(ctx context.Context, id, language, advancedAccessibilityOnly string) (*models.HotelDetailsData, error) {
-	filter := bson.M{
-		"id":        id,
-		"expiresAt": bson.M{"$gt": time.Now()},
+	lang := "en"
+	if language != "" {
+		lang = language
 	}
 
-	//todo : check for language code
+	filter := bson.M{
+		"id":        id,
+		"langauge":  lang,
+		"expiresAt": bson.M{"$gt": time.Now()},
+	}
 
 	result, err := d.hoteldetailsrepo.GetByFilter(ctx, filter)
 	if err != nil {
 		liteApiSdk, err := d.liteApiInitFunc(ctx)
 		if err != nil {
 			return nil, err
-		}
-		lang := "en"
-		if language != "" {
-			lang = language
 		}
 
 		resp, err := liteApiSdk.GetHotelDetails(id, lang, advancedAccessibilityOnly)
@@ -131,16 +131,18 @@ func (d *datasvcs) GetHotelDetails(ctx context.Context, id, language, advancedAc
 		}
 
 		result.Data.ExpiresAt = time.Now().Add(ExpireTime)
+		result.Data.Langauge = lang
 
-		go func(ctx context.Context, data models.HotelDetails) {
+		go func(ctx context.Context, lang string, data models.HotelDetails) {
 			writeOps := []mongo.WriteModel{}
-			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": data.Id}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
+			updateOp := mongo.NewUpdateOneModel().SetFilter(
+				bson.M{"id": data.Id, "langauge": lang}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
 			writeOps = append(writeOps, updateOp)
 
 			if _, err := d.hoteldetailsrepo.BulkWrite(ctx, writeOps); err != nil {
 				fmt.Printf("error bulk writing hotel details: %v", err)
 			}
-		}(context.WithoutCancel(ctx), result.Data)
+		}(context.WithoutCancel(ctx), lang, result.Data)
 
 		return &result, nil
 	}
