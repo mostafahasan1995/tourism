@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type AccessibilityAttributes struct {
 	Attributes                                 any     `bson:"attributes" json:"attributes"`
 	ShowerChair                                any     `bson:"showerChair" json:"showerChair"`
@@ -35,9 +37,12 @@ type Hotel struct {
 	FacilityIds             []int                   `bson:"facilityIds" json:"facilityIds"`
 	AccessibilityAttributes AccessibilityAttributes `bson:"accessibilityAttributes" json:"accessibilityAttributes"`
 	DeletedAt               any                     `bson:"deletedAt" json:"deletedAt"`
+	//
+	ExpiresAt time.Time `bson:"expiresAt" json:"-"`
+	Langauge  string    `bson:"langauge" json:"-"`
 }
 
-type HotelListRes struct {
+type HotelList struct {
 	Data     []Hotel `json:"data"`
 	HotelIds any     `json:"hotelIds"` // []string but can be ""  when no hotels found
 	Total    int     `json:"total"`

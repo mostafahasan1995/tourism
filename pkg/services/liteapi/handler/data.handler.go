@@ -30,6 +30,7 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/chains", helpers.Make(h.GetHotelChains))
 		r.Get("/hotelTypes", helpers.Make(h.GetHotelTypes))
 		r.Get("/facilities", helpers.Make(h.GetHotelFacilities))
+		r.Get("/reviews", helpers.Make(h.GetHotelReviews))
 
 	})
 
@@ -145,5 +146,22 @@ func (h *DataHandler) GetHotelFacilities(w http.ResponseWriter, r *http.Request)
 		return err
 	}
 
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *DataHandler) GetHotelReviews(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	params := r.URL.Query()
+
+	query := make(map[string]string)
+	for key, value := range params {
+		query[key] = value[0]
+	}
+
+	result, err := h.datasvcs.GetHotelReviews(ctx, query)
+	if err != nil {
+		return err
+	}
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

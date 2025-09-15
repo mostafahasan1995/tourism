@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -325,14 +324,10 @@ func (sdk *LiteApiSdk) GetIataCodes() (*APIResponse, error) {
 // This API endpoint returns a list of hotels available based on different search criterion.
 // The minimum required information is the country code in ISO-2 format. The API supports additional search criteria such as city name, geo coordinates, and radius.
 // This endpoint provides detailed hotel metadata, including names, addresses, ratings, amenities, and images, facilitating robust hotel search and display features within applications.
-func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, language string, retries int, delay time.Duration) (*APIResponse, error) {
+func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, retries int, delay time.Duration) (*APIResponse, error) {
 	params := url.Values{}
 	for key, value := range parameters {
 		params.Add(key, value)
-	}
-
-	if language != "" {
-		params.Add("language", language)
 	}
 
 	url := fmt.Sprintf("%s/data/hotels?%s", sdk.ServiceURL, params.Encode())
@@ -346,7 +341,7 @@ func (sdk *LiteApiSdk) GetHotels(parameters map[string]string, language string, 
 		if resp.Code == 429 || (resp.Err != nil && resp.Err["code"] == 4290) {
 			if retries > 0 {
 				time.Sleep(delay)
-				return sdk.GetHotels(parameters, language, retries-1, delay*2)
+				return sdk.GetHotels(parameters, retries-1, delay*2)
 			} else {
 				return &APIResponse{
 					Status: "failed",
@@ -395,15 +390,9 @@ func (sdk *LiteApiSdk) GetHotelDetails(hotelId, language, advancedAccessibilityO
 }
 
 // GetHotelReviews retrieves a list of reviews for a specific hotel identified by hotelId
-// Deprecated: This method is deprecated and will be removed in future versions. Use GetDataReviews instead.
-func (sdk *LiteApiSdk) GetHotelReviews(hotelId string, limit int, getSentiment bool) (*APIResponse, error) {
-	return sdk.GetDataReviews(hotelId, limit, getSentiment)
-}
-
-// GetDataReviews retrieves a list of reviews for a specific hotel identified by hotelId
-func (sdk *LiteApiSdk) GetDataReviews(hotelId string, limit int, getSentiment bool) (*APIResponse, error) {
+func (sdk *LiteApiSdk) GetHotelReviews(parameters map[string]string) (*APIResponse, error) {
 	var errors []string
-	if hotelId == "" {
+	if parameters["hotelId"] == "" {
 		errors = append(errors, "The Hotel id is required")
 	}
 
@@ -418,43 +407,70 @@ func (sdk *LiteApiSdk) GetDataReviews(hotelId string, limit int, getSentiment bo
 	}
 
 	params := url.Values{}
-	params.Add("hotelId", hotelId)
-	params.Add("limit", strconv.Itoa(limit))
-	params.Add("getSentiment", strconv.FormatBool(getSentiment))
+	for key, value := range parameters {
+		params.Add(key, value)
+	}
 
 	url := fmt.Sprintf("%s/data/reviews?%s", sdk.ServiceURL, params.Encode())
 
-	resp, err := sdk.makeRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Handle the special response structure for reviews
-	if resp.Status == "success" && resp.Data != nil {
-		// Parse the raw data
-		var reviewData map[string]any
-		if err := json.Unmarshal(resp.Data, &reviewData); err == nil {
-			resultData := make(map[string]any)
-
-			// Add sentiment analysis if present
-			if sentiment, exists := reviewData["sentimentAnalysis"]; exists {
-				resultData["data"] = reviewData["data"]
-				resultData["sentimentAnalysis"] = sentiment
-			} else {
-				resultData = reviewData
-			}
-
-			resultBytes, _ := json.Marshal(resultData)
-			return &APIResponse{
-				Status: "success",
-				Code:   resp.Code,
-				Data:   resultBytes,
-			}, nil
-		}
-	}
-
-	return resp, nil
+	return sdk.makeRequest("GET", url, nil)
 }
+
+// GetDataReviews retrieves a list of reviews for a specific hotel identified by hotelId
+// func (sdk *LiteApiSdk) GetDataReviews(hotelId string, limit int, getSentiment bool) (*APIResponse, error) {
+// 	var errors []string
+// 	if hotelId == "" {
+// 		errors = append(errors, "The Hotel id is required")
+// 	}
+
+// 	if len(errors) > 0 {
+// 		return &APIResponse{
+// 			Status: "failed",
+// 			Code:   http.StatusBadRequest,
+// 			Err: map[string]any{
+// 				"errors": errors,
+// 			},
+// 		}, nil
+// 	}
+
+// 	params := url.Values{}
+// 	params.Add("hotelId", hotelId)
+// 	params.Add("limit", strconv.Itoa(limit))
+// 	params.Add("getSentiment", strconv.FormatBool(getSentiment))
+
+// 	url := fmt.Sprintf("%s/data/reviews?%s", sdk.ServiceURL, params.Encode())
+
+// 	resp, err := sdk.makeRequest("GET", url, nil)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	// Handle the special response structure for reviews
+// 	if resp.Status == "success" && resp.Data != nil {
+// 		// Parse the raw data
+// 		var reviewData map[string]any
+// 		if err := json.Unmarshal(resp.Data, &reviewData); err == nil {
+// 			resultData := make(map[string]any)
+
+// 			// Add sentiment analysis if present
+// 			if sentiment, exists := reviewData["sentimentAnalysis"]; exists {
+// 				resultData["data"] = reviewData["data"]
+// 				resultData["sentimentAnalysis"] = sentiment
+// 			} else {
+// 				resultData = reviewData
+// 			}
+
+// 			resultBytes, _ := json.Marshal(resultData)
+// 			return &APIResponse{
+// 				Status: "success",
+// 				Code:   resp.Code,
+// 				Data:   resultBytes,
+// 			}, nil
+// 		}
+// 	}
+
+// 	return resp, nil
+// }
 
 // GetGuestsIds returns the unique guest ID of a user based on the users email ID
 // The guests API returns the unique guest ID of a user based on the users email ID.

@@ -10,13 +10,15 @@ import (
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
 	"time"
 
+	"larsa-tourism-microservices/pkg/query"
+
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type DataSvcs interface {
-	GetHotels(ctx context.Context, query map[string]string) (*models.HotelListRes, error)
+	GetHotels(ctx context.Context, query map[string]string) (*models.HotelList, error)
 	GetHotelDetails(ctx context.Context, id, language, advancedAccessibilityOnly string) (*models.HotelDetailsData, error)
 	GetCitiesByCountryCode(ctx context.Context, countryCode string) (*models.CityList, error)
 	GetCountries(ctx context.Context) (*models.CountryList, error)
@@ -25,6 +27,7 @@ type DataSvcs interface {
 	GetHotelChains(ctx context.Context) (*models.HotelChainList, error)
 	GetHotelTypes(ctx context.Context) (*models.HotelTypeList, error)
 	GetHotelFacilities(ctx context.Context) (*models.FacilityList, error)
+	GetHotelReviews(ctx context.Context, query map[string]string) (*models.HotelReviewList, error)
 }
 
 type datasvcs struct {
@@ -57,10 +60,119 @@ func NewDataSvcs(i *do.Injector) (DataSvcs, error) {
 
 const ExpireTime = 20 * time.Second
 
-func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*models.HotelListRes, error) {
-	lang := "en"
-	if query["language"] != "" {
-		lang = query["language"]
+// future use
+func constructHotelFilters(params map[string]string) {
+
+	var columns []query.Column
+
+	if params["countryCode"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "country",
+			Value: params["countryCode"],
+			Logic: "and",
+		})
+	}
+	if params["cityName"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "city",
+			Value: params["cityName"],
+			Logic: "and",
+		})
+	}
+	if params["hotelName"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "name",
+			Value: params["hotelName"],
+			Exp:   "like",
+			Logic: "and",
+		})
+	}
+	if params["longitude"] != "" && params["latitude"] != "" && params["radius"] != "" {
+		//???????
+	}
+
+	if params["zip"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "zip",
+			Value: params["zip"],
+			Logic: "and",
+		})
+	}
+
+	if params["minRating"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "rating",
+			Value: params["minRating"],
+			Exp:   ">=",
+			Logic: "and",
+		})
+	}
+	if params["minReviewsCount"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "reviewCount",
+			Value: params["minReviewsCount"],
+			Exp:   ">=",
+			Logic: "and",
+		})
+	}
+	if params["facilityIds"] != "" {
+		if params["strictFacilitiesFiltering"] == "true" {
+			columns = append(columns, query.Column{
+				Name:  "facilityIds",
+				Value: params["facilityIds"],
+				Exp:   "in", // todo: check if it is correct
+				Logic: "and",
+			})
+
+		} else {
+			columns = append(columns, query.Column{
+				Name:  "facilityIds",
+				Value: params["facilityIds"],
+				Exp:   "in",
+				Logic: "and",
+			})
+		}
+	}
+
+	if params["hotelTypeIds"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "hotelTypeId",
+			Value: params["hotelTypeIds"],
+			Exp:   "in",
+			Logic: "and",
+		})
+	}
+	if params["chainIds"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "chainId",
+			Value: params["chainIds"],
+			Exp:   "in",
+			Logic: "and",
+		})
+	}
+
+	if params["starRating"] != "" {
+		columns = append(columns, query.Column{
+			Name:  "stars",
+			Value: params["starRating"],
+			Exp:   "in",
+			Logic: "and",
+		})
+	}
+
+	if params["placeId"] != "" {
+
+	}
+
+	if params["advancedAccessibilityOnly"] != "" {
+
+	}
+
+}
+
+func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*models.HotelList, error) {
+	if query["language"] == "" {
+		query["language"] = "en"
 	}
 
 	liteApiSdk, err := d.liteApiInitFunc(ctx)
@@ -68,7 +180,7 @@ func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*mod
 		return nil, err
 	}
 
-	resp, err := liteApiSdk.GetHotels(query, lang, 3, 1*time.Second)
+	resp, err := liteApiSdk.GetHotels(query, 3, 1*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -76,15 +188,22 @@ func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*mod
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	var result models.HotelListRes
+	var result models.HotelList
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
 		return nil, err
+	}
+
+	var hotels []models.Hotel
+	for _, hotel := range result.Data {
+		hotel.Langauge = query["language"]
+		hotel.ExpiresAt = time.Now().Add(ExpireTime)
+		hotels = append(hotels, hotel)
 	}
 
 	go func(ctx context.Context, hotels []models.Hotel) {
 		writeOps := []mongo.WriteModel{}
 		for _, hotel := range hotels {
-			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
+			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
 			writeOps = append(writeOps, updateOp)
 		}
 
@@ -92,7 +211,7 @@ func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*mod
 			fmt.Printf("error bulk writing hotels: %v", err)
 		}
 
-	}(context.WithoutCancel(ctx), result.Data)
+	}(context.WithoutCancel(ctx), hotels)
 
 	return &result, nil
 
@@ -107,7 +226,7 @@ func (d *datasvcs) GetHotelDetails(ctx context.Context, id, language, advancedAc
 	filter := bson.M{
 		"id":        id,
 		"langauge":  lang,
-		"expiresAt": bson.M{"$gt": time.Now()},
+		"expiresAt": bson.M{"$gt": time.Now().UTC()},
 	}
 
 	result, err := d.hoteldetailsrepo.GetByFilter(ctx, filter)
@@ -133,16 +252,16 @@ func (d *datasvcs) GetHotelDetails(ctx context.Context, id, language, advancedAc
 		result.Data.ExpiresAt = time.Now().Add(ExpireTime)
 		result.Data.Langauge = lang
 
-		go func(ctx context.Context, lang string, data models.HotelDetails) {
+		go func(ctx context.Context, data models.HotelDetails) {
 			writeOps := []mongo.WriteModel{}
 			updateOp := mongo.NewUpdateOneModel().SetFilter(
-				bson.M{"id": data.Id, "langauge": lang}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
+				bson.M{"id": data.Id, "langauge": data.Langauge}).SetUpdate(bson.M{"$set": data}).SetUpsert(true)
 			writeOps = append(writeOps, updateOp)
 
 			if _, err := d.hoteldetailsrepo.BulkWrite(ctx, writeOps); err != nil {
 				fmt.Printf("error bulk writing hotel details: %v", err)
 			}
-		}(context.WithoutCancel(ctx), lang, result.Data)
+		}(context.WithoutCancel(ctx), result.Data)
 
 		return &result, nil
 	}
@@ -531,4 +650,40 @@ func (d *datasvcs) GetHotelFacilities(ctx context.Context) (*models.FacilityList
 	return &models.FacilityList{
 		Data: result,
 	}, nil
+}
+
+func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string) (*models.HotelReviewList, error) {
+
+	//default  limit is 100 max 1000
+
+	// pipeline := []bson.M{
+	// 	{"$match": bson.M{
+	// 		"hotelId":   query["hotelId"],
+	// 		"expiresAt": bson.M{"$gt": time.Now().UTC()},
+	// 	}},
+	// 	{"$sort": bson.M{"date": -1}},
+	// 	{"$skip": query["offset"]},
+	// 	{"$limit": query["limit"]},
+	// }
+
+	liteApiSdk, err := d.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := liteApiSdk.GetHotelReviews(query)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Status == "failed" {
+		return nil, helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	var result models.HotelReviewList
+	if err := json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, err
+	}
+
+	return &result, nil
+
 }
