@@ -76,7 +76,6 @@ func Start() error {
 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Compress(5))
-	r.Use(middlewares.LiteApiMatcher(r, injector))
 
 	//r.Match(chi.RouteContext(),"","")
 
@@ -88,6 +87,8 @@ func Start() error {
 		AllowCredentials: false,
 		MaxAge:           300, // Maximum value not ignored by any of major browsers
 	}))
+
+	r.Use(middlewares.LiteApiMatcher(r, injector))
 
 	//r.Use(common.ClientSubscriptionInstance.CheckSubscription)
 

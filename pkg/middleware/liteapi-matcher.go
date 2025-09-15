@@ -45,6 +45,7 @@ func LiteApiMatcher(router *chi.Mux, i *do.Injector) func(http.Handler) http.Han
 						helpers.WriteJsonCtx(ctx, w, http.StatusBadRequest, err)
 					} else {
 						url := r.URL.RequestURI()
+
 						resp, err := liteApiSdk.Request(method, url, nil)
 						if err != nil {
 							err := map[string]any{
