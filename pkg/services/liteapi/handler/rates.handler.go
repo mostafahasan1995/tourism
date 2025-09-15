@@ -2,6 +2,7 @@ package handler
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/liteapi"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
@@ -26,8 +27,13 @@ func NewRatesHandler(i *do.Injector, r *chi.Mux) {
 	})
 
 	r.Route("/liteapi/rates", func(r chi.Router) {
-		r.Post("/prebook", helpers.Make(h.Prebook))
-		r.Post("/book", helpers.Make(h.Book))
+		r.With(middleware.Auth("authenticate")).Post("/prebook", helpers.Make(h.Prebook))
+		r.With(middleware.Auth("authenticate")).Post("/book", helpers.Make(h.Book))
+	})
+
+	r.Route("/bookings", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Get("/prebook/me", helpers.Make(h.MyPrebooks))
+		r.With(middleware.Auth("authenticate")).Get("/book/me", helpers.Make(h.MyBookings))
 	})
 
 }
@@ -89,6 +95,28 @@ func (h *RatesHandler) Book(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.ratessvcs.Book(ctx, data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *RatesHandler) MyPrebooks(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.ratessvcs.MyPrebooks(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *RatesHandler) MyBookings(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.ratessvcs.MyBookings(ctx)
 	if err != nil {
 		return err
 	}

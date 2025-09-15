@@ -9,16 +9,16 @@ import (
 )
 
 type BookingRepo interface {
-	dbrepo.MainRepo[models.Booking]
+	dbrepo.MainRepo[models.UserBooking]
 }
 
 type bookingrepo struct {
-	dbrepo.MainRepoImpl[models.Booking]
+	dbrepo.MainRepoImpl[models.UserBooking]
 }
 
 func NewBookingRepo(i *do.Injector) (BookingRepo, error) {
 	return &bookingrepo{
-		MainRepoImpl: dbrepo.MainRepoImpl[models.Booking]{
+		MainRepoImpl: dbrepo.MainRepoImpl[models.UserBooking]{
 			Db:       do.MustInvoke[*mongo.Client](i),
 			CollName: "liteApiBookings",
 		},

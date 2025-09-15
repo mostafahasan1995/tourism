@@ -1,10 +1,15 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type BookingData struct {
 	Data       Booking `json:"data" bson:"data"`
 	GuestLevel int     `json:"guestLevel" bson:"guestLevel"`
+	Sandbox    bool    `json:"sandbox" bson:"sandbox"`
 }
 
 // Booking represents a hotel booking with all its details
@@ -173,4 +178,12 @@ type BookingHolder struct {
 type BookingHotel struct {
 	HotelID string `json:"hotelId" bson:"hotelId"`
 	Name    string `json:"name" bson:"name"`
+}
+
+type UserBooking struct {
+	Booking    `bson:",inline"`
+	GusetLevel int                `bson:"gusetLevel" json:"gusetLevel"`
+	UserId     primitive.ObjectID `bson:"userId" json:"userId"`
+	CreatedAt  time.Time          `bson:"createdAt" json:"createdAt"`
+	Trash      bool               `bson:"trash" json:"trash"`
 }

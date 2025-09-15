@@ -1,7 +1,15 @@
 package models
 
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
 type PreBookData struct {
-	Data PreBook `json:"data" bson:"data"`
+	Data       PreBook `json:"data" bson:"data"`
+	GuestLevel int     `json:"guestLevel" bson:"guestLevel"`
+	Sandbox    bool    `json:"sandbox" bson:"sandbox"`
 }
 
 type PreBook struct {
@@ -24,4 +32,13 @@ type PreBook struct {
 	SupplierID             int        `json:"supplierId" bson:"supplierId"`
 	TermsAndConditions     string     `json:"termsAndConditions" bson:"termsAndConditions"`
 	TransactionID          string     `json:"transactionId" bson:"transactionId"`
+}
+
+type UserPrebook struct {
+	PreBook    `bson:",inline"`
+	GusetLevel int                `bson:"gusetLevel" json:"gusetLevel"`
+	UserId     primitive.ObjectID `bson:"userId" json:"userId"`
+	Status     string             `bson:"status" json:"status"`
+	CreatedAt  time.Time          `bson:"createdAt" json:"createdAt"`
+	Trash      bool               `bson:"trash" json:"trash"`
 }

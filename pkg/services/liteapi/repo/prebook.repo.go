@@ -9,16 +9,16 @@ import (
 )
 
 type PreBookRepo interface {
-	dbrepo.MainRepo[models.PreBook]
+	dbrepo.MainRepo[models.UserPrebook]
 }
 
 type prebookrepo struct {
-	dbrepo.MainRepoImpl[models.PreBook]
+	dbrepo.MainRepoImpl[models.UserPrebook]
 }
 
 func NewPreBookRepo(i *do.Injector) (PreBookRepo, error) {
 	return &prebookrepo{
-		MainRepoImpl: dbrepo.MainRepoImpl[models.PreBook]{
+		MainRepoImpl: dbrepo.MainRepoImpl[models.UserPrebook]{
 			Db:       do.MustInvoke[*mongo.Client](i),
 			CollName: "liteApiPreBooks",
 		},
