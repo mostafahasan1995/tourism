@@ -92,7 +92,7 @@ func (r *ratessvcs) PreBook(ctx context.Context, data map[string]any) (any, erro
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	var result models.PreBook
+	var result models.PreBookData
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
 		return nil, err
 	}
@@ -102,7 +102,7 @@ func (r *ratessvcs) PreBook(ctx context.Context, data map[string]any) (any, erro
 			fmt.Printf("error adding prebook: %v", err)
 		}
 
-	}(context.WithoutCancel(ctx), result)
+	}(context.WithoutCancel(ctx), result.Data)
 
 	return result, nil
 }
@@ -121,7 +121,7 @@ func (r *ratessvcs) Book(ctx context.Context, data map[string]any) (any, error) 
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	var result models.Booking
+	var result models.BookingData
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
 		return nil, err
 	}
@@ -130,7 +130,7 @@ func (r *ratessvcs) Book(ctx context.Context, data map[string]any) (any, error) 
 		if err := r.bookingRepo.Add(ctx, &data); err != nil {
 			fmt.Printf("error adding booking: %v", err)
 		}
-	}(context.WithoutCancel(ctx), result)
+	}(context.WithoutCancel(ctx), result.Data)
 
 	return result, nil
 }

@@ -1,3 +1,27 @@
 package models
 
-type PreBook map[string]any
+type PreBookData struct {
+	Data PreBook `json:"data" bson:"data"`
+}
+
+type PreBook struct {
+	BoardChanged           bool       `json:"boardChanged" bson:"boardChanged"`
+	CancellationChanged    bool       `json:"cancellationChanged" bson:"cancellationChanged"`
+	Commission             float64    `json:"commission" bson:"commission"`
+	Currency               string     `json:"currency" bson:"currency"`
+	HotelID                string     `json:"hotelId" bson:"hotelId"`
+	IsPackageRate          bool       `json:"isPackageRate" bson:"isPackageRate"`
+	OfferID                string     `json:"offerId" bson:"offerId"`
+	PaymentTypes           []string   `json:"paymentTypes" bson:"paymentTypes"`
+	PrebookID              string     `json:"prebookId" bson:"prebookId"`
+	Price                  float64    `json:"price" bson:"price"`
+	PriceDifferencePercent float64    `json:"priceDifferencePercent" bson:"priceDifferencePercent"`
+	PriceType              string     `json:"priceType" bson:"priceType"`
+	RoomTypes              []RoomType `json:"roomTypes" bson:"roomTypes"`
+	SecretKey              string     `json:"secretKey" bson:"secretKey"`
+	SuggestedSellingPrice  float64    `json:"suggestedSellingPrice" bson:"suggestedSellingPrice"`
+	Supplier               string     `json:"supplier" bson:"supplier"`
+	SupplierID             int        `json:"supplierId" bson:"supplierId"`
+	TermsAndConditions     string     `json:"termsAndConditions" bson:"termsAndConditions"`
+	TransactionID          string     `json:"transactionId" bson:"transactionId"`
+}
