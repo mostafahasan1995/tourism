@@ -31,6 +31,10 @@ func NewRatesHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Post("/book", helpers.Make(h.Book))
 	})
 
+	r.Route("/liteapi/bookings", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Put("/{bookingId}", helpers.Make(h.CancelBooking))
+	})
+
 	r.Route("/bookings", func(r chi.Router) {
 		r.With(middleware.Auth("authenticate")).Get("/prebook/me", helpers.Make(h.MyPrebooks))
 		r.With(middleware.Auth("authenticate")).Get("/book/me", helpers.Make(h.MyBookings))
@@ -117,6 +121,19 @@ func (h *RatesHandler) MyBookings(w http.ResponseWriter, r *http.Request) error 
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	result, err := h.ratessvcs.MyBookings(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *RatesHandler) CancelBooking(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	bookingId := chi.URLParam(r, "bookingId")
+
+	result, err := h.ratessvcs.CancelBooking(ctx, bookingId)
 	if err != nil {
 		return err
 	}

@@ -185,5 +185,5 @@ type UserBooking struct {
 	GusetLevel int                `bson:"gusetLevel" json:"gusetLevel"`
 	UserId     primitive.ObjectID `bson:"userId" json:"userId"`
 	CreatedAt  time.Time          `bson:"createdAt" json:"createdAt"`
-	Trash      bool               `bson:"trash" json:"trash"`
+	UpdatedAt  time.Time          `bson:"updatedAt" json:"updatedAt"`
 }

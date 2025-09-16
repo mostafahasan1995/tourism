@@ -26,6 +26,7 @@ type RatesSvcs interface {
 	Book(ctx context.Context, data map[string]any) (any, error)
 	MyPrebooks(ctx context.Context) ([]models.UserPrebook, error)
 	MyBookings(ctx context.Context) ([]models.UserBooking, error)
+	CancelBooking(ctx context.Context, bookingId string) (any, error)
 }
 
 type ratessvcs struct {
@@ -128,7 +129,9 @@ func (r *ratessvcs) PreBook(ctx context.Context, data map[string]any) (any, erro
 			Trash:      false,
 		}
 
-		if err := r.preBookRepo.Add(ctx, userPrebook); err != nil {
+		if err := util.WithRetry(func() error {
+			return r.preBookRepo.Add(ctx, userPrebook)
+		}, 3); err != nil {
 			fmt.Println("error adding prebook", err)
 		}
 	}(context.WithoutCancel(ctx), result)
@@ -172,10 +175,13 @@ func (r *ratessvcs) Book(ctx context.Context, data map[string]any) (any, error) 
 			GusetLevel: result.GuestLevel,
 			UserId:     cfg.User.Id,
 			CreatedAt:  time.Now(),
-			Trash:      false,
+			UpdatedAt:  time.Now(),
 		}
-		if err := r.bookingRepo.Add(ctx, userBooking); err != nil {
-			fmt.Printf("error adding booking %v", err)
+
+		if err := util.WithRetry(func() error {
+			return r.bookingRepo.Add(ctx, userBooking)
+		}, 3); err != nil {
+			fmt.Println("error adding prebook", err)
 		}
 	}(context.WithoutCancel(ctx), result)
 
@@ -211,7 +217,7 @@ func (r *ratessvcs) MyBookings(ctx context.Context) ([]models.UserBooking, error
 		return nil, err
 	}
 
-	filter := bson.M{"userId": cfg.User.Id, "trash": false}
+	filter := bson.M{"userId": cfg.User.Id}
 
 	pipeline := []bson.M{
 		{"$match": filter},
@@ -227,4 +233,49 @@ func (r *ratessvcs) MyBookings(ctx context.Context) ([]models.UserBooking, error
 
 	return result, nil
 
+}
+
+func (r *ratessvcs) CancelBooking(ctx context.Context, bookingId string) (any, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = r.bookingRepo.GetByFilter(ctx, bson.M{"userId": cfg.User.Id, "bookingId": bookingId})
+	if err != nil {
+		return nil, errors.New("booking not found or not belongs to the user")
+	}
+
+	liteApiSdk, err := r.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := liteApiSdk.CancelBooking(bookingId)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Status == "failed" {
+		return nil, helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	var result map[string]any
+	if err := json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, err
+	}
+
+	go func(ctx context.Context, bookingId string) {
+		filter := bson.M{"userId": cfg.User.Id, "bookingId": bookingId}
+		update := bson.M{"$set": bson.M{"status": "CANCELLED", "updatedAt": time.Now()}}
+
+		if err := util.WithRetry(func() error {
+			_, err := r.bookingRepo.Patch(ctx, filter, update)
+			return err
+		}, 3); err != nil {
+			fmt.Println("error canceling booking", err)
+		}
+
+	}(context.WithoutCancel(ctx), bookingId)
+
+	return result, nil
 }

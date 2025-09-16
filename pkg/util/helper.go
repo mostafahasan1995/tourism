@@ -397,3 +397,19 @@ func Converter[To any, From any](from From) (To, error) {
 
 	return to, nil
 }
+
+func WithRetry(fn func() error, maxRetries int) error {
+	for i := 0; i < maxRetries; i++ {
+		if err := fn(); err != nil {
+			if i == maxRetries-1 {
+				return err
+			}
+			time.Sleep(time.Second * time.Duration(1<<uint(i)))
+			continue
+		}
+		break
+	}
+
+	return nil
+
+}
