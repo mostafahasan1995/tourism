@@ -9,7 +9,7 @@ type HotelReviewList struct {
 }
 
 type HotelReview struct {
-	Seq          int       `bson:"seq" json:"-"`
+	Id           string    `bson:"id" json:"-"`
 	HotelId      string    `bson:"hotelId" json:"-"`
 	AverageScore float64   `bson:"averageScore" json:"averageScore"`
 	Country      string    `bson:"country" json:"country"`

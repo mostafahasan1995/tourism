@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"larsa-tourism-microservices/pkg/enums"
 	"math"
 	"net/http"
@@ -411,5 +412,27 @@ func WithRetry(fn func() error, maxRetries int) error {
 	}
 
 	return nil
+}
 
+// GenerateReviewID creates a deterministic unique ID for a review based on score, name and date
+func GenerateReviewID(score float64, name string, date time.Time) string {
+	// Format date consistently to ensure same output for same date
+	dateStr := date.UTC().Format("2006-01-02")
+
+	// Create a consistent string combining all elements
+	// Using | as separator since it's unlikely to appear in names
+	baseString := fmt.Sprintf("%.2f|%s|%s",
+		score,
+		strings.ToLower(strings.TrimSpace(name)),
+		dateStr,
+	)
+
+	// Create a hash of the string
+	h := fnv.New32a()
+	h.Write([]byte(baseString))
+	hash := h.Sum32()
+
+	// Convert to base36 for shorter, readable string
+	// This will give us alphanumeric IDs
+	return fmt.Sprintf("r%s", strings.ToUpper(strconv.FormatUint(uint64(hash), 36)))
 }

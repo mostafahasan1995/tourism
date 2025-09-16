@@ -8,6 +8,7 @@ import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
+	"larsa-tourism-microservices/pkg/util"
 	"time"
 
 	"larsa-tourism-microservices/pkg/query"
@@ -40,6 +41,7 @@ type datasvcs struct {
 	hotelchainrepo   repo.HotelChainRepo
 	hoteltyperepo    repo.HotelTypeRepo
 	facilityrepo     repo.FacilityRepo
+	hotelreviewrepo  repo.HotelReviewRepo
 	liteApiInitFunc  liteApiSdk.LiteApiInitFunc
 }
 
@@ -54,6 +56,7 @@ func NewDataSvcs(i *do.Injector) (DataSvcs, error) {
 		hotelchainrepo:   do.MustInvoke[repo.HotelChainRepo](i),
 		hoteltyperepo:    do.MustInvoke[repo.HotelTypeRepo](i),
 		facilityrepo:     do.MustInvoke[repo.FacilityRepo](i),
+		hotelreviewrepo:  do.MustInvoke[repo.HotelReviewRepo](i),
 		liteApiInitFunc:  do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
 	}, nil
 }
@@ -654,18 +657,6 @@ func (d *datasvcs) GetHotelFacilities(ctx context.Context) (*models.FacilityList
 
 func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string) (*models.HotelReviewList, error) {
 
-	//default  limit is 100 max 1000
-
-	// pipeline := []bson.M{
-	// 	{"$match": bson.M{
-	// 		"hotelId":   query["hotelId"],
-	// 		"expiresAt": bson.M{"$gt": time.Now().UTC()},
-	// 	}},
-	// 	{"$sort": bson.M{"date": -1}},
-	// 	{"$skip": query["offset"]},
-	// 	{"$limit": query["limit"]},
-	// }
-
 	liteApiSdk, err := d.liteApiInitFunc(ctx)
 	if err != nil {
 		return nil, err
@@ -683,6 +674,24 @@ func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string)
 	if err := json.Unmarshal(resp.Data, &result); err != nil {
 		return nil, err
 	}
+
+	reviews := []models.HotelReview{}
+	for _, review := range result.Data {
+		review.ExpiresAt = time.Now().Add(ExpireTime)
+		review.HotelId = query["hotelId"]
+		review.Id = util.GenerateReviewID(review.AverageScore, review.Name, review.Date)
+		reviews = append(reviews, review)
+	}
+
+	go util.WithRetry(func() error {
+		writeOps := []mongo.WriteModel{}
+		for _, review := range reviews {
+			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"hotelId": review.HotelId, "id": review.Id}).SetUpdate(bson.M{"$set": review}).SetUpsert(true)
+			writeOps = append(writeOps, updateOp)
+		}
+		_, err := d.hotelreviewrepo.BulkWrite(context.WithoutCancel(ctx), writeOps)
+		return err
+	}, 3)
 
 	return &result, nil
 
