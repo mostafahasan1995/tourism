@@ -677,9 +677,9 @@ func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string)
 
 	reviews := []models.HotelReview{}
 	for _, review := range result.Data {
+		review.GenerateReviewID()
 		review.ExpiresAt = time.Now().Add(ExpireTime)
 		review.HotelId = query["hotelId"]
-		review.Id = util.GenerateReviewID(review.AverageScore, review.Name, review.Date)
 		reviews = append(reviews, review)
 	}
 

@@ -1,6 +1,12 @@
 package models
 
-import "time"
+import (
+	"fmt"
+	"hash/fnv"
+	"strconv"
+	"strings"
+	"time"
+)
 
 type HotelReviewList struct {
 	Data              []HotelReview           `bson:"data" json:"data"`
@@ -22,6 +28,31 @@ type HotelReview struct {
 	Cons         string    `bson:"cons" json:"cons"`
 	Source       string    `bson:"source" json:"source"`
 	ExpiresAt    time.Time `bson:"expiresAt" json:"-"`
+}
+
+func (hr *HotelReview) GenerateReviewID() {
+	// Format date consistently to ensure same output for same date
+	dateStr := hr.Date.UTC().Format("2006-01-02")
+
+	// Create a consistent string combining all elements
+	// Using | as separator since it's unlikely to appear in names
+	baseString := fmt.Sprintf("%.2f|%s|%s|%s|%s",
+		hr.AverageScore,
+		strings.ToLower(strings.TrimSpace(hr.Name)),
+		dateStr,
+		strings.ToLower(strings.TrimSpace(hr.Type)),
+		strings.ToLower(strings.TrimSpace(hr.Language)),
+	)
+
+	// Create a hash of the string
+	h := fnv.New32a()
+	h.Write([]byte(baseString))
+	hash := h.Sum32()
+
+	// Convert to base36 for shorter, readable string
+	// This will give us alphanumeric IDs
+	id := fmt.Sprintf("r%s", strings.ToUpper(strconv.FormatUint(uint64(hash), 36)))
+	hr.Id = id
 }
 
 type ReviewSentimentAnalysis struct {
