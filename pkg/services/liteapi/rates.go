@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
@@ -119,22 +118,18 @@ func (r *ratessvcs) PreBook(ctx context.Context, data map[string]any) (any, erro
 		return nil, err
 	}
 
-	go func(ctx context.Context, data models.PreBookData) {
-		userPrebook := &models.UserPrebook{
-			PreBook:    result.Data,
-			GusetLevel: result.GuestLevel,
-			UserId:     cfg.User.Id,
-			Status:     "pending",
-			CreatedAt:  time.Now(),
-			Trash:      false,
-		}
+	userPrebook := &models.UserPrebook{
+		PreBook:    result.Data,
+		GusetLevel: result.GuestLevel,
+		UserId:     cfg.User.Id,
+		Status:     "pending",
+		CreatedAt:  time.Now(),
+		Trash:      false,
+	}
 
-		if err := util.WithRetry(func() error {
-			return r.preBookRepo.Add(ctx, userPrebook)
-		}, 3); err != nil {
-			fmt.Println("error adding prebook", err)
-		}
-	}(context.WithoutCancel(ctx), result)
+	go util.WithRetry(func() error {
+		return r.preBookRepo.Add(context.WithoutCancel(ctx), userPrebook)
+	}, 3)
 
 	//in case the liteApi request success we must send the response
 	return result, nil
@@ -169,21 +164,17 @@ func (r *ratessvcs) Book(ctx context.Context, data map[string]any) (any, error) 
 		return nil, err
 	}
 
-	go func(ctx context.Context, data models.BookingData) {
-		userBooking := &models.UserBooking{
-			Booking:    result.Data,
-			GusetLevel: result.GuestLevel,
-			UserId:     cfg.User.Id,
-			CreatedAt:  time.Now(),
-			UpdatedAt:  time.Now(),
-		}
+	userBooking := &models.UserBooking{
+		Booking:    result.Data,
+		GusetLevel: result.GuestLevel,
+		UserId:     cfg.User.Id,
+		CreatedAt:  time.Now(),
+		UpdatedAt:  time.Now(),
+	}
 
-		if err := util.WithRetry(func() error {
-			return r.bookingRepo.Add(ctx, userBooking)
-		}, 3); err != nil {
-			fmt.Println("error adding prebook", err)
-		}
-	}(context.WithoutCancel(ctx), result)
+	go util.WithRetry(func() error {
+		return r.bookingRepo.Add(context.WithoutCancel(ctx), userBooking)
+	}, 3)
 
 	return result, nil
 }
@@ -264,18 +255,12 @@ func (r *ratessvcs) CancelBooking(ctx context.Context, bookingId string) (any, e
 		return nil, err
 	}
 
-	go func(ctx context.Context, bookingId string) {
+	go util.WithRetry(func() error {
 		filter := bson.M{"userId": cfg.User.Id, "bookingId": bookingId}
 		update := bson.M{"$set": bson.M{"status": "CANCELLED", "updatedAt": time.Now()}}
-
-		if err := util.WithRetry(func() error {
-			_, err := r.bookingRepo.Patch(ctx, filter, update)
-			return err
-		}, 3); err != nil {
-			fmt.Println("error canceling booking", err)
-		}
-
-	}(context.WithoutCancel(ctx), bookingId)
+		_, err := r.bookingRepo.Patch(context.WithoutCancel(ctx), filter, update)
+		return err
+	}, 3)
 
 	return result, nil
 }
