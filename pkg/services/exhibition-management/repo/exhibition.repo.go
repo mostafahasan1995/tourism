@@ -20,7 +20,7 @@ func NewExhibitionRepo(i *do.Injector) (ExhibitionRepo, error) {
 	return &exhibitionRepo{
 		MainRepoImpl: dbrepo.MainRepoImpl[models.Exhibition]{
 			Db:       do.MustInvoke[*mongo.Client](i),
-			CollName: "exhibitions",
+			CollName: "tourismExhibitions",
 		},
 	}, nil
 }
