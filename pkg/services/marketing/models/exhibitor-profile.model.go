@@ -49,7 +49,7 @@ type DynamicSection struct {
 }
 
 type ExhibitorProfileDto struct {
-	ExhibitionId      primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
+	ExhibitionId      primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" `
 	HotelId           primitive.ObjectID     `bson:"hotelId" json:"hotelId" validate:"required"`
 	HeroSection       HeroSection            `bson:"heroSection" json:"heroSection" validate:"required"`
 	FacilitiesSection FacilitiesSection      `bson:"facilitiesSection" json:"facilitiesSection"`

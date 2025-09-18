@@ -11,7 +11,7 @@ import (
 )
 
 type VisitorDto struct {
-	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
+	ExhibitionId primitive.ObjectID     `bson:"exhibitionId" json:"exhibitionId" `
 	HotelId      primitive.ObjectID     `bson:"hotelId" json:"hotelId"`
 	FullName     string                 `bson:"fullName" json:"fullName" validate:"required"`
 	Nationality  string                 `bson:"nationality" json:"nationality" validate:"required"`
