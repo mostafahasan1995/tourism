@@ -149,7 +149,7 @@ type PhoneDto struct {
 
 // FOUND
 type ExhibitorRequestDto struct {
-	ExhibitionId primitive.ObjectID `bson:"exhibitionId" json:"exhibitionId" validate:"required"`
+	ExhibitionId primitive.ObjectID `bson:"exhibitionId" json:"exhibitionId"`
 	HotelId      primitive.ObjectID `bson:"hotelId" json:"hotelId" validate:"required"`
 
 	HotelWebsite string                     `bson:"hotelWebsite" json:"hotelWebsite"`
