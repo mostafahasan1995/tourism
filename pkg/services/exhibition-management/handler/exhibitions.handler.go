@@ -43,7 +43,7 @@ func NewExhibitionHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/all", helpers.Make(h.GetAll))
 		r.Get("/stats", helpers.Make(h.GetStats))
-		r.Get("/{id}", helpers.Make(h.GetById))
+		r.With(middleware.OptionalAuth()).Get("/{id}", helpers.Make(h.GetById))
 		r.Get("/{id}/related", helpers.Make(h.GetRelatedExhibitions))
 
 		// Authenticated routes
