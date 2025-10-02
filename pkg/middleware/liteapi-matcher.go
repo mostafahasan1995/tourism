@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"encoding/json"
-	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/util"
@@ -20,16 +19,12 @@ func LiteApiMatcher(router *chi.Mux, i *do.Injector) func(http.Handler) http.Han
 			method := r.Method
 			path := r.URL.Path
 
-			fmt.Println("the method", method)
-			fmt.Println("the path", path)
-
 			rctx := chi.NewRouteContext()
 			result := router.Match(rctx, method, path)
 			if result {
-				fmt.Println("router matched")
 				next.ServeHTTP(w, r)
 			} else {
-				fmt.Println("try matching liteapi route")
+
 				b := strings.HasPrefix(path, "/liteapi")
 				if b {
 
