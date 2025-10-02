@@ -30,6 +30,7 @@ func LiteApiSdkInit() LiteApiInitFunc {
 
 		if key, ok := optionValue.(string); ok {
 			if key != "" {
+				fmt.Println("liteApi key", key)
 				return NewLiteApiSdk(key), nil
 			}
 		}
