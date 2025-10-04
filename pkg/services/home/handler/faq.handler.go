@@ -546,12 +546,98 @@ func (h *FaqHandler) SearchQuestions(w http.ResponseWriter, r *http.Request) err
 		}
 	}
 
+	// Get flat search results
 	result, err := h.faqGroupSvcs.SearchQuestions(ctx, faqPageId, searchTerm, page, size)
 	if err != nil {
 		return err
 	}
 
-	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+	// Group questions by groupId
+	groupedQuestions := make(map[string][]models.FaqSearchResult)
+	var generalQuestions []models.FaqSearchResult
+	for _, q := range result.FaqSearchResults {
+		if q.GroupId == "" || q.GroupId == "000000000000000000000000" {
+			generalQuestions = append(generalQuestions, q)
+		} else {
+			groupedQuestions[q.GroupId] = append(groupedQuestions[q.GroupId], q)
+		}
+	}
+
+	faqGroups := make([]models.FaqGroupWithQuestions, 0, len(groupedQuestions)+1)
+
+	// For each groupId, fetch group info and build group with questions
+	for groupId, questions := range groupedQuestions {
+		group, err := h.faqGroupSvcs.GetOne(ctx, groupId)
+		if err != nil || group == nil {
+			// If group not found, skip
+			continue
+		}
+		// Convert []models.FaqSearchResult to []models.FaqQuestion
+		faqQuestions := make([]models.FaqQuestion, 0, len(questions))
+		for _, sq := range questions {
+			fqid, _ := primitive.ObjectIDFromHex(sq.Id)
+			fpid, _ := primitive.ObjectIDFromHex(sq.PageId)
+			var fgid *primitive.ObjectID
+			if sq.GroupId != "" && sq.GroupId != "000000000000000000000000" {
+				id, _ := primitive.ObjectIDFromHex(sq.GroupId)
+				fgid = &id
+			}
+			faqQuestions = append(faqQuestions, models.FaqQuestion{
+				Id:         fqid,
+				FaqPageId:  fpid,
+				FaqGroupId: fgid,
+				Question:   sq.Question,
+				Answer:     sq.Answer,
+				IsActive:   sq.IsActive,
+				SortOrder:  sq.SortOrder,
+				CreatedAt:  sq.CreatedAt,
+				UpdatedAt:  sq.UpdatedAt,
+			})
+		}
+		faqGroups = append(faqGroups, models.FaqGroupWithQuestions{
+			FaqGroup:  *group,
+			Questions: faqQuestions,
+		})
+	}
+
+	// Handle general questions (no group)
+	if len(generalQuestions) > 0 {
+		// Create a pseudo-group for general questions
+		pseudoGroup := models.FaqGroup{
+			Id:        primitive.NilObjectID,
+			FaqPageId: primitive.NilObjectID,
+			Name:      "General Questions",
+			IsActive:  true,
+			SortOrder: 0,
+			Trash:     false,
+		}
+		faqQuestions := make([]models.FaqQuestion, 0, len(generalQuestions))
+		for _, sq := range generalQuestions {
+			fqid, _ := primitive.ObjectIDFromHex(sq.Id)
+			fpid, _ := primitive.ObjectIDFromHex(sq.PageId)
+			faqQuestions = append(faqQuestions, models.FaqQuestion{
+				Id:         fqid,
+				FaqPageId:  fpid,
+				FaqGroupId: nil,
+				Question:   sq.Question,
+				Answer:     sq.Answer,
+				IsActive:   sq.IsActive,
+				SortOrder:  sq.SortOrder,
+				CreatedAt:  sq.CreatedAt,
+				UpdatedAt:  sq.UpdatedAt,
+			})
+		}
+		faqGroups = append(faqGroups, models.FaqGroupWithQuestions{
+			FaqGroup:  pseudoGroup,
+			Questions: faqQuestions,
+		})
+	}
+
+	response := map[string]interface{}{
+		"faqGroups":  faqGroups,
+		"pagination": result.Pagination,
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
 
 func (h *FaqHandler) AddGroup(w http.ResponseWriter, r *http.Request) error {
