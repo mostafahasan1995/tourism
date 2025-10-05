@@ -526,6 +526,42 @@ func (h *FaqHandler) SearchQuestions(w http.ResponseWriter, r *http.Request) err
 		searchTerm = searchTerm[1 : len(searchTerm)-1]
 	}
 
+	// If no search term, return all groups for this page with their questions
+	if searchTerm == "" {
+		var groupFilter filter.FaqGroupFilter
+		if faqPageId != "" {
+			if pageOid, err := primitive.ObjectIDFromHex(faqPageId); err == nil {
+				groupFilter.FaqPageId = pageOid
+			}
+		}
+
+		// Get all groups for the page
+		groupsResult, err := h.faqGroupSvcs.GetAll(ctx, groupFilter)
+		if err != nil {
+			return err
+		}
+
+		// Enrich with questions
+		var groupsWithQuestions []models.FaqGroupWithQuestions
+		for _, group := range groupsResult.FaqGroups {
+			groupWithQuestions, err := h.faqGroupSvcs.GetWithQuestions(ctx, group.Id.Hex())
+			if err != nil {
+				groupsWithQuestions = append(groupsWithQuestions, models.FaqGroupWithQuestions{
+					FaqGroup:  group,
+					Questions: []models.FaqQuestion{},
+				})
+			} else {
+				groupsWithQuestions = append(groupsWithQuestions, *groupWithQuestions)
+			}
+		}
+
+		response := map[string]interface{}{
+			"faqGroups":  groupsWithQuestions,
+			"pagination": groupsResult.Pagination,
+		}
+		return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
+	}
+
 	if searchTerm == "" {
 		return helpers.BadRequest("search parameter is required")
 	}
