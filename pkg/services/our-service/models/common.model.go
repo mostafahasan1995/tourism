@@ -56,7 +56,7 @@ type FlightTicket struct {
 	Adults                 int                        `bson:"adults" json:"adults"`
 	Children               int                        `bson:"children" json:"children"`
 	Infant                 int                        `bson:"infant" json:"infant"`
-	PreferredContactMethod string                     `bson:"preferredContactMethod" json:"preferredContactMethod"`
+	PreferredContactMethod []string                   `bson:"preferredContactMethod" json:"preferredContactMethod"`
 	SpecialRequirements    transl.Localizable[string] `bson:"specialRequirements" json:"specialRequirements"`
 }
 
