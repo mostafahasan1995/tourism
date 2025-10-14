@@ -79,13 +79,24 @@ type Agenda struct {
 }
 
 type Services struct {
-	TourGuide           bool `bson:"tourGuide" json:"tourGuide"`
-	Translator          bool `bson:"translator" json:"translator"`
-	AirportPickup       bool `bson:"airportPickup" json:"airportPickup"`
-	TourAfterMeeting    bool `bson:"tourAfterMeeting" json:"tourAfterMeeting"`
-	Photography         bool `bson:"photography" json:"photography"`
-	AirportMeetAndGreet bool `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
-	SimCardAndInternet  bool `bson:"simCardAndInternet" json:"simCardAndInternet"`
+
+	// TourGuide           bool `bson:"tourGuide" json:"tourGuide"`
+	// Translator          bool `bson:"translator" json:"translator"`
+	// AirportPickup       bool `bson:"airportPickup" json:"airportPickup"`
+	// TourAfterMeeting    bool `bson:"tourAfterMeeting" json:"tourAfterMeeting"`
+	// Photography         bool `bson:"photography" json:"photography"`
+	// AirportMeetAndGreet bool `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
+	// SimCardAndInternet  bool `bson:"simCardAndInternet" json:"simCardAndInternet"`
+	OnGroundAssistance       bool `bson:"onGroundAssistance" json:"onGroundAssistance"`
+	TravelInsurance          bool `bson:"travelInsurance" json:"travelInsurance"`
+	VisaAssistance           bool `bson:"visaAssistance" json:"visaAssistance"`
+	WelcomeKit               bool `bson:"welcomeKit" json:"welcomeKit"`
+	FreeSimCardWifi          bool `bson:"freeSimCardWifi" json:"freeSimCardWifi"`
+	ComplimentaryGifts       bool `bson:"complimentaryGifts" json:"complimentaryGifts"`
+	VipAirportServices       bool `bson:"vipAirportServices" json:"vipAirportServices"`
+	PersonalTravelConsultant bool `bson:"personalTravelConsultant" json:"personalTravelConsultant"`
+	ChildcareServices        bool `bson:"childcareServices" json:"childcareServices"`
+	AccessibilitySupport     bool `bson:"accessibilitySupport" json:"accessibilitySupport"`
 }
 
 //
