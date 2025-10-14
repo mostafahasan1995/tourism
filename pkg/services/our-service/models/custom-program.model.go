@@ -82,59 +82,75 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 		})
 	}
 
-	if pd.Services.TourGuide.Active {
+	if pd.Services.OnGroundAssistance.Active {
 		services = append(services, InvoiceService{
-			Item:  "Tour Guide",
-			Price: pd.Services.TourGuide.Cost,
+			Item:  "On Ground Assistance",
+			Price: pd.Services.OnGroundAssistance.Cost,
 			Qty:   1,
 		})
 	}
 
-	if pd.Services.Translator.Active {
+	if pd.Services.VisaAssistance.Active {
 		services = append(services, InvoiceService{
-			Item:  "Translator",
-			Price: pd.Services.Translator.Cost,
+			Item:  "Visa Assistance",
+			Price: pd.Services.VisaAssistance.Cost,
 			Qty:   1,
 		})
 	}
 
-	if pd.Services.AirportPickup.Active {
+	if pd.Services.WelcomeKit.Active {
 		services = append(services, InvoiceService{
-			Item:  "Airport Pickup",
-			Price: pd.Services.AirportPickup.Cost,
+			Item:  "Welcome Kit",
+			Price: pd.Services.WelcomeKit.Cost,
 			Qty:   1,
 		})
 	}
 
-	if pd.Services.TourAfterMeeting.Active {
+	if pd.Services.FreeSimCardWifi.Active {
 		services = append(services, InvoiceService{
-			Item:  "Tour After Meeting",
-			Price: pd.Services.TourAfterMeeting.Cost,
+			Item:  "Free Sim Card Wifi",
+			Price: pd.Services.FreeSimCardWifi.Cost,
 			Qty:   1,
 		})
 	}
 
 	// quantity was 0 for each service resulting in wrong total
-	if pd.Services.Photography.Active {
+	if pd.Services.ComplimentaryGifts.Active {
 		services = append(services, InvoiceService{
-			Item:  "Photography",
-			Price: pd.Services.Photography.Cost,
+			Item:  "Complimentary Gifts",
+			Price: pd.Services.ComplimentaryGifts.Cost,
 			Qty:   1,
 		})
 	}
 
-	if pd.Services.AirportMeetAndGreet.Active {
+	if pd.Services.VipAirportServices.Active {
 		services = append(services, InvoiceService{
-			Item:  "Airport Meet and Greet",
-			Price: pd.Services.AirportMeetAndGreet.Cost,
+			Item:  "Vip Airport Services",
+			Price: pd.Services.VipAirportServices.Cost,
 			Qty:   1,
 		})
 	}
 
-	if pd.Services.SimCardAndInternet.Active {
+	if pd.Services.PersonalTravelConsultant.Active {
 		services = append(services, InvoiceService{
-			Item:  "Sim Card and Internet",
-			Price: pd.Services.SimCardAndInternet.Cost,
+			Item:  "Personal Travel Consultant",
+			Price: pd.Services.PersonalTravelConsultant.Cost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.ChildcareServices.Active {
+		services = append(services, InvoiceService{
+			Item:  "Childcare Services",
+			Price: pd.Services.ChildcareServices.Cost,
+			Qty:   1,
+		})
+	}
+
+	if pd.Services.AccessibilitySupport.Active {
+		services = append(services, InvoiceService{
+			Item:  "Accessibility Support",
+			Price: pd.Services.AccessibilitySupport.Cost,
 			Qty:   1,
 		})
 	}
@@ -177,13 +193,23 @@ type Service struct {
 }
 
 type ProgramServices struct {
-	TourGuide           Service `bson:"tourGuide" json:"tourGuide"`
-	Translator          Service `bson:"translator" json:"translator"`
-	AirportPickup       Service `bson:"airportPickup" json:"airportPickup"`
-	TourAfterMeeting    Service `bson:"tourAfterMeeting" json:"tourAfterMeeting"`
-	Photography         Service `bson:"photography" json:"photography"`
-	AirportMeetAndGreet Service `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
-	SimCardAndInternet  Service `bson:"simCardAndInternet" json:"simCardAndInternet"`
+	// TourGuide           Service `bson:"tourGuide" json:"tourGuide"`
+	// Translator          Service `bson:"translator" json:"translator"`
+	// AirportPickup       Service `bson:"airportPickup" json:"airportPickup"`
+	// TourAfterMeeting    Service `bson:"tourAfterMeeting" json:"tourAfterMeeting"`
+	// Photography         Service `bson:"photography" json:"photography"`
+	// AirportMeetAndGreet Service `bson:"airportMeetAndGreet" json:"airportMeetAndGreet"`
+	// SimCardAndInternet  Service `bson:"simCardAndInternet" json:"simCardAndInternet"`
+	OnGroundAssistance       Service `bson:"onGroundAssistance" json:"onGroundAssistance"`
+	TravelInsurance          Service `bson:"travelInsurance" json:"travelInsurance"`
+	VisaAssistance           Service `bson:"visaAssistance" json:"visaAssistance"`
+	WelcomeKit               Service `bson:"welcomeKit" json:"welcomeKit"`
+	FreeSimCardWifi          Service `bson:"freeSimCardWifi" json:"freeSimCardWifi"`
+	ComplimentaryGifts       Service `bson:"complimentaryGifts" json:"complimentaryGifts"`
+	VipAirportServices       Service `bson:"vipAirportServices" json:"vipAirportServices"`
+	PersonalTravelConsultant Service `bson:"personalTravelConsultant" json:"personalTravelConsultant"`
+	ChildcareServices        Service `bson:"childcareServices" json:"childcareServices"`
+	AccessibilitySupport     Service `bson:"accessibilitySupport" json:"accessibilitySupport"`
 }
 
 func (cp *CustomProgram) GetOtherServicePricing() ([]InvoiceService, error) {
