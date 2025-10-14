@@ -23,6 +23,9 @@ const (
 	GroupSizeFamily GroupSize = "family" // Family (عائلة)
 	GroupSizeSmall  GroupSize = "small"  // Small Group (مجموعة صغيرة، عادة 4–8 أشخاص)
 	GroupSizeLarge  GroupSize = "large"  // Large Group (مجموعة كبيرة، عادة أكثر من 8 أشخاص)
+	GroupSizeCustom GroupSize = "custom" // Custom Group (مجموعة خاصة)
+	GroupSizeFixed  GroupSize = "fixed"  // Fixed Group (مجموعة ثابتة)
+	GroupSizeMedium GroupSize = "medium" // Medium Group (مجموعة متوسطة)
 )
 
 type ProgramServiceType string
