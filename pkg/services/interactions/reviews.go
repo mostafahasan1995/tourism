@@ -74,6 +74,42 @@ var refLookup = []bson.M{
 					},
 				},
 			},
+			"generalRef": []bson.M{
+				{
+					"$match": bson.M{"type": "general"},
+				},
+				{
+					"$addFields": bson.M{
+						"refData": nil,
+					},
+				},
+			},
+			"exhibitionRef": []bson.M{
+				{
+					"$match": bson.M{"type": "exhibition"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismExhibitions",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
+			"packageRef": []bson.M{
+				{
+					"$match": bson.M{"type": "package"},
+				},
+				{
+					"$lookup": bson.M{
+						"from":         "tourismPackages",
+						"localField":   "ref",
+						"foreignField": "_id",
+						"as":           "refData",
+					},
+				},
+			},
 		},
 	},
 	{
@@ -84,6 +120,9 @@ var refLookup = []bson.M{
 					"$destinationRef",
 					"$programRef",
 					"$agentRef",
+					"$generalRef",
+					"$exhibitionRef",
+					"$packageRef",
 				},
 			},
 		},

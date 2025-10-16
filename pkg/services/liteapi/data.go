@@ -61,7 +61,7 @@ func NewDataSvcs(i *do.Injector) (DataSvcs, error) {
 	}, nil
 }
 
-const ExpireTime = 20 * time.Second
+const ExpireTime = 24 * time.Hour
 
 // future use
 func constructHotelFilters(params map[string]string) {

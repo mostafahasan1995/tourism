@@ -48,7 +48,50 @@ type ProgramDto struct {
 	Status      string                     `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
 	Package     primitive.ObjectID         `bson:"package" json:"package" `
 	ProgramType enums.ProgramType          `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
-	TravelType  enums.TravelType           `bson:"travelType" json:"travelType" validate:"required,oneof=relaxation-trip adventure-trip family-trip romantic-trip cultural-trip business-trip shopping-trip wellness-medical-tourism leisure-travel adventure-travel luxury-travel cultural-travel nature-wildlife-travel religious-travel romantic-travel family-travel eco-travel cruise-travel multi-country-travel city-break-travel wellness-travel event-based-travel vip-celebrity-travel"`
+	TravelType  enums.TravelType           `bson:"travelType" json:"travelType"
+	 validate:"required,oneof=
+	 relaxation-trip
+	  adventure-trip
+	   family-trip
+	    romantic-trip
+		 cultural-trip
+		  business-trip
+		   shopping-trip 
+		   wellness-medical-tourism
+		    leisure-travel
+			 adventure-travel 
+			 luxury-travel
+			  cultural-travel
+			   nature-wildlife-travel
+			    religious-travel
+				 romantic-travel
+				  family-travel 
+				  eco-travel
+				   cruise-travel
+				    multi-country-travel
+					 city-break-travel
+					  wellness-travel
+					   event-based-travel
+					    vip-celebrity-travel
+						 luxury-escape
+						 honeymoon
+						 family-luxury-holiday
+						 wellness-spa-retreat
+						 culinary-fine-dining-tour
+						 luxury-cruise-experience
+						 winter-ski-retreat
+						 custom-vip-tour
+						 exclusive-safari-nature
+						 beach-island-getaway
+						 cultural-heritage-journey
+						 religious-spiritual-journey
+						 iconic-landmarks-city-highlights
+						 private-guided-tour
+						 couples-private-tour
+						 festival-special-events
+						 photography-scenic-tour
+						 mice-business-travel  "`
+	ProgramType2 string `bson:"programType2" json:"programType2"`
 	//
 	Source      transl.Localizable[string] `bson:"source" json:"source"`
 	Company     transl.Localizable[string] `bson:"company" json:"company"`         // todo: maybe we need id here
@@ -56,7 +99,7 @@ type ProgramDto struct {
 	Purpose     string                     `bson:"purpose" json:"purpose"`
 	StartDate   time.Time                  `bson:"startDate" json:"startDate" validate:"required"`
 	EndDate     time.Time                  `bson:"endDate" json:"endDate" validate:"required"`
-	GroupSize   enums.GroupSize            `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large"` //see group size values above
+	GroupSize   enums.GroupSize            `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large fixed custom medium"` //see group size values above
 	CoverImage  types.FileField            `bson:"coverImage" json:"coverImage"`
 	//
 	GeneralType *GeneralProgram `bson:"generalType" json:"generalType" validate:"required_if=ProgramType general"`
