@@ -23,125 +23,159 @@ var refLookup = []bson.M{
 	{
 		"$facet": bson.M{
 			"hotelRef": []bson.M{
-				{
-					"$match": bson.M{"type": "hotel"},
-				},
-				{
-					"$lookup": bson.M{
-						"from":         "tourismHotels",
-						"localField":   "ref",
-						"foreignField": "_id",
-						"as":           "refData",
+				{"$match": bson.M{"type": "hotel"}},
+				{"$lookup": bson.M{
+					"from":         "tourismHotels",
+					"localField":   "ref",
+					"foreignField": "_id",
+					"as":           "refData",
+				}},
+				{"$unwind": bson.M{"path": "$refData", "preserveNullAndEmptyArrays": true}},
+				{"$addFields": bson.M{
+					"refData": bson.M{
+						"_id":        "$refData._id",
+						"title":      "$refData.title",
+						"coverImage": "$refData.coverImage",
 					},
-				},
+				}},
 			},
 			"destinationRef": []bson.M{
-				{
-					"$match": bson.M{"type": "destination"},
-				},
-				{
-					"$lookup": bson.M{
-						"from":         "tourismDestinations",
-						"localField":   "ref",
-						"foreignField": "_id",
-						"as":           "refData",
+				{"$match": bson.M{"type": "destination"}},
+				{"$lookup": bson.M{
+					"from":         "tourismDestinations",
+					"localField":   "ref",
+					"foreignField": "_id",
+					"as":           "refData",
+				}},
+				{"$unwind": bson.M{"path": "$refData", "preserveNullAndEmptyArrays": true}},
+				{"$addFields": bson.M{
+					"refData": bson.M{
+						"_id":        "$refData._id",
+						"title":      "$refData.title",
+						"coverImage": "$refData.coverImage",
 					},
-				},
+				}},
 			},
 			"programRef": []bson.M{
-				{
-					"$match": bson.M{"type": "program"},
-				},
-				{
-					"$lookup": bson.M{
-						"from":         "tourismPrograms",
-						"localField":   "ref",
-						"foreignField": "_id",
-						"as":           "refData",
+				{"$match": bson.M{"type": "program"}},
+				{"$lookup": bson.M{
+					"from":         "tourismPrograms",
+					"localField":   "ref",
+					"foreignField": "_id",
+					"as":           "refData",
+				}},
+				{"$unwind": bson.M{"path": "$refData", "preserveNullAndEmptyArrays": true}},
+				{"$addFields": bson.M{
+					"refData": bson.M{
+						"_id":         "$refData._id",
+						"title":       "$refData.title",
+						"coverImage":  "$refData.coverImage",
+						"programType": "$refData.programType",
+						"destinations": bson.M{
+							"$cond": bson.M{
+								"if":   bson.M{"$eq": []interface{}{"$refData.programType", "general"}},
+								"then": "$refData.generalType.destinations",
+								"else": "$refData.customType.destinations",
+							},
+						},
 					},
-				},
+				}},
 			},
 			"agentRef": []bson.M{
-				{
-					"$match": bson.M{"type": "agent"},
-				},
-				{
-					"$lookup": bson.M{
-						"from":         "tourismAgents",
-						"localField":   "ref",
-						"foreignField": "_id",
-						"as":           "refData",
+				{"$match": bson.M{"type": "agent"}},
+				{"$lookup": bson.M{
+					"from":         "tourismAgents",
+					"localField":   "ref",
+					"foreignField": "_id",
+					"as":           "refData",
+				}},
+				{"$unwind": bson.M{"path": "$refData", "preserveNullAndEmptyArrays": true}},
+				{"$addFields": bson.M{
+					"refData": bson.M{
+						"_id":   "$refData._id",
+						"title": "$refData.title",
 					},
-				},
+				}},
 			},
 			"generalRef": []bson.M{
-				{
-					"$match": bson.M{"type": "general"},
-				},
-				{
-					"$addFields": bson.M{
-						"refData": nil,
-					},
-				},
+				{"$match": bson.M{"type": "general"}},
+				{"$addFields": bson.M{"refData": nil}},
 			},
 			"exhibitionRef": []bson.M{
-				{
-					"$match": bson.M{"type": "exhibition"},
-				},
-				{
-					"$lookup": bson.M{
-						"from":         "tourismExhibitions",
-						"localField":   "ref",
-						"foreignField": "_id",
-						"as":           "refData",
+				{"$match": bson.M{"type": "exhibition"}},
+
+				// Make sure refObjectId is ObjectId (handles string or object)
+				{"$addFields": bson.M{
+					"refObjectId": bson.M{
+						"$cond": bson.A{
+							bson.M{"$eq": bson.A{bson.M{"$type": "$ref"}, "string"}},
+							bson.M{"$toObjectId": "$ref"},
+							"$ref",
+						},
 					},
-				},
+				}},
+
+				// Lookup using the object id
+				{"$lookup": bson.M{
+					"from":         "tourismExhibitions", // change to "exhibitions" if that is the real collection
+					"localField":   "refObjectId",
+					"foreignField": "_id",
+					"as":           "refData",
+				}},
+
+				// Convert array -> single object for decoding
+				{"$unwind": bson.M{"path": "$refData", "preserveNullAndEmptyArrays": true}},
+
+				// Build refData exactly as you want: id + title.
+				// Title will come from either refData.title OR refData.exhibitiondto.title
+				{"$addFields": bson.M{
+					"refData": bson.M{
+						"_id": "$refData._id",
+						"title": bson.M{
+							"$ifNull": bson.A{
+								"$refData.title",
+								"$refData.exhibitiondto.title",
+							},
+						},
+					},
+				}},
 			},
+
 			"packageRef": []bson.M{
-				{
-					"$match": bson.M{"type": "package"},
-				},
-				{
-					"$lookup": bson.M{
-						"from":         "tourismPackages",
-						"localField":   "ref",
-						"foreignField": "_id",
-						"as":           "refData",
+				{"$match": bson.M{"type": "package"}},
+				{"$lookup": bson.M{
+					"from":         "tourismPackages",
+					"localField":   "ref",
+					"foreignField": "_id",
+					"as":           "refData",
+				}},
+				{"$unwind": bson.M{"path": "$refData", "preserveNullAndEmptyArrays": true}},
+				{"$addFields": bson.M{
+					"refData": bson.M{
+						"_id":          "$refData._id",
+						"title":        "$refData.title",
+						"coverImage":   "$refData.coverImage",
+						"destinations": "$refData.destinations",
 					},
-				},
+				}},
 			},
 		},
 	},
-	{
-		"$project": bson.M{
-			"result": bson.M{
-				"$concatArrays": []interface{}{
-					"$hotelRef",
-					"$destinationRef",
-					"$programRef",
-					"$agentRef",
-					"$generalRef",
-					"$exhibitionRef",
-					"$packageRef",
-				},
+	{"$project": bson.M{
+		"result": bson.M{
+			"$concatArrays": []interface{}{
+				"$hotelRef",
+				"$destinationRef",
+				"$programRef",
+				"$agentRef",
+				"$generalRef",
+				"$exhibitionRef",
+				"$packageRef",
 			},
 		},
-	},
-	{
-		"$unwind": "$result",
-	},
-	{
-		"$replaceRoot": bson.M{
-			"newRoot": "$result",
-		},
-	},
-	{
-		"$addFields": bson.M{
-			"refData": bson.M{
-				"$arrayElemAt": []interface{}{"$refData", 0},
-			},
-		},
-	},
+	}},
+	{"$unwind": "$result"},
+	{"$replaceRoot": bson.M{"newRoot": "$result"}},
 }
 
 var userLookup = []bson.M{

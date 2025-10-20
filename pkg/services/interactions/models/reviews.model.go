@@ -60,8 +60,12 @@ type ReviewRes struct {
 }
 
 type RefData struct {
-	Name  *transl.Localizable[string] `bson:"name,omitempty" json:"name,omitempty"`
-	Title *transl.Localizable[string] `bson:"title,omitempty" json:"title,omitempty"`
+	Name         *transl.Localizable[string] `bson:"name,omitempty" json:"name,omitempty"`
+	Title        *transl.Localizable[string] `bson:"title,omitempty" json:"title,omitempty"`
+	CoverImage   *types.FileField            `bson:"coverImage,omitempty" json:"coverImage,omitempty"`
+	ProgramType  *string                     `bson:"programType,omitempty" json:"programType,omitempty"`
+	Destinations []interface{}               `bson:"destinations,omitempty" json:"destinations,omitempty"`
+	Id           *primitive.ObjectID         `bson:"_id,omitempty" json:"_id,omitempty"`
 }
 
 type UserData struct {
