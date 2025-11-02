@@ -97,8 +97,8 @@ type ProgramDto struct {
 	Company     transl.Localizable[string] `bson:"company" json:"company"`         // todo: maybe we need id here
 	Coordinator string                     `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
 	Purpose     string                     `bson:"purpose" json:"purpose"`
-	StartDate   time.Time                  `bson:"startDate" json:"startDate" validate:"required"`
-	EndDate     time.Time                  `bson:"endDate" json:"endDate" validate:"required"`
+	StartDate   time.Time                  `bson:"startDate" json:"startDate" `
+	EndDate     time.Time                  `bson:"endDate" json:"endDate" `
 	GroupSize   enums.GroupSize            `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large fixed custom medium"` //see group size values above
 	CoverImage  types.FileField            `bson:"coverImage" json:"coverImage"`
 	//
