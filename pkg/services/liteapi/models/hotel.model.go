@@ -16,6 +16,7 @@ type AccessibilityAttributes struct {
 
 type Hotel struct {
 	Id                      string                  `bson:"id" json:"id"`
+	PlaceId                 string                  `bson:"placeId" json:"placeId"`
 	PrimaryHotelId          any                     `bson:"primaryHotelId" json:"primaryHotelId"`
 	Name                    string                  `bson:"name" json:"name"`
 	HotelDescription        string                  `bson:"hotelDescription" json:"hotelDescription"`

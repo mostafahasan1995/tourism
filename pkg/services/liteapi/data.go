@@ -3,6 +3,7 @@ package liteapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/helpers"
@@ -31,6 +32,7 @@ type DataSvcs interface {
 	GetHotelReviews(ctx context.Context, query map[string]string) (*models.HotelReviewList, error)
 	//
 	GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error)
+	GetHotelsByPlaceId(ctx context.Context, query map[string]string) (*models.HotelList, error)
 }
 
 type datasvcs struct {
@@ -209,6 +211,62 @@ func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*mod
 		writeOps := []mongo.WriteModel{}
 		for _, hotel := range hotels {
 			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
+			writeOps = append(writeOps, updateOp)
+		}
+
+		if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
+			fmt.Printf("error bulk writing hotels: %v", err)
+		}
+
+	}(context.WithoutCancel(ctx), hotels)
+
+	return &result, nil
+
+}
+
+func (d *datasvcs) GetHotelsByPlaceId(ctx context.Context, query map[string]string) (*models.HotelList, error) {
+	if query["language"] == "" {
+		query["language"] = "en"
+	}
+
+	// if query["countryCode"] != "" {
+	// 	return nil, errors.New("countryCode is not supported")
+	// }
+
+	if query["placeId"] == "" {
+		return nil, errors.New("placeId is required")
+	}
+
+	liteApiSdk, err := d.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := liteApiSdk.GetHotels(query, 3, 1*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Status == "failed" {
+		return nil, helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	var result models.HotelList
+	if err := json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, err
+	}
+
+	var hotels []models.Hotel
+	for _, hotel := range result.Data {
+		hotel.Langauge = query["language"]
+		hotel.PlaceId = query["placeId"]
+		hotel.ExpiresAt = time.Now().Add(ExpireTime)
+		hotels = append(hotels, hotel)
+	}
+
+	go func(ctx context.Context, hotels []models.Hotel) {
+		writeOps := []mongo.WriteModel{}
+		for _, hotel := range hotels {
+			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
 			writeOps = append(writeOps, updateOp)
 		}
 
@@ -699,9 +757,9 @@ func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string)
 
 }
 
-func (d *datasvcs) GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error) {
+func (d *datasvcs) GetHotelsFromDB(ctx context.Context, placeId, language string, skip, limit int) (*models.HotelList, error) {
 	filter := bson.M{
-		"country":  country,
+		"placeId":  placeId,
 		"language": language,
 	}
 

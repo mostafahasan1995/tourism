@@ -4,8 +4,8 @@ import "go.mongodb.org/mongo-driver/bson/primitive"
 
 type DataFetch struct {
 	Id           primitive.ObjectID `json:"_id,omitempty" bson:"_id,omitempty"`
-	Country      string             `json:"country" bson:"country"`
 	Language     string             `json:"language" bson:"language"`
+	PlaceId      string             `json:"placeId" bson:"placeId"`
 	FullyFetched bool               `json:"fullyFetched" bson:"fullyFetched"`
 	TotalCount   int                `json:"totalCount" bson:"totalCount"`
 	FetchedCount int                `json:"fetchedCount" bson:"fetchedCount"`

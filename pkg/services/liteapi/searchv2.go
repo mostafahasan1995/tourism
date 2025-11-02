@@ -44,12 +44,12 @@ func NewSearchV2Svcs(i *do.Injector) (SearchV2Svcs, error) {
 	}, nil
 }
 
-func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, country, language string) error {
+func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, placeId, language string) error {
 	if err := s.dataFetchedRepo.EnsureIndexes(ctx); err != nil {
 		return errors.New("error create index")
 	}
 
-	dataFetched, err := s.getDataFetchedInfo(ctx, country, language)
+	dataFetched, err := s.getDataFetchedInfo(ctx, placeId, language)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 		return errors.New("error getting data fetched info")
 	}
@@ -59,7 +59,7 @@ func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, country, lan
 		return nil
 	}
 
-	lock, err := s.acquireLock(ctx, country, language)
+	lock, err := s.acquireLock(ctx, placeId, language)
 	if err != nil {
 		return err
 	}
@@ -75,8 +75,8 @@ func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, country, lan
 		}
 
 		hotelsQuery := map[string]string{
-			"countryCode": country,
-			"language":    language,
+			"placeId":  placeId,
+			"language": language,
 		}
 
 		defer func() {
@@ -103,8 +103,9 @@ func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, country, lan
 			hotelsQuery["offset"] = strconv.Itoa(offset)
 			hotelsQuery["limit"] = strconv.Itoa(limit)
 
-			result, err := s.dataSvcs.GetHotels(ctx, hotelsQuery)
+			result, err := s.dataSvcs.GetHotelsByPlaceId(ctx, hotelsQuery)
 			if err != nil {
+				fmt.Println("error fetching hotels from liteapi: %w", err)
 				return fmt.Errorf("error fetching hotels from liteapi: %w", err)
 			}
 
@@ -113,7 +114,7 @@ func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, country, lan
 			if dataFetched == nil {
 				dataFetched = &models.DataFetch{
 					Id:         primitive.NewObjectID(),
-					Country:    country,
+					PlaceId:    placeId,
 					Language:   language,
 					TotalCount: result.Total,
 				}
@@ -136,15 +137,15 @@ func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, country, lan
 
 }
 
-func (s *searchV2Svcs) getDataFetchedInfo(ctx context.Context, country, language string) (*models.DataFetch, error) {
+func (s *searchV2Svcs) getDataFetchedInfo(ctx context.Context, placeId, language string) (*models.DataFetch, error) {
 	filter := bson.M{
-		"country":  country,
+		"placeId":  placeId,
 		"language": language,
 	}
 	return s.dataFetchedRepo.GetByFilter(ctx, filter)
 }
 
-func (s *searchV2Svcs) pollFromDb(ctx context.Context, w http.ResponseWriter, query map[string]any, country, language string) error {
+func (s *searchV2Svcs) pollFromDb(ctx context.Context, w http.ResponseWriter, query map[string]any, placeId, language string) error {
 	numOfHotelFetched := 0
 	limit := 5000
 	var dataFetched *models.DataFetch
@@ -160,7 +161,7 @@ func (s *searchV2Svcs) pollFromDb(ctx context.Context, w http.ResponseWriter, qu
 		default:
 		}
 
-		dataFetched, err = s.getDataFetchedInfo(ctx2, country, language)
+		dataFetched, err = s.getDataFetchedInfo(ctx2, placeId, language)
 		if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
 			return errors.New("error getting total count")
 		}
@@ -169,15 +170,16 @@ func (s *searchV2Svcs) pollFromDb(ctx context.Context, w http.ResponseWriter, qu
 		}
 
 		skip := numOfHotelFetched
-		result, err := s.dataSvcs.GetHotelsFromDB(ctx2, country, language, skip, limit)
+		result, err := s.dataSvcs.GetHotelsFromDB(ctx2, placeId, language, skip, limit)
 		if err != nil {
 			return err
 		}
 
-		if err := s.streamData(ctx2, w, query, result.Data); err != nil {
-			return errors.New("error streaming data [fetch from db]")
-		}
 		numOfHotelFetched += len(result.Data)
+
+		if err := s.streamData(ctx2, w, query, result.Data); err != nil {
+			return fmt.Errorf("error streaming data [fetch from db]: %w", err)
+		}
 
 		if numOfHotelFetched >= dataFetched.TotalCount {
 			fmt.Println("fully fetched the hotels form db")
@@ -194,14 +196,19 @@ func (s *searchV2Svcs) Search(ctx context.Context, w http.ResponseWriter, query 
 	if !ok {
 		language = "en"
 	}
-	country, ok := query["countryCode"].(string)
+	// country, ok := query["countryCode"].(string)
+	// if !ok {
+	// 	return nil, errors.New("countryCode is required")
+	// }
+
+	placeId, ok := query["placeId"].(string)
 	if !ok {
-		return nil, errors.New("countryCode is required")
+		return nil, errors.New("placeId is required")
 	}
 
-	go s.fetchHotelsInBackground(context.WithoutCancel(ctx), country, language)
+	go s.fetchHotelsInBackground(context.WithoutCancel(ctx), placeId, language)
 
-	if err := s.pollFromDb(ctx, w, query, country, language); err != nil {
+	if err := s.pollFromDb(ctx, w, query, placeId, language); err != nil {
 		return nil, err
 	}
 
@@ -209,14 +216,14 @@ func (s *searchV2Svcs) Search(ctx context.Context, w http.ResponseWriter, query 
 
 }
 
-func (s *searchV2Svcs) acquireLock(ctx context.Context, country, language string) (*models.Lock, error) {
+func (s *searchV2Svcs) acquireLock(ctx context.Context, placeId, language string) (*models.Lock, error) {
 	if err := s.lockRepo.EnsureIndexes(ctx); err != nil {
 		fmt.Println("error create index")
 		return nil, err
 	}
 
 	filter := bson.M{
-		"country":  country,
+		"placeId":  placeId,
 		"language": language,
 		"isLocked": false,
 	}
@@ -243,7 +250,7 @@ func (s *searchV2Svcs) acquireLock(ctx context.Context, country, language string
 		return nil, err
 	}
 
-	fmt.Println("lock acquired successfully for", country, language)
+	fmt.Println("lock acquired successfully for", placeId, language)
 	return doc, nil
 }
 
@@ -277,8 +284,8 @@ func (s *searchV2Svcs) streamData(ctx context.Context, w http.ResponseWriter, da
 		"guestNationality": "US",
 		"checkin":          data["checkin"],
 		"checkout":         data["checkout"],
-		"countryCode":      "USD",
-		"stream":           true,
+		//"countryCode":      "USD",
+		"stream": true,
 	}
 
 	// ratesData := map[string]any{

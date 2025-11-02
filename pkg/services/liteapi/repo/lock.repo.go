@@ -40,8 +40,8 @@ func (l *lockrepo) EnsureIndexes(ctx context.Context) error {
 	coll := l.Db.Database(cfg.Db).Collection(l.CollName)
 
 	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "country", Value: 1}, {Key: "language", Value: 1}},
-		Options: options.Index().SetUnique(true).SetName("country_language_unique"),
+		Keys:    bson.D{{Key: "placeId", Value: 1}, {Key: "language", Value: 1}},
+		Options: options.Index().SetUnique(true).SetName("palceId_language_unique"),
 	}
 
 	_, err = coll.Indexes().CreateOne(ctx, indexModel)

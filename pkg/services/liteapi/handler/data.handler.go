@@ -13,14 +13,12 @@ import (
 
 type DataHandler struct {
 	datasvcs     liteapi.DataSvcs
-	searchsvcs   liteapi.SearchSvcs
 	searchv2svcs liteapi.SearchV2Svcs
 }
 
 func NewDataHandler(i *do.Injector, r *chi.Mux) {
 	h := &DataHandler{
 		datasvcs:     do.MustInvoke[liteapi.DataSvcs](i),
-		searchsvcs:   do.MustInvoke[liteapi.SearchSvcs](i),
 		searchv2svcs: do.MustInvoke[liteapi.SearchV2Svcs](i),
 	}
 

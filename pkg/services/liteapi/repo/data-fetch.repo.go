@@ -39,8 +39,8 @@ func (d *datafetchrepo) EnsureIndexes(ctx context.Context) error {
 	coll := d.Db.Database(cfg.Db).Collection(d.CollName)
 
 	indexModel := mongo.IndexModel{
-		Keys:    bson.D{{Key: "country", Value: 1}, {Key: "language", Value: 1}},
-		Options: options.Index().SetUnique(true).SetName("country_language_unique"),
+		Keys:    bson.D{{Key: "placeId", Value: 1}, {Key: "language", Value: 1}},
+		Options: options.Index().SetUnique(true).SetName("placeId_language_unique"),
 	}
 
 	_, err = coll.Indexes().CreateOne(ctx, indexModel)
