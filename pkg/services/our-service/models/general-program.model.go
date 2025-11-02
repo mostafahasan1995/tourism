@@ -11,7 +11,7 @@ import (
 type GeneralProgram struct {
 	Destinations   []GeneralProgramDestination `bson:"destinations" json:"destinations"`
 	Includes       Includes                    `bson:"includes" json:"includes"`
-	Activities     []primitive.ObjectID        `bson:"activities" json:"activities"`
+	Activities     any                         `bson:"activities" json:"activities"`
 	DailyItinerary []DailyItinerary            `bson:"dailyItinerary" json:"dailyItinerary"`
 	Notes          GPNotes                     `bson:"notes" json:"notes"`
 	Pricing        GPPricing                   `bson:"pricing" json:"pricing"`
