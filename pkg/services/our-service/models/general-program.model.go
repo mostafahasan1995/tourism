@@ -9,12 +9,13 @@ import (
 
 // general program - to show in the website so the customer can book it then we will create a custom program for them
 type GeneralProgram struct {
-	Destinations   []GeneralProgramDestination `bson:"destinations" json:"destinations"`
-	Includes       Includes                    `bson:"includes" json:"includes"`
-	Activities     []primitive.ObjectID        `bson:"activities" json:"activities"`
-	DailyItinerary []DailyItinerary            `bson:"dailyItinerary" json:"dailyItinerary"`
-	Notes          GPNotes                     `bson:"notes" json:"notes"`
-	Pricing        GPPricing                   `bson:"pricing" json:"pricing"`
+	Destinations    []GeneralProgramDestination `bson:"destinations" json:"destinations"`
+	Includes        Includes                    `bson:"includes" json:"includes"`
+	Activities      any                         `bson:"activities" json:"activities"`
+	DailyItinerary  []DailyItinerary            `bson:"dailyItinerary" json:"dailyItinerary"`
+	Notes           GPNotes                     `bson:"notes" json:"notes"`
+	Pricing         GPPricing                   `bson:"pricing" json:"pricing"`
+	GeneralDuration int                         `bson:"generalDuration" json:"generalDuration"`
 }
 
 type GPNotes struct {

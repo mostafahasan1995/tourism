@@ -313,6 +313,15 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 		}
 		// Check if this is a general program and has daily itinerary
 		if data.ProgramType == "general" && data.GeneralType != nil {
+			// Sum up all durations from destinations before saving/returning
+			totalDuration := 0
+			for _, dest := range data.GeneralType.Destinations {
+				totalDuration += dest.Duration
+			}
+			data.GeneralType.GeneralDuration = totalDuration
+		}
+
+		if data.ProgramType == "general" && data.GeneralType != nil {
 			// Loop through daily itinerary
 			for i, day := range data.GeneralType.DailyItinerary {
 				// Check if NewActions exists and has elements
