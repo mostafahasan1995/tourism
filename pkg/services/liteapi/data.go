@@ -29,6 +29,8 @@ type DataSvcs interface {
 	GetHotelTypes(ctx context.Context) (*models.HotelTypeList, error)
 	GetHotelFacilities(ctx context.Context) (*models.FacilityList, error)
 	GetHotelReviews(ctx context.Context, query map[string]string) (*models.HotelReviewList, error)
+	//
+	GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error)
 }
 
 type datasvcs struct {
@@ -695,4 +697,29 @@ func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string)
 
 	return &result, nil
 
+}
+
+func (d *datasvcs) GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error) {
+	filter := bson.M{
+		"country":  country,
+		"language": language,
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+
+	var result []models.Hotel
+	if err := d.hotelrepo.Aggregate(ctx, pipeline, func(cursor *mongo.Cursor) error {
+		return cursor.All(ctx, &result)
+	}); err != nil {
+		return nil, err
+	}
+
+	return &models.HotelList{
+		Data:  result,
+		Total: len(result),
+	}, nil
 }

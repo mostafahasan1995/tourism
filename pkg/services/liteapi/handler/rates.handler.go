@@ -24,11 +24,14 @@ func NewRatesHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/liteapi/hotels", func(r chi.Router) {
 		r.Post("/rates", helpers.Make(h.GetHotelsRates))
 		r.Post("/min-rates", helpers.Make(h.GetMinRates))
+		//
+		r.Post("/rates/stream", helpers.Make(h.GetHotelsRatesStream))
 	})
 
 	r.Route("/liteapi/rates", func(r chi.Router) {
 		r.With(middleware.Auth("authenticate")).Post("/prebook", helpers.Make(h.Prebook))
 		r.With(middleware.Auth("authenticate")).Post("/book", helpers.Make(h.Book))
+
 	})
 
 	r.Route("/liteapi/bookings", func(r chi.Router) {
@@ -134,6 +137,23 @@ func (h *RatesHandler) CancelBooking(w http.ResponseWriter, r *http.Request) err
 	bookingId := chi.URLParam(r, "bookingId")
 
 	result, err := h.ratessvcs.CancelBooking(ctx, bookingId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// stream
+func (h *RatesHandler) GetHotelsRatesStream(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data map[string]any
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	result, err := h.ratessvcs.GetFullRatesStream(ctx, data)
 	if err != nil {
 		return err
 	}

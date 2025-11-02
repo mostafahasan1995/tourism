@@ -7,16 +7,21 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/goccy/go-json"
 	"github.com/samber/do"
 )
 
 type DataHandler struct {
-	datasvcs liteapi.DataSvcs
+	datasvcs     liteapi.DataSvcs
+	searchsvcs   liteapi.SearchSvcs
+	searchv2svcs liteapi.SearchV2Svcs
 }
 
 func NewDataHandler(i *do.Injector, r *chi.Mux) {
 	h := &DataHandler{
-		datasvcs: do.MustInvoke[liteapi.DataSvcs](i),
+		datasvcs:     do.MustInvoke[liteapi.DataSvcs](i),
+		searchsvcs:   do.MustInvoke[liteapi.SearchSvcs](i),
+		searchv2svcs: do.MustInvoke[liteapi.SearchV2Svcs](i),
 	}
 
 	r.Route("/liteapi/data", func(r chi.Router) {
@@ -31,6 +36,10 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/hotelTypes", helpers.Make(h.GetHotelTypes))
 		r.Get("/facilities", helpers.Make(h.GetHotelFacilities))
 		r.Get("/reviews", helpers.Make(h.GetHotelReviews))
+		//
+		//r.Get("/lock/{country}/{language}", helpers.Make(h.AcquireLock))
+		// r.Post("/stream-rates", helpers.Make(h.StreamRates))
+		r.Post("/search", helpers.Make(h.SearchHotels))
 
 	})
 
@@ -163,5 +172,36 @@ func (h *DataHandler) GetHotelReviews(w http.ResponseWriter, r *http.Request) er
 	if err != nil {
 		return err
 	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+//
+
+// func (h *DataHandler) AcquireLock(w http.ResponseWriter, r *http.Request) error {
+// 	ctx, _ := util.AddCtxAppCfg(r)
+
+// 	country := chi.URLParam(r, "country")
+// 	language := chi.URLParam(r, "language")
+
+// 	locked, err := h.searchsvcs.AcquireLock(ctx, country, language)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, locked)
+// }
+
+func (h *DataHandler) SearchHotels(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data map[string]any
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	result, err := h.searchv2svcs.Search(ctx, w, data)
+	if err != nil {
+		return err
+	}
+
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }

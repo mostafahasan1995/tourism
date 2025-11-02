@@ -15,6 +15,8 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	// do.Provide(i, liteapi.NewReferenceDataSvcs)
 	do.Provide(i, liteapi.NewRatesSvcs)
 	do.Provide(i, liteapi.NewDataSvcs)
+	do.Provide(i, liteapi.NewSearchSvcs)
+	do.Provide(i, liteapi.NewSearchV2Svcs)
 
 	//repos
 	do.Provide(i, repo.NewHotelRepo)
@@ -29,6 +31,8 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewBookingRepo)
 	do.Provide(i, repo.NewFacilityRepo)
 	do.Provide(i, repo.NewHotelReviewRepo)
+	do.Provide(i, repo.NewLockRepo)
+	do.Provide(i, repo.NewDataFetchRepo)
 
 	//handlers
 	handler.NewDataHandler(i, r)
