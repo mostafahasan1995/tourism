@@ -11,3 +11,15 @@ type DataFetch struct {
 	FetchedCount int                `json:"fetchedCount" bson:"fetchedCount"`
 	Count        int                `json:"count" bson:"count"`
 }
+
+func (d *DataFetch) IsFullyFetched() bool {
+	return d.FetchedCount >= d.TotalCount
+}
+
+func (d *DataFetch) IsPartiallyFetched() bool {
+	return d.FetchedCount > 0 && d.FetchedCount < d.TotalCount
+}
+
+func (d *DataFetch) IsNotFetched() bool {
+	return d.FetchedCount == 0
+}

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
 	"net/http"
@@ -54,7 +55,7 @@ func (s *searchV2Svcs) fetchHotelsInBackground(ctx context.Context, placeId, lan
 		return errors.New("error getting data fetched info")
 	}
 
-	if dataFetched != nil && dataFetched.FetchedCount >= dataFetched.TotalCount {
+	if dataFetched != nil && dataFetched.IsFullyFetched() {
 		//we already have the full dataset
 		return nil
 	}
@@ -145,7 +146,7 @@ func (s *searchV2Svcs) getDataFetchedInfo(ctx context.Context, placeId, language
 	return s.dataFetchedRepo.GetByFilter(ctx, filter)
 }
 
-func (s *searchV2Svcs) pollFromDb(ctx context.Context, w http.ResponseWriter, query map[string]any, placeId, language string) error {
+func (s *searchV2Svcs) pollFromDbV2(ctx context.Context, placeId, language string, callback func(hotels []models.Hotel) error) error {
 	numOfHotelFetched := 0
 	limit := 5000
 	var dataFetched *models.DataFetch
@@ -175,11 +176,9 @@ func (s *searchV2Svcs) pollFromDb(ctx context.Context, w http.ResponseWriter, qu
 			return err
 		}
 
-		numOfHotelFetched += len(result.Data)
+		callback(result.Data)
 
-		if err := s.streamData(ctx2, w, query, result.Data); err != nil {
-			return fmt.Errorf("error streaming data [fetch from db]: %w", err)
-		}
+		numOfHotelFetched += len(result.Data)
 
 		if numOfHotelFetched >= dataFetched.TotalCount {
 			fmt.Println("fully fetched the hotels form db")
@@ -196,10 +195,6 @@ func (s *searchV2Svcs) Search(ctx context.Context, w http.ResponseWriter, query 
 	if !ok {
 		language = "en"
 	}
-	// country, ok := query["countryCode"].(string)
-	// if !ok {
-	// 	return nil, errors.New("countryCode is required")
-	// }
 
 	placeId, ok := query["placeId"].(string)
 	if !ok {
@@ -208,9 +203,11 @@ func (s *searchV2Svcs) Search(ctx context.Context, w http.ResponseWriter, query 
 
 	go s.fetchHotelsInBackground(context.WithoutCancel(ctx), placeId, language)
 
-	if err := s.pollFromDb(ctx, w, query, placeId, language); err != nil {
-		return nil, err
-	}
+	s.streamDataV2(context.WithoutCancel(ctx), w, placeId, language, query)
+
+	// if err := s.pollFromDb(ctx, w, query, placeId, language); err != nil {
+	// 	return nil, err
+	// }
 
 	return nil, nil
 
@@ -268,113 +265,114 @@ func (s *searchV2Svcs) releaseLock(ctx context.Context, lockId primitive.ObjectI
 	return nil
 }
 
-func (s *searchV2Svcs) streamData(ctx context.Context, w http.ResponseWriter, data map[string]any, hotels []models.Hotel) error {
-	// Create a map for quick hotel lookup by ID
-	hotelMap := make(map[string]models.Hotel, len(hotels))
-	ids := make([]string, 0, len(hotels))
-	for _, hotel := range hotels {
-		ids = append(ids, hotel.Id)
-		hotelMap[hotel.Id] = hotel
+func (s *searchV2Svcs) streamDataV2(ctx context.Context, w http.ResponseWriter, placeId, language string, data map[string]any) error {
+	dataFetched, err := s.getDataFetchedInfo(ctx, placeId, language)
+	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
+		return fmt.Errorf("error getting data fetched info: %w -%s-%s", err, placeId, language)
 	}
 
 	ratesData := map[string]any{
-		"hotelIds":         ids,
+		"placeId":          data["placeId"],
 		"occupancies":      data["occupancies"],
 		"currency":         "USD",
-		"guestNationality": "US",
+		"guestNationality": data["guestNationality"],
 		"checkin":          data["checkin"],
 		"checkout":         data["checkout"],
-		//"countryCode":      "USD",
-		"stream": true,
 	}
-
-	// ratesData := map[string]any{
-	// 	"hotelIds":         []string{"lp6556ccb8"},
-	// 	"occupancies":      []any{map[string]any{"adults": 1, "children": []any{}}},
-	// 	"currency":         "USD",
-	// 	"guestNationality": "US",
-	// 	"checkin":          "2025-11-23",
-	// 	"checkout":         "2025-11-24",
-	// 	"countryCode":      "USD",
-	// 	"stream":           true,
-	// }
 
 	liteApiSdk, err := s.liteApiInitFunc(ctx)
 	if err != nil {
 		return err
 	}
 
-	ch, err := liteApiSdk.GetFullRatesStream(ratesData)
+	resp, err := liteApiSdk.GetFullRates(ratesData)
 	if err != nil {
 		return err
 	}
 
-	// Set headers for Server-Sent Events (SSE)
-	// These headers tell the browser to keep the connection open and expect streaming data
+	if resp.Status == "failed" {
+		return helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	var result models.RatesList
+	if err := json.Unmarshal(resp.Data, &result); err != nil {
+		return err
+	}
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
 	// Get the flusher to flush data immediately
-	// The flusher is a type assertion that checks if 'w' supports immediate flushing
-	// Most HTTP servers (like Go's net/http) support this
 	flusher, ok := w.(http.Flusher)
 	if !ok {
 		return errors.New("streaming not supported")
 	}
 
-	for event := range ch {
-		if event.Error != nil {
-			// Send error and terminate stream
-			errorData, _ := json.Marshal(map[string]any{
-				"error": event.Error.Error(),
-			})
-			fmt.Fprintf(w, "data: %s\n\n", errorData)
-			flusher.Flush()
-			return event.Error
+	if dataFetched != nil && dataFetched.IsFullyFetched() {
+		hotelIds := make([]string, 0, len(result.Data))
+		for _, rate := range result.Data {
+			if hotelId, ok := rate["hotelId"].(string); ok {
+				hotelIds = append(hotelIds, hotelId)
+			}
+		}
+		hotels, err := s.dataSvcs.GetHotelsByIds(ctx, hotelIds)
+		if err != nil {
+			return fmt.Errorf("error getting hotels by ids")
+		}
+		m := make(map[string]models.Hotel, len(hotels))
+		for _, hotel := range hotels {
+			m[hotel.Id] = hotel
 		}
 
-		if event.Done {
-			// Send [DONE] signal to indicate completion
-			fmt.Fprintf(w, "data: [DONE]\n\n")
-			flusher.Flush()
-			break
-		}
-
-		var result map[string]any
-		if err := json.Unmarshal(event.Data, &result); err != nil {
-			// Send parse error and terminate
-			errorData, _ := json.Marshal(map[string]any{
-				"error": "failed to parse rate data",
-			})
-			fmt.Fprintf(w, "data: %s\n\n", errorData)
-			flusher.Flush()
-			return err
-		}
-
-		// Add related hotel information to the rate
-		if hotelId, ok := result["hotelId"].(string); ok {
-			if hotel, exists := hotelMap[hotelId]; exists {
-				result["hotel"] = hotel
+		for _, rate := range result.Data {
+			if hotelId, ok := rate["hotelId"].(string); ok {
+				if hotel, exists := m[hotelId]; exists {
+					rate["hotel"] = hotel
+					rateJSON, err := json.Marshal(rate)
+					if err != nil {
+						return err
+					}
+					fmt.Fprintf(w, "data: %s\n\n", rateJSON)
+					flusher.Flush()
+				}
 			}
 		}
 
-		// Stream each rate to the frontend
-		rateJSON, err := json.Marshal(result)
-		if err != nil {
-			return err
-		}
+	} else {
 
-		// Write SSE data event to the HTTP response buffer
-		// Format: "data: {json}\n\n" - compatible with JS client
-		// The client expects simple "data: " prefix without event types
-		fmt.Fprintf(w, "data: %s\n\n", rateJSON)
+		s.pollFromDbV2(ctx, placeId, language, func(hotels []models.Hotel) error {
 
-		// Flush immediately to send data in real-time
-		// This ensures the client receives each rate as it becomes available
-		flusher.Flush()
+			m := make(map[string]models.Hotel, len(hotels))
+			for _, hotel := range hotels {
+				m[hotel.Id] = hotel
+			}
+
+			for _, rate := range result.Data {
+				if hotelId, ok := rate["hotelId"].(string); ok {
+					if hotel, exists := m[hotelId]; exists {
+						rate["hotel"] = hotel
+						rateJSON, err := json.Marshal(rate)
+						if err != nil {
+							return err
+						}
+						fmt.Fprintf(w, "data: %s\n\n", rateJSON)
+						flusher.Flush()
+					}
+				}
+
+			}
+
+			return nil
+		})
+
 	}
+
+	// Send [DONE] signal to indicate completion
+	fmt.Fprintf(w, "data: [DONE]\n\n")
+	flusher.Flush()
+	// Set headers for Server-Sent Events (SSE)
 
 	return nil
 }

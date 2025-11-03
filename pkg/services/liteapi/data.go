@@ -12,8 +12,6 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"time"
 
-	"larsa-tourism-microservices/pkg/query"
-
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -33,6 +31,7 @@ type DataSvcs interface {
 	//
 	GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error)
 	GetHotelsByPlaceId(ctx context.Context, query map[string]string) (*models.HotelList, error)
+	GetHotelsByIds(ctx context.Context, hotelIds []string) ([]models.Hotel, error)
 }
 
 type datasvcs struct {
@@ -68,114 +67,6 @@ func NewDataSvcs(i *do.Injector) (DataSvcs, error) {
 const ExpireTime = 24 * time.Hour
 
 // future use
-func constructHotelFilters(params map[string]string) {
-
-	var columns []query.Column
-
-	if params["countryCode"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "country",
-			Value: params["countryCode"],
-			Logic: "and",
-		})
-	}
-	if params["cityName"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "city",
-			Value: params["cityName"],
-			Logic: "and",
-		})
-	}
-	if params["hotelName"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "name",
-			Value: params["hotelName"],
-			Exp:   "like",
-			Logic: "and",
-		})
-	}
-	if params["longitude"] != "" && params["latitude"] != "" && params["radius"] != "" {
-		//???????
-	}
-
-	if params["zip"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "zip",
-			Value: params["zip"],
-			Logic: "and",
-		})
-	}
-
-	if params["minRating"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "rating",
-			Value: params["minRating"],
-			Exp:   ">=",
-			Logic: "and",
-		})
-	}
-	if params["minReviewsCount"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "reviewCount",
-			Value: params["minReviewsCount"],
-			Exp:   ">=",
-			Logic: "and",
-		})
-	}
-	if params["facilityIds"] != "" {
-		if params["strictFacilitiesFiltering"] == "true" {
-			columns = append(columns, query.Column{
-				Name:  "facilityIds",
-				Value: params["facilityIds"],
-				Exp:   "in", // todo: check if it is correct
-				Logic: "and",
-			})
-
-		} else {
-			columns = append(columns, query.Column{
-				Name:  "facilityIds",
-				Value: params["facilityIds"],
-				Exp:   "in",
-				Logic: "and",
-			})
-		}
-	}
-
-	if params["hotelTypeIds"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "hotelTypeId",
-			Value: params["hotelTypeIds"],
-			Exp:   "in",
-			Logic: "and",
-		})
-	}
-	if params["chainIds"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "chainId",
-			Value: params["chainIds"],
-			Exp:   "in",
-			Logic: "and",
-		})
-	}
-
-	if params["starRating"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "stars",
-			Value: params["starRating"],
-			Exp:   "in",
-			Logic: "and",
-		})
-	}
-
-	if params["placeId"] != "" {
-
-	}
-
-	if params["advancedAccessibilityOnly"] != "" {
-
-	}
-
-}
 
 func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*models.HotelList, error) {
 	if query["language"] == "" {
@@ -255,26 +146,33 @@ func (d *datasvcs) GetHotelsByPlaceId(ctx context.Context, query map[string]stri
 		return nil, err
 	}
 
-	var hotels []models.Hotel
+	writeOps := []mongo.WriteModel{}
+
 	for _, hotel := range result.Data {
 		hotel.Langauge = query["language"]
 		hotel.PlaceId = query["placeId"]
 		hotel.ExpiresAt = time.Now().Add(ExpireTime)
-		hotels = append(hotels, hotel)
+		updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
+		writeOps = append(writeOps, updateOp)
+
 	}
 
-	go func(ctx context.Context, hotels []models.Hotel) {
-		writeOps := []mongo.WriteModel{}
-		for _, hotel := range hotels {
-			updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
-			writeOps = append(writeOps, updateOp)
-		}
+	if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
+		fmt.Printf("error bulk writing hotels: %v", err)
+	}
 
-		if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
-			fmt.Printf("error bulk writing hotels: %v", err)
-		}
+	// go func(ctx context.Context, hotels []models.Hotel) {
+	// 	writeOps := []mongo.WriteModel{}
+	// 	for _, hotel := range hotels {
+	// 		updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
+	// 		writeOps = append(writeOps, updateOp)
+	// 	}
 
-	}(context.WithoutCancel(ctx), hotels)
+	// 	if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
+	// 		fmt.Printf("error bulk writing hotels: %v", err)
+	// 	}
+
+	// }(context.WithoutCancel(ctx), hotels)
 
 	return &result, nil
 
@@ -780,4 +678,23 @@ func (d *datasvcs) GetHotelsFromDB(ctx context.Context, placeId, language string
 		Data:  result,
 		Total: len(result),
 	}, nil
+}
+
+func (d *datasvcs) GetHotelsByIds(ctx context.Context, hotelIds []string) ([]models.Hotel, error) {
+	filter := bson.M{
+		"id": bson.M{"$in": hotelIds},
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+	}
+
+	var result []models.Hotel
+	if err := d.hotelrepo.Aggregate(ctx, pipeline, func(cursor *mongo.Cursor) error {
+		return cursor.All(ctx, &result)
+	}); err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }
