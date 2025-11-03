@@ -299,10 +299,13 @@ func (s *searchV2Svcs) streamDataV2(ctx context.Context, w http.ResponseWriter, 
 		return err
 	}
 
+	// Set headers for Server-Sent Events (SSE) before writing any data
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Accept, Authorization, Content-Type, X-CSRF-Token, x-client, x-access-token, x-service, x-expire, x-service-token, x-user-id")
 
 	// Get the flusher to flush data immediately
 	flusher, ok := w.(http.Flusher)
@@ -372,7 +375,6 @@ func (s *searchV2Svcs) streamDataV2(ctx context.Context, w http.ResponseWriter, 
 	// Send [DONE] signal to indicate completion
 	fmt.Fprintf(w, "data: [DONE]\n\n")
 	flusher.Flush()
-	// Set headers for Server-Sent Events (SSE)
 
 	return nil
 }

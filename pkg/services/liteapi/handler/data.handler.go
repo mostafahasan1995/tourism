@@ -196,10 +196,11 @@ func (h *DataHandler) SearchHotels(w http.ResponseWriter, r *http.Request) error
 		return helpers.InvalidJSON()
 	}
 
-	result, err := h.searchv2svcs.Search(ctx, w, data)
+	_, err := h.searchv2svcs.Search(ctx, w, data)
 	if err != nil {
 		return err
 	}
 
-	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+	// SSE streaming handles the response, no need to write JSON
+	return nil
 }
