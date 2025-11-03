@@ -565,7 +565,8 @@ func (a *agentsvcs) GetDestinationAgents(ctx context.Context, query string) ([]m
 
 	ids := data.Ids
 
-	match := bson.M{"trash": false}
+	match := bson.M{"trash": false,
+		"status": enums.AgentStatusActive}
 
 	pipeline := []bson.M{
 		{"$match": match},
