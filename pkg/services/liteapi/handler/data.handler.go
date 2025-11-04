@@ -38,9 +38,19 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		//r.Get("/lock/{country}/{language}", helpers.Make(h.AcquireLock))
 		// r.Post("/stream-rates", helpers.Make(h.StreamRates))
 		r.Post("/search", helpers.Make(h.SearchHotels))
-
+		r.Get("/stats", helpers.Make(h.GetStats))
 	})
 
+}
+
+func (h *DataHandler) GetStats(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.searchv2svcs.GetStats(ctx)
+	if err != nil {
+		return err
+	}
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *DataHandler) GetHotels(w http.ResponseWriter, r *http.Request) error {

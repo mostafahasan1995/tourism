@@ -23,6 +23,7 @@ import (
 
 type SearchV2Svcs interface {
 	Search(ctx context.Context, w http.ResponseWriter, query map[string]any) (any, error)
+	GetStats(ctx context.Context) (any, error)
 }
 
 type searchV2Svcs struct {
@@ -377,4 +378,29 @@ func (s *searchV2Svcs) streamDataV2(ctx context.Context, w http.ResponseWriter, 
 	flusher.Flush()
 
 	return nil
+}
+
+func (s *searchV2Svcs) GetStats(ctx context.Context) (any, error) {
+	pipeline := []bson.M{
+		{"$match": bson.M{}},
+	}
+
+	var dataFetched []models.DataFetch
+	if err := s.dataFetchedRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &dataFetched)
+	}); err != nil {
+		return nil, err
+	}
+
+	var locks []models.Lock
+	if err := s.lockRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &locks)
+	}); err != nil {
+		return nil, err
+	}
+
+	return map[string]any{
+		"dataFetched": dataFetched,
+		"locks":       locks,
+	}, nil
 }
