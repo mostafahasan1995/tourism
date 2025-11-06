@@ -69,6 +69,8 @@ func NewDataSvcs(i *do.Injector) (DataSvcs, error) {
 
 const ExpireTime = 24 * time.Hour
 
+const hotelDataExpireTime = 48 * time.Hour
+
 // future use
 
 func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*models.HotelList, error) {
@@ -150,7 +152,7 @@ func (d *datasvcs) GetHotelsByPlaceId(ctx context.Context, query map[string]stri
 	for _, hotel := range result.Data {
 		hotel.Langauge = query["language"]
 		hotel.PlaceId = query["placeId"]
-		hotel.ExpiresAt = time.Now().Add(ExpireTime)
+		hotel.ExpiresAt = time.Now().Add(hotelDataExpireTime)
 		updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
 		writeOps = append(writeOps, updateOp)
 
