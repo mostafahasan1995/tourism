@@ -12,14 +12,16 @@ import (
 )
 
 type DataHandler struct {
-	datasvcs     liteapi.DataSvcs
-	searchv2svcs liteapi.SearchV2Svcs
+	datasvcs liteapi.DataSvcs
+	//searchv2svcs liteapi.SearchV2Svcs
+	searchv3svcs liteapi.Searchv3Svcs
 }
 
 func NewDataHandler(i *do.Injector, r *chi.Mux) {
 	h := &DataHandler{
-		datasvcs:     do.MustInvoke[liteapi.DataSvcs](i),
-		searchv2svcs: do.MustInvoke[liteapi.SearchV2Svcs](i),
+		datasvcs: do.MustInvoke[liteapi.DataSvcs](i),
+		//searchv2svcs: do.MustInvoke[liteapi.SearchV2Svcs](i),
+		searchv3svcs: do.MustInvoke[liteapi.Searchv3Svcs](i),
 	}
 
 	r.Route("/liteapi/data", func(r chi.Router) {
@@ -38,19 +40,11 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		//r.Get("/lock/{country}/{language}", helpers.Make(h.AcquireLock))
 		// r.Post("/stream-rates", helpers.Make(h.StreamRates))
 		r.Post("/search", helpers.Make(h.SearchHotels))
-		r.Get("/stats", helpers.Make(h.GetStats))
+
+		//
+
 	})
 
-}
-
-func (h *DataHandler) GetStats(w http.ResponseWriter, r *http.Request) error {
-	ctx, _ := util.AddCtxAppCfg(r)
-
-	result, err := h.searchv2svcs.GetStats(ctx)
-	if err != nil {
-		return err
-	}
-	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
 
 func (h *DataHandler) GetHotels(w http.ResponseWriter, r *http.Request) error {
@@ -206,7 +200,7 @@ func (h *DataHandler) SearchHotels(w http.ResponseWriter, r *http.Request) error
 		return helpers.InvalidJSON()
 	}
 
-	_, err := h.searchv2svcs.Search(ctx, w, data)
+	_, err := h.searchv3svcs.Search(ctx, w, data)
 	if err != nil {
 		return err
 	}

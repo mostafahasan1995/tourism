@@ -32,6 +32,9 @@ type DataSvcs interface {
 	GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error)
 	GetHotelsByPlaceId(ctx context.Context, query map[string]string) (*models.HotelList, error)
 	GetHotelsByIds(ctx context.Context, hotelIds []string) ([]models.Hotel, error)
+	//
+	GetHotelsByPlaceIdFromDB(ctx context.Context, placeId, language string, skip, limit int) (*models.HotelList, error)
+	GetFetchedHotelsCount(ctx context.Context, placeId, language string) (int64, error)
 }
 
 type datasvcs struct {
@@ -120,10 +123,6 @@ func (d *datasvcs) GetHotelsByPlaceId(ctx context.Context, query map[string]stri
 		query["language"] = "en"
 	}
 
-	// if query["countryCode"] != "" {
-	// 	return nil, errors.New("countryCode is not supported")
-	// }
-
 	if query["placeId"] == "" {
 		return nil, errors.New("placeId is required")
 	}
@@ -157,22 +156,11 @@ func (d *datasvcs) GetHotelsByPlaceId(ctx context.Context, query map[string]stri
 
 	}
 
-	if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
-		fmt.Printf("error bulk writing hotels: %v", err)
+	if len(writeOps) > 0 {
+		if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
+			fmt.Printf("error bulk writing hotels: %v", err)
+		}
 	}
-
-	// go func(ctx context.Context, hotels []models.Hotel) {
-	// 	writeOps := []mongo.WriteModel{}
-	// 	for _, hotel := range hotels {
-	// 		updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
-	// 		writeOps = append(writeOps, updateOp)
-	// 	}
-
-	// 	if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
-	// 		fmt.Printf("error bulk writing hotels: %v", err)
-	// 	}
-
-	// }(context.WithoutCancel(ctx), hotels)
 
 	return &result, nil
 
@@ -697,4 +685,38 @@ func (d *datasvcs) GetHotelsByIds(ctx context.Context, hotelIds []string) ([]mod
 	}
 
 	return result, nil
+}
+
+func (d *datasvcs) GetHotelsByPlaceIdFromDB(ctx context.Context, placeId, language string, skip, limit int) (*models.HotelList, error) {
+	filter := bson.M{
+		"placeId":  placeId,
+		"language": language,
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+
+	var result []models.Hotel
+	if err := d.hotelrepo.Aggregate(ctx, pipeline, func(cursor *mongo.Cursor) error {
+		return cursor.All(ctx, &result)
+	}); err != nil {
+		return nil, err
+	}
+
+	return &models.HotelList{
+		Data:  result,
+		Total: len(result),
+	}, nil
+}
+
+func (d *datasvcs) GetFetchedHotelsCount(ctx context.Context, placeId, language string) (int64, error) {
+	filter := bson.M{
+		"placeId":  placeId,
+		"language": language,
+	}
+
+	return d.hotelrepo.Count(ctx, filter)
 }

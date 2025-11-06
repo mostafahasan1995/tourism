@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"larsa-tourism-microservices/pkg/util"
-	"log"
-	"os"
 	"time"
 
 	"github.com/samber/do"
@@ -40,7 +38,7 @@ func InitDB() (*mongo.Client, error) {
 	defer cancel()
 
 	//SetComponentLevel(options.LogComponentCommand, options.LogLevelDebug)
-	logger := log.New(os.Stdout, "mongo: ", log.LstdFlags)
+	//logger := log.New(os.Stdout, "mongo: ", log.LstdFlags)
 
 	bsonOpts := &options.BSONOptions{
 		DefaultDocumentM: true,
@@ -51,13 +49,13 @@ func InitDB() (*mongo.Client, error) {
 			//logger.Println(evt.Command)
 		},
 		Succeeded: func(ctx context.Context, evt *event.CommandSucceededEvent) {
-			logger.Println("Succeeded")
+			//logger.Println("Succeeded")
 			// logger.Println("Database Name -> ", evt.DatabaseName)
 			// logger.Println("Command Name -> ", evt.CommandName)
 			// logger.Println("Duration -> ", evt.Duration)
 		},
 		Failed: func(ctx context.Context, evt *event.CommandFailedEvent) {
-			logger.Println("Failed")
+			//logger.Println("Failed")
 			// logger.Println("Database Name -> ", evt.DatabaseName)
 			// logger.Println("Command Name -> ", evt.CommandName)
 			// logger.Println("Duration -> ", evt.Duration)

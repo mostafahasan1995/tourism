@@ -15,7 +15,8 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	// do.Provide(i, liteapi.NewReferenceDataSvcs)
 	do.Provide(i, liteapi.NewRatesSvcs)
 	do.Provide(i, liteapi.NewDataSvcs)
-	do.Provide(i, liteapi.NewSearchV2Svcs)
+	//do.Provide(i, liteapi.NewSearchV2Svcs)
+	do.Provide(i, liteapi.NewSearchv3Svcs)
 
 	//repos
 	do.Provide(i, repo.NewHotelRepo)

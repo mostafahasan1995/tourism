@@ -436,3 +436,27 @@ func GenerateReviewID(score float64, name string, date time.Time) string {
 	// This will give us alphanumeric IDs
 	return fmt.Sprintf("r%s", strings.ToUpper(strconv.FormatUint(uint64(hash), 36)))
 }
+
+func SliceChunk[T any](arr []T, size int) [][]T {
+	if size == 0 {
+		return [][]T{arr}
+	}
+	c := 0
+	result := [][]T{}
+	for {
+		var a []T
+		if c+size > len(arr) {
+			a = arr[c:]
+		} else {
+			a = arr[c : c+size]
+		}
+		c += len(a)
+		result = append(result, a)
+		if c == len(arr) {
+			break
+		}
+	}
+
+	return result
+
+}
