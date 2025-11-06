@@ -181,11 +181,11 @@ func (s *searchv3Svcs) stream(ctx context.Context, w http.ResponseWriter, hotels
 	ratesData := map[string]any{
 		"hotelIds":         hotelIds,
 		"occupancies":      data["occupancies"],
-		"currency":         "USD",
+		"currency":         data["currency"],
 		"guestNationality": data["guestNationality"],
 		"checkin":          data["checkin"],
 		"checkout":         data["checkout"],
-		"maxRatesPerHotel": 1,
+		"maxRatesPerHotel": data["maxRatesPerHotel"],
 	}
 
 	liteApiSdk, err := s.liteApiInitFunc(ctx)
