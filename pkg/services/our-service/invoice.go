@@ -116,6 +116,7 @@ func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models
 			Id:         primitive.NewObjectID(),
 			InvoiceDto: *data,
 			Payments:   []models.Payment{},
+			Status:     enums.InvoiceStatusPending,
 		}
 
 		if err := invoice.SetTotals(); err != nil {

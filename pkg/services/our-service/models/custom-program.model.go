@@ -17,6 +17,7 @@ type CustomProgram struct {
 	FlightTicketRequest ProgramFlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty"`
 	PartnerRequest      PartnerRequest             `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty"`
 	Destinations        []ProgramDestination       `bson:"destinations,omitempty" json:"destinations,omitempty"`
+	TotalCost           float64                    `bson:"totalCost" json:"totalCost"`
 }
 
 type ProgramVipCar struct {
