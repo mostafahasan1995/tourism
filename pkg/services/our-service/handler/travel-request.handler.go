@@ -43,7 +43,7 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Get("/my-requests/{status}", helpers.Make(h.MyRequests))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/approve", helpers.Make(h.Approve))
-		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.Approve))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/reject", helpers.Make(h.Reject))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/complete", helpers.Make(h.SetAsCompleted))
 	})
 
