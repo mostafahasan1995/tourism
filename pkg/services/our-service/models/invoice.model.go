@@ -61,6 +61,7 @@ type Invoice struct {
 	PaidAmount   float64            `bson:"paidAmount" json:"paidAmount"`
 	UnpaidAmount float64            `bson:"unpaidAmount" json:"unpaidAmount"`
 	Payments     []Payment          `bson:"payments" json:"payments"`
+	Status       enums.InvoiceStatus `bson:"status" json:"status", validate:"required,oneof=waitingforpayment paid unpaid"`
 	Trash        bool               `bson:"trash" json:"trash"`
 	CreatedAt    time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy    primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
