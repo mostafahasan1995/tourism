@@ -282,7 +282,7 @@ func (u *HotelsUpdater) Run() error {
 
 	j, err := scheduler.NewJob(
 		gocron.DurationJob(
-			5*time.Minute,
+			48*time.Hour,
 		),
 		gocron.NewTask(
 			u.updateHotels,
