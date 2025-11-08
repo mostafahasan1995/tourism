@@ -23,6 +23,9 @@ type InvoiceDto struct {
 	Adjustments []InvoiceAdjustment        `bson:"adjustments" json:"adjustments"`
 	Note        string                     `bson:"note" json:"note"`
 }
+type InvoiceStatusUpdateDto struct {
+	Status enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=waitingforpayment paid unpaid"`
+}
 
 type InvoiceAdjustment struct {
 	Type    string  `bson:"type" json:"type"` //addition - substruction
@@ -48,6 +51,9 @@ type InvoiceService struct {
 }
 
 func (i *InvoiceDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, i)
+}
+func (i *InvoiceStatusUpdateDto) Validate(v *validator.Validate) error {
 	return helpers.GenericValidation(v, i)
 }
 

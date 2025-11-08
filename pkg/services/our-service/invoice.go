@@ -31,6 +31,7 @@ type InvoiceSvcs interface {
 	Get(ctx context.Context, skip, limit int64, query string) (*models.InvoicePagination, error)
 	Add(ctx context.Context, data *models.InvoiceDto) (*models.Invoice, error)
 	Update(ctx context.Context, id string, data *models.InvoiceDto) (*models.Invoice, error)
+	UpdateStatus(ctx context.Context, id string, status enums.InvoiceStatus) (*models.Invoice, error)
 	AddPayment(ctx context.Context, invoiceId string, data *models.PaymentDto) (*models.Invoice, error)
 	UpdatePayment(ctx context.Context, invoiceId, paymentId string, data *models.PaymentDto) (*models.Invoice, error)
 	DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error)
@@ -116,9 +117,9 @@ func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models
 			Id:         primitive.NewObjectID(),
 			InvoiceDto: *data,
 			Payments:   []models.Payment{},
-			Status:     enums.InvoiceStatusPending,
+		
 		}
-
+		invoice.Status = enums.InvoiceStatusPending
 		if err := invoice.SetTotals(); err != nil {
 			return nil, err
 		}
@@ -181,6 +182,52 @@ func (i *invoiceSvcs) Update(ctx context.Context, id string, data *models.Invoic
 
 	return result.(*models.Invoice), nil
 
+}
+
+func (i *invoiceSvcs) UpdateStatus(ctx context.Context, id string, status enums.InvoiceStatus) (*models.Invoice, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
+		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+		if err != nil {
+			return nil, errors.New("invoice not found")
+		}
+
+		now := time.Now()
+
+		filter := bson.M{"_id": _id}
+		update := bson.M{
+			"$set": bson.M{
+				"status":    status,
+				"updatedAt": now,
+				"updatedBy": cfg.User.Id,
+			},
+		}
+
+		if _, err := i.repo.Patch(ctx, filter, update); err != nil {
+			return nil, err
+		}
+
+		invoice.Status = status
+		invoice.UpdatedAt = now
+		invoice.UpdatedBy = cfg.User.Id
+
+		return invoice, nil
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return result.(*models.Invoice), nil
 }
 
 // when add payment by admin
