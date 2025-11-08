@@ -1,6 +1,10 @@
 package models
 
-import "time"
+import (
+	"time"
+
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
 
 type AccessibilityAttributes struct {
 	Attributes                                 any     `bson:"attributes" json:"attributes"`
@@ -47,4 +51,13 @@ type HotelList struct {
 	Data     []Hotel `json:"data"`
 	HotelIds any     `json:"hotelIds"` // []string but can be ""  when no hotels found
 	Total    int     `json:"total"`
+}
+
+//updater lock
+
+type Locker struct {
+	Id        primitive.ObjectID `json:"id,omitempty" bson:"_id,omitempty"`
+	Key       string             `json:"key" bson:"key"`
+	IsLocked  bool               `json:"isLocked" bson:"isLocked"`
+	ExpiresAt time.Time          `json:"expiresAt,omitempty" bson:"expiresAt,omitempty"`
 }

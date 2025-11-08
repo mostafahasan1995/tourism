@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
-	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
@@ -15,6 +14,10 @@ import (
 	"strconv"
 
 	"github.com/samber/do"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Searchv3Svcs interface {
@@ -22,24 +25,20 @@ type Searchv3Svcs interface {
 }
 
 type searchv3Svcs struct {
-	lockRepo        repo.LockRepo
+	//lockRepo        repo.LockRepo
 	dataFetchedRepo repo.DataFetchRepo
 	dataSvcs        DataSvcs
 	liteApiInitFunc liteApiSdk.LiteApiInitFunc
-	withtxn         *db.WithTxn
-	workerPool      chan struct{}
-	testCh          chan int
+	placeRepo       repo.PlaceRepo
 }
 
 func NewSearchv3Svcs(i *do.Injector) (Searchv3Svcs, error) {
 	return &searchv3Svcs{
-		lockRepo:        do.MustInvoke[repo.LockRepo](i),
+		//lockRepo:        do.MustInvoke[repo.LockRepo](i),
 		dataFetchedRepo: do.MustInvoke[repo.DataFetchRepo](i),
 		dataSvcs:        do.MustInvoke[DataSvcs](i),
 		liteApiInitFunc: do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
-		withtxn:         do.MustInvoke[*db.WithTxn](i),
-		workerPool:      make(chan struct{}, 2),
-		testCh:          make(chan int, 100),
+		placeRepo:       do.MustInvoke[repo.PlaceRepo](i),
 	}, nil
 }
 
@@ -128,6 +127,16 @@ func (s *searchv3Svcs) Search(ctx context.Context, w http.ResponseWriter, query 
 	placeId, ok := query["placeId"].(string)
 	if !ok {
 		return nil, errors.New("placeId is required")
+	}
+	_, err := s.placeRepo.GetByFilter(ctx, bson.M{"placeId": placeId, "language": language})
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			if err := s.savePlace(ctx, placeId, language); err != nil {
+				return nil, fmt.Errorf("error saving place: %w", err)
+			}
+		} else {
+			return nil, fmt.Errorf("error getting place: %w", err)
+		}
 	}
 
 	// Set SSE headers once at the start
@@ -255,4 +264,53 @@ func (s *searchv3Svcs) stream(ctx context.Context, w http.ResponseWriter, hotels
 	}
 
 	return nil
+}
+
+func (s *searchv3Svcs) savePlace(ctx context.Context, placeId, language string) error {
+	liteApiSdk, err := s.liteApiInitFunc(ctx)
+	if err != nil {
+		return err
+	}
+
+	resp, err := liteApiSdk.GetPlace(placeId)
+	if err != nil {
+		return err
+	}
+
+	if resp.Status == "failed" {
+		return helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	var result models.PlaceResponse
+	if err := json.Unmarshal(resp.Data, &result); err != nil {
+		return err
+	}
+
+	place := &models.Place{
+		Id:       primitive.NewObjectID(),
+		PlaceId:  placeId,
+		Language: language,
+		Data:     result.Data,
+	}
+
+	filter := bson.M{"placeId": placeId, "language": language}
+	update := bson.M{"$set": place}
+
+	upsert := true
+	after := options.After
+
+	opts := []*options.FindOneAndUpdateOptions{
+		{
+			Upsert:         &upsert,
+			ReturnDocument: &after,
+		},
+	}
+
+	_, err = s.placeRepo.Patch(ctx, filter, update, opts...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+
 }

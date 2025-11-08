@@ -449,6 +449,11 @@ func (sdk *LiteApiSdk) GetPlaces(textQuery, placeType, language string) (*APIRes
 	return sdk.makeRequest("GET", url, nil)
 }
 
+func (sdk *LiteApiSdk) GetPlace(placeId string) (*APIResponse, error) {
+	url := fmt.Sprintf("%s/data/places/%s", sdk.ServiceURL, placeId)
+	return sdk.makeRequest("GET", url, nil)
+}
+
 // GetCurrencies returns all available currency codes along with its name and supported countries
 // The API returns all available currency codes along with its name and the list of supported countries that the currency applies to.
 func (sdk *LiteApiSdk) GetCurrencies() (*APIResponse, error) {

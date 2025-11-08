@@ -3,11 +3,16 @@ package api
 import (
 
 	// "context"
+	"context"
 	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/caching"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/nats"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	home "larsa-tourism-microservices/pkg/services/home/di"
 	messaging "larsa-tourism-microservices/pkg/services/messaging/di"
@@ -18,6 +23,7 @@ import (
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
 	exhibitionmanagement "larsa-tourism-microservices/pkg/services/exhibition-management/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
+	liteapiPkg "larsa-tourism-microservices/pkg/services/liteapi"
 	liteapi "larsa-tourism-microservices/pkg/services/liteapi/di"
 	marketing "larsa-tourism-microservices/pkg/services/marketing/di"
 	member "larsa-tourism-microservices/pkg/services/member/di"
@@ -46,7 +52,6 @@ import (
 
 func Start() error {
 	port := util.GetEnv("PORT", "3277")
-	//host := util.GetEnv("HOST", "")
 
 	fmt.Println("start server on port:", port)
 
@@ -123,11 +128,51 @@ func Start() error {
 	transtest.Init(injector, r)
 	liteapi.Init(injector, r)
 
+	updater := liteapiPkg.NewHotelsUpdater(
+		injector,
+		[]string{
+			"d0lfvck5drjs739an280",
+		},
+	)
+
+	server := &http.Server{
+		Addr:    ":" + port,
+		Handler: r,
+	}
+
 	fmt.Println("start server")
 
-	if err := http.ListenAndServe(":"+port, r); err != nil {
-		log.Fatal(err)
+	// Channel to listen for OS signals
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		if err := updater.Run(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	// Wait for signal
+	<-stop
+	log.Println("Shutting down server...")
+
+	updater.Stop()
+
+	// Create context with timeout for shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Fatalf("Server Shutdown Failed:%+v", err)
 	}
+
+	log.Println("Server exited gracefully")
 
 	return nil
 }

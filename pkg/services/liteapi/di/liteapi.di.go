@@ -31,8 +31,10 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewBookingRepo)
 	do.Provide(i, repo.NewFacilityRepo)
 	do.Provide(i, repo.NewHotelReviewRepo)
-	do.Provide(i, repo.NewLockRepo)
+	//do.Provide(i, repo.NewLockRepo)
 	do.Provide(i, repo.NewDataFetchRepo)
+	do.Provide(i, repo.NewLockerRepo)
+	do.Provide(i, repo.NewPlaceRepo)
 
 	//handlers
 	handler.NewDataHandler(i, r)

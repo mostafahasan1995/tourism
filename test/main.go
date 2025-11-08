@@ -1,50 +1,31 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
-func test(datafetched int) {
-
-	df := datafetched
-
-	df = 10
-	fmt.Println(datafetched, df)
-
-}
-
-func SliceChunk[T any](arr []T, size int) [][]T {
-	if size == 0 {
-		return [][]T{arr}
+func worker(c chan string, i int) {
+	for msg := range c {
+		fmt.Println("worker", i, "received message", msg)
+		time.Sleep(10 * time.Second)
 	}
-	c := 0
-	result := [][]T{}
-	for {
-		var a []T
-		if c+size > len(arr) {
-			a = arr[c:]
-		} else {
-			a = arr[c : c+size]
-		}
-		c += len(a)
-		result = append(result, a)
-		if c == len(arr) {
-			break
-		}
-	}
-
-	return result
 
 }
 
 func main() {
-	arr := [][]int{
-		{1, 2, 3, 4, 5},
-		{1, 2, 3, 4, 5},
-		{1, 2, 3, 4, 5},
-		{1, 2, 3, 4, 5},
-		{1, 2, 3, 4, 5},
+
+	c := make(chan string)
+
+	for i := 0; i < 3; i++ {
+		go worker(c, i)
 	}
 
-	result := SliceChunk(arr, 3)
+	for i := 0; i < 100; i++ {
+		c <- fmt.Sprintf("message %d", i)
+	}
 
-	fmt.Println(result)
+	time.Sleep(10 * time.Second)
+	//close(c)
+
 }
