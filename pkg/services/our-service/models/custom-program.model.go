@@ -98,7 +98,14 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 			Qty:   1,
 		})
 	}
+	if pd.Services.TravelInsurance.Active {
+		services = append(services, InvoiceService{
+			Item:  "Travel Insurance",
+			Price: pd.Services.TravelInsurance.Cost,
+			Qty:   1,
+		})
 
+	}
 	if pd.Services.WelcomeKit.Active {
 		services = append(services, InvoiceService{
 			Item:  "Welcome Kit",
