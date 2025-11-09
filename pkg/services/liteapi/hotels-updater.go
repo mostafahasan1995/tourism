@@ -19,53 +19,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var fakePlaces = []models.Place{
-	{
-		PlaceId:  "1",
-		Language: "en",
-	},
-	{
-		PlaceId:  "2",
-		Language: "ar",
-	},
-	{
-		PlaceId:  "3",
-		Language: "fr",
-	},
-	{
-		PlaceId:  "4",
-		Language: "de",
-	},
-	{
-		PlaceId:  "5",
-		Language: "es",
-	},
-	{
-		PlaceId:  "6",
-		Language: "it",
-	},
-	{
-		PlaceId:  "7",
-		Language: "pt",
-	},
-	{
-		PlaceId:  "8",
-		Language: "ru",
-	},
-	{
-		PlaceId:  "9",
-		Language: "tr",
-	},
-	{
-		PlaceId:  "10",
-		Language: "ar",
-	},
-	{
-		PlaceId:  "11",
-		Language: "en",
-	},
-}
-
 var lockerRepoInstance repo.LockerRepo
 
 type chData struct {
@@ -172,7 +125,7 @@ func NewHotelsUpdater(i *do.Injector, dbs []string) *HotelsUpdater {
 		lockerRepo:  do.MustInvoke[repo.LockerRepo](i),
 		placeRepo:   do.MustInvoke[repo.PlaceRepo](i),
 		dataSvcs:    do.MustInvoke[DataSvcs](i),
-		numOfWorker: 3,
+		numOfWorker: 20,
 		dbs:         dbs,
 		ctx:         ctx,
 		cancel:      cancel,
