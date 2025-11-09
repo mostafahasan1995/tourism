@@ -17,6 +17,7 @@ type CustomProgram struct {
 	FlightTicketRequest ProgramFlightTicketRequest `bson:"flightTicketRequest,omitempty" json:"flightTicketRequest,omitempty"`
 	PartnerRequest      PartnerRequest             `bson:"partnerRequest,omitempty" json:"partnerRequest,omitempty"`
 	Destinations        []ProgramDestination       `bson:"destinations,omitempty" json:"destinations,omitempty"`
+	TotalCost           float64                    `bson:"totalCost" json:"totalCost"`
 }
 
 type ProgramVipCar struct {
@@ -97,7 +98,14 @@ func (pd *ProgramDestination) GetProgramDestServicePricing() ([]InvoiceService, 
 			Qty:   1,
 		})
 	}
+	if pd.Services.TravelInsurance.Active {
+		services = append(services, InvoiceService{
+			Item:  "Travel Insurance",
+			Price: pd.Services.TravelInsurance.Cost,
+			Qty:   1,
+		})
 
+	}
 	if pd.Services.WelcomeKit.Active {
 		services = append(services, InvoiceService{
 			Item:  "Welcome Kit",

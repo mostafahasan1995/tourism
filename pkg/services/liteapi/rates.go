@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
@@ -26,6 +27,8 @@ type RatesSvcs interface {
 	MyPrebooks(ctx context.Context) ([]models.UserPrebook, error)
 	MyBookings(ctx context.Context) ([]models.UserBooking, error)
 	CancelBooking(ctx context.Context, bookingId string) (any, error)
+	//
+	GetFullRatesStream(ctx context.Context, data any) (any, error)
 }
 
 type ratessvcs struct {
@@ -263,4 +266,41 @@ func (r *ratessvcs) CancelBooking(ctx context.Context, bookingId string) (any, e
 	}, 3)
 
 	return result, nil
+}
+
+func (r *ratessvcs) GetFullRatesStream(ctx context.Context, data any) (any, error) {
+	liteApiSdk, err := r.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	ch, err := liteApiSdk.GetFullRatesStream(data)
+	if err != nil {
+		return nil, err
+	}
+
+	var allRates []map[string]any
+
+	for event := range ch {
+		if event.Error != nil {
+			return nil, event.Error
+		}
+		if event.Done {
+			break
+		}
+		fmt.Println(string(event.Data))
+
+		var result map[string]any
+		if err := json.Unmarshal(event.Data, &result); err != nil {
+			return nil, err
+		}
+
+		allRates = append(allRates, result)
+
+	}
+
+	fmt.Println(allRates[0])
+
+	return nil, nil
+
 }

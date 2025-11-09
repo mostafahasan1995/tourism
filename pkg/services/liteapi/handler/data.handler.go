@@ -7,16 +7,21 @@ import (
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/goccy/go-json"
 	"github.com/samber/do"
 )
 
 type DataHandler struct {
 	datasvcs liteapi.DataSvcs
+	//searchv2svcs liteapi.SearchV2Svcs
+	searchv3svcs liteapi.Searchv3Svcs
 }
 
 func NewDataHandler(i *do.Injector, r *chi.Mux) {
 	h := &DataHandler{
 		datasvcs: do.MustInvoke[liteapi.DataSvcs](i),
+		//searchv2svcs: do.MustInvoke[liteapi.SearchV2Svcs](i),
+		searchv3svcs: do.MustInvoke[liteapi.Searchv3Svcs](i),
 	}
 
 	r.Route("/liteapi/data", func(r chi.Router) {
@@ -31,6 +36,12 @@ func NewDataHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/hotelTypes", helpers.Make(h.GetHotelTypes))
 		r.Get("/facilities", helpers.Make(h.GetHotelFacilities))
 		r.Get("/reviews", helpers.Make(h.GetHotelReviews))
+		//
+		//r.Get("/lock/{country}/{language}", helpers.Make(h.AcquireLock))
+		// r.Post("/stream-rates", helpers.Make(h.StreamRates))
+		r.Post("/search", helpers.Make(h.SearchHotels))
+
+		//
 
 	})
 
@@ -164,4 +175,36 @@ func (h *DataHandler) GetHotelReviews(w http.ResponseWriter, r *http.Request) er
 		return err
 	}
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+//
+
+// func (h *DataHandler) AcquireLock(w http.ResponseWriter, r *http.Request) error {
+// 	ctx, _ := util.AddCtxAppCfg(r)
+
+// 	country := chi.URLParam(r, "country")
+// 	language := chi.URLParam(r, "language")
+
+// 	locked, err := h.searchsvcs.AcquireLock(ctx, country, language)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, locked)
+// }
+
+func (h *DataHandler) SearchHotels(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data map[string]any
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return helpers.InvalidJSON()
+	}
+
+	_, err := h.searchv3svcs.Search(ctx, w, data)
+	if err != nil {
+		return err
+	}
+
+	// SSE streaming handles the response, no need to write JSON
+	return nil
 }

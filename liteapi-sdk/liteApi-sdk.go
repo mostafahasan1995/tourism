@@ -1,6 +1,7 @@
 package liteApiSdk
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -37,7 +38,7 @@ func NewLiteApiSdk(apiKey string) *LiteApiSdk {
 		BookServiceURL: "https://book.liteapi.travel/v3.0",
 		DashboardURL:   "https://da.liteapi.travel",
 		Client: &http.Client{
-			Timeout: 30 * time.Second,
+			Timeout: 5 * time.Minute, // Increased from 30s to 5min for large data operations
 		},
 	}
 }
@@ -118,6 +119,13 @@ func (sdk *LiteApiSdk) makeRequest(method, url string, body any) (*APIResponse, 
 	}
 }
 
+// StreamEvent represents a single event from the streaming API
+type StreamEvent struct {
+	Data  json.RawMessage `json:"data"`
+	Error error           `json:"error,omitempty"`
+	Done  bool            `json:"done"`
+}
+
 // GetFullRates searches and returns all available rooms along with rates and cancellation policies
 // The Full Rates API is to search and return all available rooms along with its rates, cancellation policies for a list of hotel ID's based on the search dates.
 // For each hotel ID, all available room information is returned.
@@ -127,6 +135,169 @@ func (sdk *LiteApiSdk) makeRequest(method, url string, body any) (*APIResponse, 
 func (sdk *LiteApiSdk) GetFullRates(data interface{}) (*APIResponse, error) {
 	url := sdk.ServiceURL + "/hotels/rates"
 	return sdk.makeRequest("POST", url, data)
+}
+
+// GetFullRatesStream searches and returns available rooms as a stream when stream=true is set in the request body
+// This method returns a channel that yields streaming events. The channel will be closed when the stream ends or an error occurs.
+// Usage:
+//
+//	eventChan, err := sdk.GetFullRatesStream(data)
+//	if err != nil { handle error }
+//	for event := range eventChan {
+//	  if event.Error != nil { handle error }
+//	  if event.Done { break }
+//	  // process event.Data
+//	}
+func (sdk *LiteApiSdk) GetFullRatesStream(data interface{}) (<-chan StreamEvent, error) {
+	url := sdk.ServiceURL + "/hotels/rates"
+	return sdk.makeStreamRequest("POST", url, data)
+}
+
+// makeStreamRequest handles HTTP streaming requests
+func (sdk *LiteApiSdk) makeStreamRequest(method, url string, body any) (<-chan StreamEvent, error) {
+	var reqBody io.Reader
+	if body != nil {
+		jsonData, err := json.Marshal(body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal request body: %v", err)
+		}
+		reqBody = bytes.NewBuffer(jsonData)
+	}
+
+	req, err := http.NewRequest(method, url, reqBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %v", err)
+	}
+
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-API-Key", sdk.ApiKey)
+
+	resp, err := sdk.Client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %v", err)
+	}
+
+	// Check if response is not OK
+	if resp.StatusCode != http.StatusOK {
+		defer resp.Body.Close()
+		responseBody, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read error response: %v", err)
+		}
+		return nil, fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(responseBody))
+	}
+
+	// Create channel for streaming events
+	eventChan := make(chan StreamEvent, 10)
+
+	// Start goroutine to read stream
+	go func() {
+		defer close(eventChan)
+		defer resp.Body.Close()
+
+		// Check if response is SSE format by looking at Content-Type
+		contentType := resp.Header.Get("Content-Type")
+		isSSE := strings.Contains(contentType, "text/event-stream")
+
+		// Also check for streaming parameter in the request to detect SSE
+		// LiteAPI might return SSE when stream=true but not set proper Content-Type
+		if !isSSE {
+			// Read a small sample to detect format
+			peek := make([]byte, 10)
+			n, _ := resp.Body.Read(peek)
+			if n > 0 {
+				// Check if response starts with "data:" which indicates SSE
+				if strings.HasPrefix(string(peek[:n]), "data:") {
+					isSSE = true
+				}
+			}
+
+			// Create a new reader with the peeked data prepended
+			resp.Body = io.NopCloser(io.MultiReader(bytes.NewReader(peek[:n]), resp.Body))
+		}
+
+		if isSSE {
+			// Handle SSE (Server-Sent Events) format
+			// Using bufio.Reader instead of Scanner to handle UNLIMITED line sizes
+			// Scanner has buffer limits, Reader.ReadString does not
+			reader := bufio.NewReader(resp.Body)
+
+			for {
+				// Read line by line with NO SIZE LIMIT
+				line, err := reader.ReadString('\n')
+
+				// Handle EOF
+				if err == io.EOF {
+					// If we got data before EOF, process it
+					if line != "" {
+						line = strings.TrimSpace(line)
+						if strings.HasPrefix(line, "data:") {
+							jsonData := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+							if jsonData != "" {
+								eventChan <- StreamEvent{Data: json.RawMessage(jsonData), Done: false}
+							}
+						}
+					}
+					// Stream ended normally
+					eventChan <- StreamEvent{Done: true}
+					return
+				}
+
+				// Handle other errors
+				if err != nil {
+					eventChan <- StreamEvent{Error: fmt.Errorf("error reading SSE stream: %v", err), Done: true}
+					return
+				}
+
+				// Trim whitespace and newlines
+				line = strings.TrimSpace(line)
+
+				// Skip empty lines (SSE uses empty lines as separators)
+				if line == "" {
+					continue
+				}
+
+				// SSE format: "data: {json}"
+				if strings.HasPrefix(line, "data:") {
+					// Extract JSON after "data: "
+					jsonData := strings.TrimSpace(strings.TrimPrefix(line, "data:"))
+
+					// Skip if data is empty
+					if jsonData == "" {
+						continue
+					}
+
+					// Send the JSON data - NO SIZE LIMIT!
+					eventChan <- StreamEvent{Data: json.RawMessage(jsonData), Done: false}
+				}
+				// Skip event type lines and other SSE metadata
+			}
+
+		} else {
+			// Handle newline-delimited JSON format
+			decoder := json.NewDecoder(resp.Body)
+
+			for {
+				var chunk json.RawMessage
+				if err := decoder.Decode(&chunk); err != nil {
+					if err == io.EOF {
+						// Stream ended normally
+						eventChan <- StreamEvent{Done: true}
+						return
+					}
+					// Error occurred
+					eventChan <- StreamEvent{Error: fmt.Errorf("failed to decode stream: %v", err), Done: true}
+					return
+				}
+
+				// Send the chunk
+				eventChan <- StreamEvent{Data: chunk, Done: false}
+			}
+		}
+	}()
+
+	return eventChan, nil
 }
 
 // GetMinRates gets minimum rates for hotels
@@ -275,6 +446,11 @@ func (sdk *LiteApiSdk) GetPlaces(textQuery, placeType, language string) (*APIRes
 	params.Add("language", language)
 
 	url := fmt.Sprintf("%s/data/places?%s", sdk.ServiceURL, params.Encode())
+	return sdk.makeRequest("GET", url, nil)
+}
+
+func (sdk *LiteApiSdk) GetPlace(placeId string) (*APIResponse, error) {
+	url := fmt.Sprintf("%s/data/places/%s", sdk.ServiceURL, placeId)
 	return sdk.makeRequest("GET", url, nil)
 }
 

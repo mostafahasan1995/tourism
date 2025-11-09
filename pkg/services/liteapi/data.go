@@ -3,6 +3,7 @@ package liteapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	liteApiSdk "larsa-tourism-microservices/liteapi-sdk"
 	"larsa-tourism-microservices/pkg/helpers"
@@ -10,8 +11,6 @@ import (
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
 	"larsa-tourism-microservices/pkg/util"
 	"time"
-
-	"larsa-tourism-microservices/pkg/query"
 
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,6 +28,13 @@ type DataSvcs interface {
 	GetHotelTypes(ctx context.Context) (*models.HotelTypeList, error)
 	GetHotelFacilities(ctx context.Context) (*models.FacilityList, error)
 	GetHotelReviews(ctx context.Context, query map[string]string) (*models.HotelReviewList, error)
+	//
+	GetHotelsFromDB(ctx context.Context, country, language string, skip, limit int) (*models.HotelList, error)
+	GetHotelsByPlaceId(ctx context.Context, query map[string]string) (*models.HotelList, error)
+	GetHotelsByIds(ctx context.Context, hotelIds []string) ([]models.Hotel, error)
+	//
+	GetHotelsByPlaceIdFromDB(ctx context.Context, placeId, language string, skip, limit int) (*models.HotelList, error)
+	GetFetchedHotelsCount(ctx context.Context, placeId, language string) (int64, error)
 }
 
 type datasvcs struct {
@@ -63,115 +69,9 @@ func NewDataSvcs(i *do.Injector) (DataSvcs, error) {
 
 const ExpireTime = 24 * time.Hour
 
+const hotelDataExpireTime = 48 * time.Hour
+
 // future use
-func constructHotelFilters(params map[string]string) {
-
-	var columns []query.Column
-
-	if params["countryCode"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "country",
-			Value: params["countryCode"],
-			Logic: "and",
-		})
-	}
-	if params["cityName"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "city",
-			Value: params["cityName"],
-			Logic: "and",
-		})
-	}
-	if params["hotelName"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "name",
-			Value: params["hotelName"],
-			Exp:   "like",
-			Logic: "and",
-		})
-	}
-	if params["longitude"] != "" && params["latitude"] != "" && params["radius"] != "" {
-		//???????
-	}
-
-	if params["zip"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "zip",
-			Value: params["zip"],
-			Logic: "and",
-		})
-	}
-
-	if params["minRating"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "rating",
-			Value: params["minRating"],
-			Exp:   ">=",
-			Logic: "and",
-		})
-	}
-	if params["minReviewsCount"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "reviewCount",
-			Value: params["minReviewsCount"],
-			Exp:   ">=",
-			Logic: "and",
-		})
-	}
-	if params["facilityIds"] != "" {
-		if params["strictFacilitiesFiltering"] == "true" {
-			columns = append(columns, query.Column{
-				Name:  "facilityIds",
-				Value: params["facilityIds"],
-				Exp:   "in", // todo: check if it is correct
-				Logic: "and",
-			})
-
-		} else {
-			columns = append(columns, query.Column{
-				Name:  "facilityIds",
-				Value: params["facilityIds"],
-				Exp:   "in",
-				Logic: "and",
-			})
-		}
-	}
-
-	if params["hotelTypeIds"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "hotelTypeId",
-			Value: params["hotelTypeIds"],
-			Exp:   "in",
-			Logic: "and",
-		})
-	}
-	if params["chainIds"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "chainId",
-			Value: params["chainIds"],
-			Exp:   "in",
-			Logic: "and",
-		})
-	}
-
-	if params["starRating"] != "" {
-		columns = append(columns, query.Column{
-			Name:  "stars",
-			Value: params["starRating"],
-			Exp:   "in",
-			Logic: "and",
-		})
-	}
-
-	if params["placeId"] != "" {
-
-	}
-
-	if params["advancedAccessibilityOnly"] != "" {
-
-	}
-
-}
 
 func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*models.HotelList, error) {
 	if query["language"] == "" {
@@ -215,6 +115,54 @@ func (d *datasvcs) GetHotels(ctx context.Context, query map[string]string) (*mod
 		}
 
 	}(context.WithoutCancel(ctx), hotels)
+
+	return &result, nil
+
+}
+
+func (d *datasvcs) GetHotelsByPlaceId(ctx context.Context, query map[string]string) (*models.HotelList, error) {
+	if query["language"] == "" {
+		query["language"] = "en"
+	}
+
+	if query["placeId"] == "" {
+		return nil, errors.New("placeId is required")
+	}
+
+	liteApiSdk, err := d.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := liteApiSdk.GetHotels(query, 3, 1*time.Second)
+	if err != nil {
+		return nil, err
+	}
+	if resp.Status == "failed" {
+		return nil, helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	var result models.HotelList
+	if err := json.Unmarshal(resp.Data, &result); err != nil {
+		return nil, err
+	}
+
+	writeOps := []mongo.WriteModel{}
+
+	for _, hotel := range result.Data {
+		hotel.Langauge = query["language"]
+		hotel.PlaceId = query["placeId"]
+		hotel.ExpiresAt = time.Now().Add(hotelDataExpireTime)
+		updateOp := mongo.NewUpdateOneModel().SetFilter(bson.M{"id": hotel.Id, "language": hotel.Langauge, "placeId": hotel.PlaceId}).SetUpdate(bson.M{"$set": hotel}).SetUpsert(true)
+		writeOps = append(writeOps, updateOp)
+
+	}
+
+	if len(writeOps) > 0 {
+		if _, err := d.hotelrepo.BulkWrite(ctx, writeOps); err != nil {
+			fmt.Printf("error bulk writing hotels: %v", err)
+		}
+	}
 
 	return &result, nil
 
@@ -695,4 +643,82 @@ func (d *datasvcs) GetHotelReviews(ctx context.Context, query map[string]string)
 
 	return &result, nil
 
+}
+
+func (d *datasvcs) GetHotelsFromDB(ctx context.Context, placeId, language string, skip, limit int) (*models.HotelList, error) {
+	filter := bson.M{
+		"placeId":  placeId,
+		"language": language,
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+
+	var result []models.Hotel
+	if err := d.hotelrepo.Aggregate(ctx, pipeline, func(cursor *mongo.Cursor) error {
+		return cursor.All(ctx, &result)
+	}); err != nil {
+		return nil, err
+	}
+
+	return &models.HotelList{
+		Data:  result,
+		Total: len(result),
+	}, nil
+}
+
+func (d *datasvcs) GetHotelsByIds(ctx context.Context, hotelIds []string) ([]models.Hotel, error) {
+	filter := bson.M{
+		"id": bson.M{"$in": hotelIds},
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+	}
+
+	var result []models.Hotel
+	if err := d.hotelrepo.Aggregate(ctx, pipeline, func(cursor *mongo.Cursor) error {
+		return cursor.All(ctx, &result)
+	}); err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
+func (d *datasvcs) GetHotelsByPlaceIdFromDB(ctx context.Context, placeId, language string, skip, limit int) (*models.HotelList, error) {
+	filter := bson.M{
+		"placeId":  placeId,
+		"language": language,
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$skip": skip},
+		{"$limit": limit},
+	}
+
+	var result []models.Hotel
+	if err := d.hotelrepo.Aggregate(ctx, pipeline, func(cursor *mongo.Cursor) error {
+		return cursor.All(ctx, &result)
+	}); err != nil {
+		return nil, err
+	}
+
+	return &models.HotelList{
+		Data:  result,
+		Total: len(result),
+	}, nil
+}
+
+func (d *datasvcs) GetFetchedHotelsCount(ctx context.Context, placeId, language string) (int64, error) {
+	filter := bson.M{
+		"placeId":  placeId,
+		"language": language,
+	}
+
+	return d.hotelrepo.Count(ctx, filter)
 }

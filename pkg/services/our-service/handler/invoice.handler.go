@@ -32,6 +32,7 @@ func NewInvoiceHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/{id}", helpers.Make(h.GetOne))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}", helpers.Make(h.Update))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
 		r.With(middleware.Auth("authenticate")).Post("/{id}/payments", helpers.Make(h.AddPayment))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/payments/{paymentId}", helpers.Make(h.UpdatePayment))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}/payments/{paymentId}", helpers.Make(h.DeletePayment))
@@ -102,6 +103,28 @@ func (h *InvoiceHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.invoicesvcs.Update(ctx, id, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *InvoiceHandler) UpdateStatus(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	id := chi.URLParam(r, "id")
+
+	var data models.InvoiceStatusUpdateDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return err
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.invoicesvcs.UpdateStatus(ctx, id, data.Status)
 	if err != nil {
 		return err
 	}

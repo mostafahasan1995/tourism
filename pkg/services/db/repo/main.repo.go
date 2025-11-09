@@ -24,14 +24,29 @@ type MainRepo[T any] interface {
 type MainRepoImpl[T any] struct {
 	Db       *mongo.Client
 	CollName string
+	DbName   string
+}
+
+func (m *MainRepoImpl[T]) getDbName(ctx context.Context) (string, error) {
+	var dbName string
+	if m.DbName != "" {
+		dbName = m.DbName
+	} else {
+		cfg, err := util.GetReqAppCfg(ctx)
+		if err != nil {
+			return "", err
+		}
+		dbName = cfg.Db
+	}
+	return dbName, nil
 }
 
 func (m *MainRepoImpl[T]) DeleteMain(ctx context.Context, filter bson.M) error {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return err
 	}
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	_, err = coll.DeleteOne(ctx, filter)
 	if err != nil {
@@ -41,11 +56,12 @@ func (m *MainRepoImpl[T]) DeleteMain(ctx context.Context, filter bson.M) error {
 }
 
 func (m *MainRepoImpl[T]) Add(ctx context.Context, data *T, opts ...*options.InsertOneOptions) error {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return err
 	}
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	if _, err := coll.InsertOne(ctx, data, opts...); err != nil {
 		return err
@@ -54,11 +70,11 @@ func (m *MainRepoImpl[T]) Add(ctx context.Context, data *T, opts ...*options.Ins
 }
 
 func (m *MainRepoImpl[T]) AddMany(ctx context.Context, data []any, opts ...*options.InsertManyOptions) error {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return err
 	}
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	if _, err := coll.InsertMany(ctx, data, opts...); err != nil {
 		return err
@@ -67,12 +83,12 @@ func (m *MainRepoImpl[T]) AddMany(ctx context.Context, data []any, opts ...*opti
 }
 
 func (m *MainRepoImpl[T]) GetByFilter(ctx context.Context, filter bson.M) (*T, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	var result T
 	if err := coll.FindOne(ctx, filter).Decode(&result); err != nil {
@@ -83,12 +99,12 @@ func (m *MainRepoImpl[T]) GetByFilter(ctx context.Context, filter bson.M) (*T, e
 }
 
 func (m *MainRepoImpl[T]) Patch(ctx context.Context, filter, update bson.M, ops ...*options.FindOneAndUpdateOptions) (*T, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	upsert := false
 	after := options.After
@@ -112,12 +128,12 @@ func (m *MainRepoImpl[T]) Patch(ctx context.Context, filter, update bson.M, ops 
 }
 
 func (m *MainRepoImpl[T]) Aggregate(ctx context.Context, pipeline any, callback func(cur *mongo.Cursor) error) error {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return err
 	}
 
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	cur, err := coll.Aggregate(ctx, pipeline)
 	if err != nil {
@@ -132,11 +148,11 @@ func (m *MainRepoImpl[T]) Aggregate(ctx context.Context, pipeline any, callback 
 }
 
 func (m *MainRepoImpl[T]) BulkWrite(ctx context.Context, writeOps []mongo.WriteModel) (*mongo.BulkWriteResult, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return nil, err
 	}
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	opts := options.BulkWrite().SetOrdered(true)
 	result, errIns := coll.BulkWrite(ctx, writeOps, opts)
@@ -149,12 +165,12 @@ func (m *MainRepoImpl[T]) BulkWrite(ctx context.Context, writeOps []mongo.WriteM
 }
 
 func (m *MainRepoImpl[T]) Count(ctx context.Context, filter any, opts ...*options.CountOptions) (int64, error) {
-	cfg, err := util.GetReqAppCfg(ctx)
+	dbName, err := m.getDbName(ctx)
 	if err != nil {
 		return 0, err
 	}
 
-	coll := m.Db.Database(cfg.Db).Collection(m.CollName)
+	coll := m.Db.Database(dbName).Collection(m.CollName)
 
 	switch f := filter.(type) {
 	case bson.M:
