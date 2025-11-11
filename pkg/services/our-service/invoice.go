@@ -416,9 +416,9 @@ func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqI
 			//DepartureAgent:   invoiceTravelRequestData.DepartureAgent,
 			// DestinationAgent: invoiceTravelRequestData.DestinationAgent,
 			Payments: []models.Payment{},
-			invoice.Status = enums.InvoiceStatusPending
+			
 		}
-
+        invoice.Status = enums.InvoiceStatusPending
 		if err := invoice.SetTotals(); err != nil {
 			return nil, err
 		}
