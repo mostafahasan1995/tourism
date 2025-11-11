@@ -690,7 +690,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		if err != nil {
 			return nil, errors.New("error add invoice")
 		}
-
+        invoice.Status = enums.InvoiceStatusPending
 		filter := bson.M{"_id": _id}
 		update := bson.M{"$set": bson.M{
 			"status":    enums.TravelReqStatusApproved,
