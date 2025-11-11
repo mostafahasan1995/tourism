@@ -26,18 +26,151 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-var programLookup = []bson.M{
-	{"$lookup": bson.M{
-		"from":         "tourismPrograms",
-		"localField":   "program",
-		"foreignField": "_id",
-		"as":           "programData",
-	}},
-	{"$unwind": bson.M{
-		"path":                       "$programData",
-		"preserveNullAndEmptyArrays": true,
-	}},
+var programTotalCostStages = []bson.M{
+	{
+		"$addFields": bson.M{
+			"resolvedDestinations": bson.M{
+				"$concatArrays": bson.A{
+					bson.M{"$ifNull": bson.A{"$customType.destinations", bson.A{}}},
+					bson.M{"$ifNull": bson.A{"$customType.vipCar.destinations", bson.A{}}},
+					bson.M{"$ifNull": bson.A{"$customType.flightTicketRequest.destinations", bson.A{}}},
+				},
+			},
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"destinationCosts": bson.M{
+				"$map": bson.M{
+					"input": "$resolvedDestinations",
+					"as":    "d",
+					"in": bson.M{
+						"$let": bson.M{
+							"vars": bson.M{
+								"accomSum": bson.M{
+									"$cond": bson.M{
+										"if": bson.M{"$isArray": "$$d.accommodation"},
+										"then": bson.M{
+											"$reduce": bson.M{
+												"input":        "$$d.accommodation",
+												"initialValue": 0,
+												"in": bson.M{
+													"$add": bson.A{
+														"$$value",
+														bson.M{"$ifNull": bson.A{"$$this.totalStayCost", 0}},
+													},
+												},
+											},
+										},
+										"else": 0,
+									},
+								},
+							},
+							"in": bson.M{
+								"$add": bson.A{
+									bson.M{"$ifNull": bson.A{"$$d.totalCost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.flightTickets.totalCost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.transportation.totalCost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.activities.totalCost", 0}},
+									"$$accomSum",
+									bson.M{"$ifNull": bson.A{"$$d.services.onGroundAssistance.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.travelInsurance.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.visaAssistance.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.welcomeKit.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.freeSimCardWifi.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.complimentaryGifts.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.vipAirportServices.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.personalTravelConsultant.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.childcareServices.cost", 0}},
+									bson.M{"$ifNull": bson.A{"$$d.services.accessibilitySupport.cost", 0}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"totalDestinationsCost": bson.M{
+				"$cond": bson.M{
+					"if":   bson.M{"$isArray": "$destinationCosts"},
+					"then": bson.M{"$sum": "$destinationCosts"},
+					"else": 0,
+				},
+			},
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"topLevelTotalsSum": bson.M{
+				"$add": bson.A{
+					bson.M{"$ifNull": bson.A{"$customType.vipCar.totalCost", 0}},
+					bson.M{"$ifNull": bson.A{"$customType.flightTicketRequest.totalCost", 0}},
+					bson.M{"$ifNull": bson.A{"$customType.hotelBooking.totalCost", 0}},
+				},
+			},
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"customType.totalCost": bson.M{
+				"$cond": bson.M{
+					"if":   bson.M{"$gt": bson.A{bson.M{"$size": "$resolvedDestinations"}, 0}},
+					"then": "$totalDestinationsCost",
+					"else": "$topLevelTotalsSum",
+				},
+			},
+		},
+	},
+	{
+		"$addFields": bson.M{
+			"totalCost": bson.M{"$ifNull": bson.A{"$customType.totalCost", 0}},
+		},
+	},
+	{
+		"$project": bson.M{
+			"resolvedDestinations":  0,
+			"destinationCosts":      0,
+			"totalDestinationsCost": 0,
+			"topLevelTotalsSum":     0,
+		},
+	},
 }
+
+var programLookup = func() []bson.M {
+	pipeline := bson.A{
+		bson.M{
+			"$match": bson.M{
+				"$expr": bson.M{
+					"$eq": bson.A{"$_id", "$$programId"},
+				},
+			},
+		},
+	}
+
+	for _, stage := range programTotalCostStages {
+		pipeline = append(pipeline, stage)
+	}
+
+	return []bson.M{
+		{
+			"$lookup": bson.M{
+				"from":     "tourismPrograms",
+				"let":      bson.M{"programId": "$program"},
+				"pipeline": pipeline,
+				"as":       "programData",
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$programData",
+				"preserveNullAndEmptyArrays": true,
+			},
+		},
+	}
+}()
 
 var travelReqCustomerLookup = []bson.M{
 	{"$lookup": bson.M{
