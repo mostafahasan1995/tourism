@@ -8,10 +8,13 @@ const (
 	PaymentStatusUnpaid  PaymentStatus = "unpaid"
 )
 
+
 type InvoiceStatus string
 
 const (
-	InvoiceStatusPending InvoiceStatus = "waitingforpayment"
+	InvoiceStatusPending InvoiceStatus = "waiting-payment"
 	InvoiceStatusPaid    InvoiceStatus = "paid"
 	InvoiceStatusUnpaid  InvoiceStatus = "unpaid"
+
+	InvoiceStatusWaitingApproved InvoiceStatus = "waiting-approved"
 )
