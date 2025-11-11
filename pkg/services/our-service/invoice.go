@@ -119,7 +119,7 @@ func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models
 			Payments:   []models.Payment{},
 		
 		}
-		invoice.Status = enums.InvoiceStatusPending
+		
 		if err := invoice.SetTotals(); err != nil {
 			return nil, err
 		}
