@@ -65,13 +65,17 @@ type TravelRequest struct {
 	UpdatedBy        primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
+
 func (t *TravelRequest) GetDepartureDestinationId() (*primitive.ObjectID, error) {
 	switch t.ServiceType {
 	case enums.ServiceTypeDelegation, enums.ServiceTypeCustomPlan, enums.ServiceTypeBusinessMan, enums.ServiceTypeHotelBooking:
 		if len(t.Destinations) == 0 {
 			return nil, errors.New("no destinations found")
 		}
-		return &t.Destinations[0].DestinationFrom, nil
+		if t.Destinations[0].DestinationTo.IsZero() {
+			return nil, errors.New("destination to is empty")
+		}
+		return &t.Destinations[0].DestinationTo, nil
 
 	case enums.ServiceTypeVipCar:
 		if t.VipCar == nil {
@@ -80,7 +84,10 @@ func (t *TravelRequest) GetDepartureDestinationId() (*primitive.ObjectID, error)
 		if len(t.VipCar.Destinations) == 0 {
 			return nil, errors.New("no vip car destinations found")
 		}
-		return &t.VipCar.Destinations[0].DestinationFrom, nil
+		if t.VipCar.Destinations[0].DestinationTo.IsZero() {
+			return nil, errors.New("vip car destination to is empty")
+		}
+		return &t.VipCar.Destinations[0].DestinationTo, nil
 	case enums.ServiceTypeFlightRequest:
 		if t.FlightTicketRequest == nil {
 			return nil, errors.New("flight ticket request is nil")
@@ -88,11 +95,15 @@ func (t *TravelRequest) GetDepartureDestinationId() (*primitive.ObjectID, error)
 		if len(t.FlightTicketRequest.Destinations) == 0 {
 			return nil, errors.New("no flight ticket request destinations found")
 		}
-		return &t.FlightTicketRequest.Destinations[0].DestinationFrom, nil
+		if t.FlightTicketRequest.Destinations[0].DestinationTo.IsZero() {
+			return nil, errors.New("flight ticket request destination to is empty")
+		}
+		return &t.FlightTicketRequest.Destinations[0].DestinationTo, nil
 	}
 
 	return nil, errors.New("unsupported service type")
 }
+
 
 type TravelRequestRes struct {
 	TravelRequest `bson:",inline"`
