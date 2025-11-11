@@ -24,8 +24,9 @@ type InvoiceDto struct {
 	Note        string                     `bson:"note" json:"note"`
 }
 type InvoiceStatusUpdateDto struct {
-	Status enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=waitingforpayment paid unpaid"`
+	Status enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=waiting-payment paid unpaid waiting-approved"`
 }
+
 
 type InvoiceAdjustment struct {
 	Type    string  `bson:"type" json:"type"` //addition - substruction
@@ -67,7 +68,7 @@ type Invoice struct {
 	PaidAmount   float64            `bson:"paidAmount" json:"paidAmount"`
 	UnpaidAmount float64            `bson:"unpaidAmount" json:"unpaidAmount"`
 	Payments     []Payment          `bson:"payments" json:"payments"`
-	Status       enums.InvoiceStatus `bson:"status" json:"status", validate:"required,oneof=waitingforpayment paid unpaid"`
+	Status       enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=waiting-payment paid unpaid waiting-approved"`
 	Trash        bool               `bson:"trash" json:"trash"`
 	CreatedAt    time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
 	CreatedBy    primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
