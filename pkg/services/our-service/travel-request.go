@@ -883,36 +883,51 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		return nil, errors.New("error get settings")
 	}
 
-	profitRatio := financialSettings.ProfitRatio //platform profit ratio
-
+	profitRatio := financialSettings.ProfitRatio // platform profit ratio
 	var transactions []models.AgentTransaction
+
+	loadAgentFinancial := func(agentData membermodels.Agent, agentID primitive.ObjectID) (membermodels.AgentFinancial, error) {
+		financial := agentData.Financial
+		if !financial.ProfitOfTourismProgram || financial.Ratio == 0 {
+			agentDoc, err := t.agentsvcs.GetByFilter(ctx, bson.M{"_id": agentID, "trash": false})
+			if err != nil {
+				return financial, err
+			}
+			financial = agentDoc.Financial
+		}
+		return financial, nil
+	}
+
 	for _, r := range result {
 		if r.Invoice.Id == primitive.NilObjectID {
 			return nil, errors.New("invoice not found")
 		}
 
-		clientProfit := r.Invoice.Total * (profitRatio / 100)
+		invoiceTotal := r.Invoice.Total
+		if invoiceTotal == 0 {
+			invoiceTotal = r.Invoice.SubTotal
+		}
 
+		clientProfit := invoiceTotal * (profitRatio / 100)
 		var commission float64
 
 		if r.DepartureAgent == r.TripCoordinator {
-			profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
-			if profitOfTourismProgram {
-				commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
-
+			financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+			if err == nil && financial.ProfitOfTourismProgram {
+				commission = clientProfit * (financial.Ratio / 100)
 			}
 
 		} else {
 			if r.DepartureAgent == _id {
-				profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
-				if profitOfTourismProgram {
-					commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
+				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+				if err == nil && financial.ProfitOfTourismProgram {
+					commission = clientProfit * (financial.Ratio / 100)
 				}
 
 			} else if r.TripCoordinator == _id {
-				profitOfTourismProgram := r.TripCoordinatorData.Financial.ProfitOfTourismProgram
-				if profitOfTourismProgram {
-					commission = clientProfit * (r.TripCoordinatorData.Financial.Ratio / 100)
+				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
+				if err == nil && financial.ProfitOfTourismProgram {
+					commission = clientProfit * (financial.Ratio / 100)
 				}
 			}
 		}
