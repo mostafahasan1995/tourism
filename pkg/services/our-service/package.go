@@ -2,7 +2,9 @@ package ourservice
 
 import (
 	"context"
+	"errors"
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
@@ -23,6 +25,7 @@ type PackageSvcs interface {
 	Add(ctx context.Context, data *models.PackageDto) (*models.Package, error)
 	Update(ctx context.Context, pkgId string, data *models.PackageDto) (*models.Package, error)
 	Delete(ctx context.Context, pkgId string) error
+	SeedDefaults(ctx context.Context) error
 }
 
 type packagesvcs struct {
@@ -33,6 +36,107 @@ func NewPackageSvcs(i *do.Injector) (PackageSvcs, error) {
 	return &packagesvcs{
 		repo: do.MustInvoke[repo.PackageRepo](i),
 	}, nil
+}
+
+type packageSeed struct {
+	IDHex        string
+	Name         map[string]string
+	Status       enums.PackageStatus
+	AllowGeneral bool
+	AllowCustom  bool
+}
+
+var defaultPackageSeeds = []packageSeed{
+	{
+		IDHex:        "66f900000000000000000001",
+		Name:         map[string]string{"en": "Delegation Travel"},
+		Status:       enums.PackageStatusActive,
+		AllowGeneral: false,
+		AllowCustom:  true,
+	},
+	{
+		IDHex:        "66f900000000000000000002",
+		Name:         map[string]string{"en": "Luxury Travel"},
+		Status:       enums.PackageStatusActive,
+		AllowGeneral: false,
+		AllowCustom:  true,
+	},
+	{
+		IDHex:        "66f900000000000000000003",
+		Name:         map[string]string{"en": "Family Travel"},
+		Status:       enums.PackageStatusActive,
+		AllowGeneral: false,
+		AllowCustom:  true,
+	},
+	{
+		IDHex:        "66f900000000000000000004",
+		Name:         map[string]string{"en": "Honeymoon Package"},
+		Status:       enums.PackageStatusActive,
+		AllowGeneral: false,
+		AllowCustom:  true,
+	},
+	{
+		IDHex:        "66f900000000000000000005",
+		Name:         map[string]string{"en": "Business Man Travel"},
+		Status:       enums.PackageStatusActive,
+		AllowGeneral: false,
+		AllowCustom:  true,
+	},
+	{
+		IDHex:        "66f900000000000000000006",
+		Name:         map[string]string{"en": "Religious Tourism"},
+		Status:       enums.PackageStatusActive,
+		AllowGeneral: false,
+		AllowCustom:  true,
+	},
+}
+
+func (p *packagesvcs) ensureDefaultPackages(ctx context.Context) error {
+	if len(defaultPackageSeeds) == 0 {
+		return nil
+	}
+
+	now := time.Now()
+	operations := make([]mongo.WriteModel, 0, len(defaultPackageSeeds))
+
+	for _, seed := range defaultPackageSeeds {
+		id, err := primitive.ObjectIDFromHex(seed.IDHex)
+		if err != nil {
+			return err
+		}
+
+		update := bson.M{
+			"$set": bson.M{
+				"name":                seed.Name,
+				"status":              seed.Status,
+				"isSystemPkg":         true,
+				"allowGeneralProgram": seed.AllowGeneral,
+				"allowCustomProgram":  seed.AllowCustom,
+				"trash":               false,
+			},
+			"$setOnInsert": bson.M{
+				"thumbnail": []any{},
+				"createdAt": now,
+				"createdBy": primitive.NilObjectID,
+				"updatedAt": now,
+				"updatedBy": primitive.NilObjectID,
+			},
+		}
+
+		op := mongo.NewUpdateOneModel().
+			SetFilter(bson.M{"_id": id}).
+			SetUpdate(update).
+			SetUpsert(true)
+
+		operations = append(operations, op)
+	}
+
+	_, err := p.repo.BulkWrite(ctx, operations)
+	return err
+}
+
+func (p *packagesvcs) SeedDefaults(ctx context.Context) error {
+	return p.ensureDefaultPackages(ctx)
 }
 
 func (p *packagesvcs) GetAll(ctx context.Context, query any) ([]models.Package, error) {
@@ -57,7 +161,6 @@ func (p *packagesvcs) GetAll(ctx context.Context, query any) ([]models.Package, 
 }
 
 func (p *packagesvcs) Get(ctx context.Context, skip, limit int64, query any) (*models.PackageWithPagination, error) {
-
 	match := bson.M{"trash": false}
 
 	f, err := helpers.ParseFilters[filter.PackageFilter](query)
@@ -158,6 +261,15 @@ func (p *packagesvcs) Delete(ctx context.Context, pkgId string) error {
 	_id, err := primitive.ObjectIDFromHex(pkgId)
 	if err != nil {
 		return err
+	}
+
+	existingPkg, err := p.repo.GetByFilter(ctx, bson.M{"_id": _id})
+	if err != nil {
+		return err
+	}
+
+	if existingPkg.IsSystemPkg {
+		return errors.New("cannot delete system package")
 	}
 
 	filter := bson.M{"_id": _id}
