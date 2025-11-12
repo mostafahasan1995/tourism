@@ -26,6 +26,7 @@ func NewPackageHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/packages", func(r chi.Router) {
 		r.Get("/", helpers.Make(h.Get))
 		r.Get("/all", helpers.Make(h.GetAll))
+		r.With(middleware.Auth("authenticate")).Post("/init", helpers.Make(h.SeedDefaults))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
@@ -106,4 +107,14 @@ func (l *PackageHandler) Delete(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, "ok")
+}
+
+func (l *PackageHandler) SeedDefaults(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	if err := l.packagesvcs.SeedDefaults(ctx); err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]string{"status": "seeded"})
 }
