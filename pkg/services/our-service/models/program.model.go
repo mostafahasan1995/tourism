@@ -40,8 +40,8 @@ type Program struct {
 }
 
 type ProgramDto struct {
-	Title       transl.Localizable[string] `bson:"title" json:"title" validate:"required"`                                                                                      // program title
-	ServiceType enums.ProgramServiceType   `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking"` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	Title       transl.Localizable[string] `bson:"title" json:"title" validate:"required"`                                                                                                                                                                             // program title
+	ServiceType enums.ProgramServiceType   `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking family-travel luxury-travel religious-travel honeymoon business-man-travel delegation "` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
 	TravelReqId primitive.ObjectID         `bson:"travelReqId" json:"travelReqId" `
 	CustomerId  *primitive.ObjectID        `bson:"customerId" json:"customerId"`
 	AgentId     primitive.ObjectID         `bson:"agentId" json:"agentId"`
