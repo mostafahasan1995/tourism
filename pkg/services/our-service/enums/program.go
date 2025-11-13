@@ -31,11 +31,17 @@ const (
 type ProgramServiceType string
 
 const (
-	ProgramServiceTypeTourismProgram ProgramServiceType = "tourism-program"
-	ProgramServiceTypeCustomProgram  ProgramServiceType = "custom-program"
-	ProgramServiceTypeFlightTicket   ProgramServiceType = "flight-ticket"
-	ProgramServiceTypeVipCar         ProgramServiceType = "vip-car"
-	ProgramServiceTypeHotelBooking   ProgramServiceType = "hotel-booking"
+	ProgramServiceTypeTourismProgram    ProgramServiceType = "tourism-program"
+	ProgramServiceTypeCustomProgram     ProgramServiceType = "custom-program"
+	ProgramServiceTypeFlightTicket      ProgramServiceType = "flight-ticket"
+	ProgramServiceTypeVipCar            ProgramServiceType = "vip-car"
+	ProgramServiceTypeHotelBooking      ProgramServiceType = "hotel-booking"
+	ProgramServiceTypeFamilyTravel      ProgramServiceType = "family-travel"
+	ProgramServiceTypeLuxuryTravel      ProgramServiceType = "luxury-travel"
+	ProgramServiceTypeReligiousTravel   ProgramServiceType = "religious-travel"
+	ProgramServiceTypeHoneymoon         ProgramServiceType = "honeymoon"
+	ProgramServiceTypeBusinessManTravel ProgramServiceType = "business-man-travel"
+	ProgramServiceTypeDelegation        ProgramServiceType = "delegation"
 )
 
 // travel type
