@@ -161,3 +161,17 @@ type AgentTransactionPagination struct {
 	Transactions []AgentTransaction `bson:"transactions" json:"transactions"`
 	Pagination   types.Pagination   `bson:"pagination" json:"pagination"`
 }
+
+type CompanyTransaction struct {
+	TravelRequestId primitive.ObjectID         `bson:"travelRequestId" json:"travelRequestId"`
+	InvoiceId       primitive.ObjectID         `bson:"invoiceId" json:"invoiceId"`
+	Date            time.Time                  `bson:"date" json:"date"`
+	OrderId         string                     `bson:"orderId" json:"orderId"`
+	CustomerName    transl.Localizable[string] `bson:"customerName" json:"customerName"`
+	Profit          float64                    `bson:"profit" json:"profit"`
+}
+
+type CompanyTransactionPagination struct {
+	Transactions []CompanyTransaction `bson:"transactions" json:"transactions"`
+	Pagination   types.Pagination     `bson:"pagination" json:"pagination"`
+}
