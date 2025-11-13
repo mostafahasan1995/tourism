@@ -239,6 +239,7 @@ type TravelRequestSvcs interface {
 	GetCustomerRequests(ctx context.Context, customerId string, skip, limit int64, query any) (*models.CustomerTravelRequestPagination, error)
 	GetAll(ctx context.Context, query any) ([]models.TravelRequestRes, error)
 	GetOne(ctx context.Context, id string) (*models.TravelRequest, error)
+	GetCompanyTransactions(ctx context.Context, skip, limit int64, query any) (*models.CompanyTransactionPagination, error)
 	Add(ctx context.Context, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	Update(ctx context.Context, id string, data *models.TravelRequestDto) (*models.TravelRequest, error)
 	MyRequests(ctx context.Context, status string) ([]models.TravelRequestRes, error)
@@ -883,36 +884,51 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		return nil, errors.New("error get settings")
 	}
 
-	profitRatio := financialSettings.ProfitRatio //platform profit ratio
-
+	profitRatio := financialSettings.ProfitRatio // platform profit ratio
 	var transactions []models.AgentTransaction
+
+	loadAgentFinancial := func(agentData membermodels.Agent, agentID primitive.ObjectID) (membermodels.AgentFinancial, error) {
+		financial := agentData.Financial
+		if !financial.ProfitOfTourismProgram || financial.Ratio == 0 {
+			agentDoc, err := t.agentsvcs.GetByFilter(ctx, bson.M{"_id": agentID, "trash": false})
+			if err != nil {
+				return financial, err
+			}
+			financial = agentDoc.Financial
+		}
+		return financial, nil
+	}
+
 	for _, r := range result {
 		if r.Invoice.Id == primitive.NilObjectID {
 			return nil, errors.New("invoice not found")
 		}
 
-		clientProfit := r.Invoice.Total * (profitRatio / 100)
+		invoiceTotal := r.Invoice.Total
+		if invoiceTotal == 0 {
+			invoiceTotal = r.Invoice.SubTotal
+		}
 
+		clientProfit := invoiceTotal * (profitRatio / 100)
 		var commission float64
 
 		if r.DepartureAgent == r.TripCoordinator {
-			profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
-			if profitOfTourismProgram {
-				commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
-
+			financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+			if err == nil && financial.ProfitOfTourismProgram {
+				commission = clientProfit * (financial.Ratio / 100)
 			}
 
 		} else {
 			if r.DepartureAgent == _id {
-				profitOfTourismProgram := r.DepartureAgentData.Financial.ProfitOfTourismProgram
-				if profitOfTourismProgram {
-					commission = clientProfit * (r.DepartureAgentData.Financial.Ratio / 100)
+				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+				if err == nil && financial.ProfitOfTourismProgram {
+					commission = clientProfit * (financial.Ratio / 100)
 				}
 
 			} else if r.TripCoordinator == _id {
-				profitOfTourismProgram := r.TripCoordinatorData.Financial.ProfitOfTourismProgram
-				if profitOfTourismProgram {
-					commission = clientProfit * (r.TripCoordinatorData.Financial.Ratio / 100)
+				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
+				if err == nil && financial.ProfitOfTourismProgram {
+					commission = clientProfit * (financial.Ratio / 100)
 				}
 			}
 		}
@@ -940,6 +956,128 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 		},
 	}, nil
 
+}
+
+func (t *travelrequestsvcs) GetCompanyTransactions(ctx context.Context, skip, limit int64, query any) (*models.CompanyTransactionPagination, error) {
+	match := bson.M{
+		"status": enums.TravelReqStatusCompleted,
+		"trash":  false,
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+	}
+
+	countPipeline := make([]bson.M, len(pipeline))
+	copy(countPipeline, pipeline)
+
+	count, err := t.repo.Count(ctx, countPipeline)
+	if err != nil {
+		return nil, err
+	}
+
+	invoiceLookup := []bson.M{
+		{
+			"$lookup": bson.M{
+				"from":         "tourismInvoices",
+				"localField":   "invoiceId",
+				"foreignField": "_id",
+				"as":           "invoice",
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$invoice",
+				"preserveNullAndEmptyArrays": true,
+			},
+		},
+	}
+
+	customerLookup := []bson.M{
+		{
+			"$lookup": bson.M{
+				"from":         "tourismCustomers",
+				"localField":   "customerId",
+				"foreignField": "_id",
+				"as":           "customer",
+			},
+		},
+		{
+			"$unwind": bson.M{
+				"path":                       "$customer",
+				"preserveNullAndEmptyArrays": true,
+			},
+		},
+	}
+
+	pipeline = append(pipeline,
+		bson.M{"$sort": bson.M{"_id": -1}},
+		bson.M{"$skip": skip},
+		bson.M{"$limit": limit},
+	)
+
+	pipeline = append(pipeline, invoiceLookup...)
+	pipeline = append(pipeline, customerLookup...)
+
+	type companyAux struct {
+		models.TravelRequest `bson:",inline"`
+		Invoice              models.Invoice        `bson:"invoice" json:"invoice"`
+		Customer             membermodels.Customer `bson:"customer" json:"customer"`
+	}
+
+	var result []companyAux
+	err = t.repo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	financialSettings, err := t.financialsettingssvcs.Get(ctx)
+	if err != nil {
+		return nil, errors.New("error get settings")
+	}
+
+	profitRatio := financialSettings.ProfitRatio
+
+	var transactions []models.CompanyTransaction
+	for _, r := range result {
+		if r.Invoice.Id == primitive.NilObjectID {
+			continue
+		}
+
+		invoiceTotal := r.Invoice.Total
+		if invoiceTotal == 0 {
+			invoiceTotal = r.Invoice.SubTotal
+		}
+
+		profit := invoiceTotal * (profitRatio / 100)
+
+		transaction := models.CompanyTransaction{
+			TravelRequestId: r.Id,
+			InvoiceId:       r.InvoiceId,
+			Date:            r.Date,
+			OrderId:         r.Invoice.InvoiceId,
+			CustomerName:    r.Customer.Name,
+			Profit:          profit,
+		}
+
+		transactions = append(transactions, transaction)
+	}
+
+	var totalPages float64 = 0
+	if limit > 0 {
+		totalPages = math.Ceil(float64(count) / float64(limit))
+	}
+
+	return &models.CompanyTransactionPagination{
+		Transactions: transactions,
+		Pagination: types.Pagination{
+			TotalPages: totalPages,
+			PerPage:    limit,
+			TotalCount: count,
+		},
+	}, nil
 }
 
 func (t *travelrequestsvcs) Count(ctx context.Context, filter any) (int64, error) {
