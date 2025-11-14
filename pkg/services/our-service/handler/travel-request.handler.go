@@ -39,6 +39,7 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Get("/customer/{customerId}", helpers.Make(h.GetCustomerRequests))
 		r.With(middleware.Auth("authenticate")).Get("/agent/{agentId}", helpers.Make(h.GetAgentTransactions))
+
 		r.With(middleware.Auth("authenticate")).Get("/profit", helpers.Make(h.GetCompanyTransactions))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
