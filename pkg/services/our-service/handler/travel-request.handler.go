@@ -39,6 +39,8 @@ func NewTravelRequestHandler(i *do.Injector, r *chi.Mux) {
 		).Get("/all", helpers.Make(h.GetAll))
 		r.With(middleware.Auth("authenticate")).Get("/customer/{customerId}", helpers.Make(h.GetCustomerRequests))
 		r.With(middleware.Auth("authenticate")).Get("/agent/{agentId}", helpers.Make(h.GetAgentTransactions))
+
+		r.With(middleware.Auth("authenticate")).Get("/profit", helpers.Make(h.GetCompanyTransactions))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
 		r.With(middleware.Auth("authenticate")).Get("/my-requests/{status}", helpers.Make(h.MyRequests))
@@ -132,6 +134,24 @@ func (h *TravelRequestHandler) GetAgentTransactions(w http.ResponseWriter, r *ht
 	query := r.URL.Query().Get("query")
 
 	result, err := h.travelreqsvcs.GetAgentTransactions(ctx, agentId, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *TravelRequestHandler) GetCompanyTransactions(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.travelreqsvcs.GetCompanyTransactions(ctx, skip, limit, query)
 	if err != nil {
 		return err
 	}
