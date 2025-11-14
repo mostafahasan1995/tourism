@@ -1,0 +1,195 @@
+package ourservice
+
+import (
+	"context"
+	"errors"
+	"time"
+
+	membermodels "larsa-tourism-microservices/pkg/services/member/models"
+	"larsa-tourism-microservices/pkg/services/our-service/models"
+	"larsa-tourism-microservices/pkg/services/our-service/repo"
+	"larsa-tourism-microservices/pkg/transl"
+
+	"github.com/samber/do"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type AgentFinancialSvcs interface {
+	GetAccount(ctx context.Context, agentId string, limit int) (*models.AgentFinancialAccount, error)
+	AddProfit(ctx context.Context, agent *membermodels.Agent, amount float64) (*models.AgentFinancialAccount, error)
+	Withdraw(ctx context.Context, agentId string, req *models.AgentWithdrawRequest, limit int) (*models.AgentFinancialAccount, error)
+}
+
+type agentfinancialsvcs struct {
+	repo repo.AgentFinancialRepo
+}
+
+func NewAgentFinancialSvcs(i *do.Injector) (AgentFinancialSvcs, error) {
+	return &agentfinancialsvcs{
+		repo: do.MustInvoke[repo.AgentFinancialRepo](i),
+	}, nil
+}
+
+func (s *agentfinancialsvcs) ensureAccount(ctx context.Context, agentObjectID primitive.ObjectID, agentName transl.Localizable[string]) (*models.AgentFinancialAccount, error) {
+	account, err := s.repo.GetByFilter(ctx, bson.M{"agentId": agentObjectID})
+	if err == nil {
+		// Account exists, update agent name if provided and different
+		if len(agentName) > 0 {
+			if account.AgentName == nil || !equalLocalizable(account.AgentName, agentName) {
+				filter := bson.M{"_id": account.Id}
+				update := bson.M{
+					"$set": bson.M{
+						"agentName": agentName,
+						"updatedAt": time.Now(),
+					},
+				}
+				updated, err := s.repo.Patch(ctx, filter, update)
+				if err != nil {
+					return nil, err
+				}
+				return updated, nil
+			}
+		}
+		return account, nil
+	}
+
+	// Account doesn't exist, create a new one
+	now := time.Now()
+	account = &models.AgentFinancialAccount{
+		Id:             primitive.NewObjectID(),
+		AgentId:        agentObjectID,
+		AgentName:      agentName,
+		TotalProfit:    0,
+		TotalWithdrawn: 0,
+		Balance:        0,
+		Withdrawals:    []models.AgentWithdrawal{},
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+
+	if err := s.repo.Add(ctx, account); err != nil {
+		return nil, err
+	}
+
+	return account, nil
+}
+
+func (s *agentfinancialsvcs) GetAccount(ctx context.Context, agentId string, limit int) (*models.AgentFinancialAccount, error) {
+	agentObjectID, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := s.ensureAccount(ctx, agentObjectID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Limit withdrawals for performance
+	s.limitWithdrawals(account, limit)
+
+	return account, nil
+}
+
+func (s *agentfinancialsvcs) AddProfit(ctx context.Context, agent *membermodels.Agent, amount float64) (*models.AgentFinancialAccount, error) {
+	if agent == nil {
+		return nil, errors.New("agent is required")
+	}
+
+	if amount <= 0 {
+		return nil, errors.New("amount must be greater than zero")
+	}
+
+	account, err := s.ensureAccount(ctx, agent.Id, agent.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	account.TotalProfit += amount
+	account.Balance += amount
+	account.UpdatedAt = time.Now()
+
+	filter := bson.M{"_id": account.Id}
+	update := bson.M{"$set": account}
+
+	updated, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
+}
+
+func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *models.AgentWithdrawRequest, limit int) (*models.AgentFinancialAccount, error) {
+	if req == nil {
+		return nil, errors.New("request is required")
+	}
+
+	if req.Amount <= 0 {
+		return nil, errors.New("amount must be greater than zero")
+	}
+
+	agentObjectID, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := s.ensureAccount(ctx, agentObjectID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.Amount > account.Balance {
+		return nil, errors.New("insufficient balance")
+	}
+
+	withdrawal := models.AgentWithdrawal{
+		Id:     primitive.NewObjectID(),
+		Amount: req.Amount,
+		Method: req.Method,
+		Note:   req.Note,
+		Date:   time.Now(),
+	}
+
+	account.TotalWithdrawn += req.Amount
+	account.Balance -= req.Amount
+	account.Withdrawals = append([]models.AgentWithdrawal{withdrawal}, account.Withdrawals...)
+	account.UpdatedAt = time.Now()
+
+	filter := bson.M{"_id": account.Id}
+	update := bson.M{"$set": account}
+
+	updated, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	// Limit withdrawals for performance
+	s.limitWithdrawals(updated, limit)
+
+	return updated, nil
+}
+
+// limitWithdrawals limits the withdrawals array to the specified limit for performance
+// Since withdrawals are stored with newest first (prepended), we take the first 'limit' items
+func (s *agentfinancialsvcs) limitWithdrawals(account *models.AgentFinancialAccount, limit int) {
+	if limit <= 0 {
+		return // Don't limit if limit is 0 or negative
+	}
+	if len(account.Withdrawals) > limit {
+		account.Withdrawals = account.Withdrawals[:limit]
+	}
+}
+
+func equalLocalizable(a transl.Localizable[string], b transl.Localizable[string]) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for k, v := range a {
+		if bv, ok := b[k]; !ok || bv != v {
+			return false
+		}
+	}
+	return true
+}
