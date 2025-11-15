@@ -454,16 +454,16 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 		return nil, err
 	}
 	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
-		// userId := cfg.User.Id // same as customerId
-		//check if the user making the request is customer
-		// customer, err := t.customersvcs.GetOne(ctx, userId.Hex())
-		// if err != nil {
-		// 	return nil, errors.New("error get customer, check if user is customer")
-		// }
+		userId := cfg.User.Id // same as customerId
+		// check if the user making the request is customer
+		customer, err := t.customersvcs.GetOne(ctx, userId.Hex())
+		if err != nil {
+			return nil, errors.New("error get customer, check if user is customer")
+		}
 
-		// if data.ClientEmail != customer.Security.Email {
-		// 	return nil, errors.New("client email is not the same as customer email")
-		// }
+		if data.ClientEmail != customer.Security.Email {
+			return nil, errors.New("client email is not the same as customer email")
+		}
 
 		seq, err := t.sortingsvcs.GetAndUpdateSourceSeq(ctx, "travelRequest")
 		if err != nil {
@@ -478,7 +478,7 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 			TravelRequestDto: *data,
 			Date:             time.Now(),
 			Status:           enums.TravelReqStatusPending,
-			CustomerId:       cfg.User.Id,
+			CustomerId:       customer.Id,
 			CreatedAt:        time.Now(),
 			CreatedBy:        cfg.User.Id,
 		}
@@ -653,9 +653,9 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		program := request.Program
 		customer := request.Customer
 
-		// if customer.Id == primitive.NilObjectID {
-		// 	return nil, errors.New("customer not found")
-		// }
+		if customer.Id == primitive.NilObjectID {
+			return nil, errors.New("customer not found")
+		}
 		if program.Id == primitive.NilObjectID {
 			return nil, errors.New("program not found")
 		}
