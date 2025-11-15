@@ -478,7 +478,7 @@ func (t *travelrequestsvcs) Add(ctx context.Context, data *models.TravelRequestD
 			TravelRequestDto: *data,
 			Date:             time.Now(),
 			Status:           enums.TravelReqStatusPending,
-			CustomerId:       cfg.User.Id,
+			CustomerId:       customer.Id,
 			CreatedAt:        time.Now(),
 			CreatedBy:        cfg.User.Id,
 		}
@@ -700,7 +700,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			"status":    enums.TravelReqStatusApproved,
 			"invoiceId": invoice.Id,
 			"updatedAt": time.Now(),
-			"updatedBy": customer.Id,
+			"updatedBy": cfg.User.Id,
 		}}
 
 		updatedRequest, err := t.repo.Patch(ctx, filter, update)
