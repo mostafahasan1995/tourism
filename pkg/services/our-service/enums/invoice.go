@@ -8,7 +8,6 @@ const (
 	PaymentStatusUnpaid  PaymentStatus = "unpaid"
 )
 
-
 type InvoiceStatus string
 
 const (
@@ -17,4 +16,12 @@ const (
 	InvoiceStatusUnpaid  InvoiceStatus = "unpaid"
 
 	InvoiceStatusWaitingApproved InvoiceStatus = "waiting-approved"
+)
+
+type WithdrawalStatus string
+
+const (
+	WithdrawalStatusPending  WithdrawalStatus = "pending"
+	WithdrawalStatusApproved WithdrawalStatus = "approved"
+	WithdrawalStatusRejected WithdrawalStatus = "rejected"
 )

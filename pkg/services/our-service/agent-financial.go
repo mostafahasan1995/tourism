@@ -6,6 +6,7 @@ import (
 	"time"
 
 	membermodels "larsa-tourism-microservices/pkg/services/member/models"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
 	"larsa-tourism-microservices/pkg/transl"
@@ -17,8 +18,10 @@ import (
 
 type AgentFinancialSvcs interface {
 	GetAccount(ctx context.Context, agentId string, limit int) (*models.AgentFinancialAccount, error)
+	CreateOrUpdateAccount(ctx context.Context, agentId string, dto *models.AgentFinancialAccountDto) (*models.AgentFinancialAccount, error)
 	AddProfit(ctx context.Context, agent *membermodels.Agent, amount float64) (*models.AgentFinancialAccount, error)
 	Withdraw(ctx context.Context, agentId string, req *models.AgentWithdrawRequest, limit int) (*models.AgentFinancialAccount, error)
+	ApproveWithdrawal(ctx context.Context, agentId string, withdrawalId string) (*models.AgentFinancialAccount, error)
 }
 
 type agentfinancialsvcs struct {
@@ -92,6 +95,62 @@ func (s *agentfinancialsvcs) GetAccount(ctx context.Context, agentId string, lim
 	return account, nil
 }
 
+func (s *agentfinancialsvcs) CreateOrUpdateAccount(ctx context.Context, agentId string, dto *models.AgentFinancialAccountDto) (*models.AgentFinancialAccount, error) {
+	if dto == nil {
+		return nil, errors.New("dto is required")
+	}
+
+	agentObjectID, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := s.repo.GetByFilter(ctx, bson.M{"agentId": agentObjectID})
+	if err != nil {
+		// Account doesn't exist, create a new one
+		now := time.Now()
+		account = &models.AgentFinancialAccount{
+			Id:              primitive.NewObjectID(),
+			AgentId:         agentObjectID,
+			PaymentMethod:   dto.PaymentMethod,
+			BankAccountInfo: dto.BankAccountInfo,
+			TotalProfit:     0,
+			TotalWithdrawn:  0,
+			Balance:         0,
+			Withdrawals:     []models.AgentWithdrawal{},
+			CreatedAt:       now,
+			UpdatedAt:       now,
+		}
+
+		if err := s.repo.Add(ctx, account); err != nil {
+			return nil, err
+		}
+
+		return account, nil
+	}
+
+	// Account exists, update payment info
+	account.PaymentMethod = dto.PaymentMethod
+	account.BankAccountInfo = dto.BankAccountInfo
+	account.UpdatedAt = time.Now()
+
+	filter := bson.M{"_id": account.Id}
+	update := bson.M{
+		"$set": bson.M{
+			"paymentMethod":   account.PaymentMethod,
+			"bankAccountInfo": account.BankAccountInfo,
+			"updatedAt":       account.UpdatedAt,
+		},
+	}
+
+	updated, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
+}
+
 func (s *agentfinancialsvcs) AddProfit(ctx context.Context, agent *membermodels.Agent, amount float64) (*models.AgentFinancialAccount, error) {
 	if agent == nil {
 		return nil, errors.New("agent is required")
@@ -149,6 +208,7 @@ func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *
 		Amount: req.Amount,
 		Method: req.Method,
 		Note:   req.Note,
+		Status: enums.WithdrawalStatusPending,
 		Date:   time.Now(),
 	}
 
@@ -167,6 +227,56 @@ func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *
 
 	// Limit withdrawals for performance
 	s.limitWithdrawals(updated, limit)
+
+	return updated, nil
+}
+
+func (s *agentfinancialsvcs) ApproveWithdrawal(ctx context.Context, agentId string, withdrawalId string) (*models.AgentFinancialAccount, error) {
+	agentObjectID, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	withdrawalObjectID, err := primitive.ObjectIDFromHex(withdrawalId)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := s.ensureAccount(ctx, agentObjectID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the withdrawal in the account
+	var withdrawalIndex = -1
+	var withdrawal *models.AgentWithdrawal
+	for i := range account.Withdrawals {
+		if account.Withdrawals[i].Id == withdrawalObjectID {
+			withdrawalIndex = i
+			withdrawal = &account.Withdrawals[i]
+			break
+		}
+	}
+
+	if withdrawal == nil {
+		return nil, errors.New("withdrawal not found")
+	}
+
+	if withdrawal.Status != enums.WithdrawalStatusPending {
+		return nil, errors.New("withdrawal is not pending, cannot approve")
+	}
+
+	// Update withdrawal status to approved
+	account.Withdrawals[withdrawalIndex].Status = enums.WithdrawalStatusApproved
+	account.UpdatedAt = time.Now()
+
+	filter := bson.M{"_id": account.Id}
+	update := bson.M{"$set": account}
+
+	updated, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
 
 	return updated, nil
 }
