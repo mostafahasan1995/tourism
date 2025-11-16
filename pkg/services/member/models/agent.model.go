@@ -22,12 +22,30 @@ type AgentDto struct {
 	Countries   []string                   `bson:"countries" json:"countries"`
 	Contact     AgentContact               `bson:"contacts" json:"contacts"` // Changed to new AgentContact structure
 	Security    MemberSecurity             `bson:"security" json:"security"`
+	BankAccount AgentFinancialAccount      `bson:"bankAccount" json:"bankAccount"`
 	Financial   AgentFinancial             `bson:"financial" json:"financial"`
 }
 
 type AgentFinancial struct {
 	ProfitOfTourismProgram bool    `bson:"profitOfTourismProgram" json:"profitOfTourismProgram"`
 	Ratio                  float64 `bson:"ratio" json:"ratio"`
+}
+type AgentFinancialAccount struct {
+	BankName            string   `bson:"bankName" json:"bankName"`
+	AccountNumber       string   `bson:"accountNumber" json:"accountNumber"`
+	AccountHolderName   string   `bson:"accountHolderName" json:"accountHolderName"`
+	IBAN                string   `bson:"iban" json:"iban"`
+	SwiftCode           string   `bson:"swiftCode" json:"swiftCode"`
+	SupportedCurrencies []string `bson:"supportedCurrencies" json:"supportedCurrencies"`
+}
+
+// DTO used to patch only the bank account information for an agent.
+type AgentBankAccountDto struct {
+	BankAccount AgentFinancialAccount `json:"bankAccount" validate:"required"`
+}
+
+func (a *AgentBankAccountDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, a)
 }
 
 type FinancialUnit struct {
