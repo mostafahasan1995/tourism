@@ -32,6 +32,7 @@ func NewAgentFinancialHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Put("/{agentId}", helpers.Make(h.CreateOrUpdateAccount))
 		r.With(middleware.Auth("authenticate")).Post("/{agentId}/withdraw", helpers.Make(h.Withdraw))
 		r.With(middleware.Auth("authenticate")).Patch("/{agentId}/withdrawals/{withdrawalId}/approve", helpers.Make(h.ApproveWithdrawal))
+		r.With(middleware.Auth("authenticate")).Patch("/{agentId}/withdrawals/{withdrawalId}/reject", helpers.Make(h.RejectWithdrawal))
 	})
 }
 
@@ -119,6 +120,20 @@ func (h *AgentFinancialHandler) ApproveWithdrawal(w http.ResponseWriter, r *http
 	withdrawalId := chi.URLParam(r, "withdrawalId")
 
 	account, err := h.svcs.ApproveWithdrawal(ctx, agentId, withdrawalId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, account)
+}
+
+func (h *AgentFinancialHandler) RejectWithdrawal(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "agentId")
+	withdrawalId := chi.URLParam(r, "withdrawalId")
+
+	account, err := h.svcs.RejectWithdrawal(ctx, agentId, withdrawalId)
 	if err != nil {
 		return err
 	}
