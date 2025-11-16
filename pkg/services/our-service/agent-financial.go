@@ -22,6 +22,7 @@ type AgentFinancialSvcs interface {
 	AddProfit(ctx context.Context, agent *membermodels.Agent, amount float64) (*models.AgentFinancialAccount, error)
 	Withdraw(ctx context.Context, agentId string, req *models.AgentWithdrawRequest, limit int) (*models.AgentFinancialAccount, error)
 	ApproveWithdrawal(ctx context.Context, agentId string, withdrawalId string) (*models.AgentFinancialAccount, error)
+	RejectWithdrawal(ctx context.Context, agentId string, withdrawalId string) (*models.AgentFinancialAccount, error)
 }
 
 type agentfinancialsvcs struct {
@@ -268,6 +269,63 @@ func (s *agentfinancialsvcs) ApproveWithdrawal(ctx context.Context, agentId stri
 
 	// Update withdrawal status to approved
 	account.Withdrawals[withdrawalIndex].Status = enums.WithdrawalStatusApproved
+	account.UpdatedAt = time.Now()
+
+	filter := bson.M{"_id": account.Id}
+	update := bson.M{"$set": account}
+
+	updated, err := s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
+}
+
+func (s *agentfinancialsvcs) RejectWithdrawal(ctx context.Context, agentId string, withdrawalId string) (*models.AgentFinancialAccount, error) {
+	agentObjectID, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	withdrawalObjectID, err := primitive.ObjectIDFromHex(withdrawalId)
+	if err != nil {
+		return nil, err
+	}
+
+	account, err := s.ensureAccount(ctx, agentObjectID, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Find the withdrawal in the account
+	var withdrawalIndex = -1
+	var withdrawal *models.AgentWithdrawal
+	for i := range account.Withdrawals {
+		if account.Withdrawals[i].Id == withdrawalObjectID {
+			withdrawalIndex = i
+			withdrawal = &account.Withdrawals[i]
+			break
+		}
+	}
+
+	if withdrawal == nil {
+		return nil, errors.New("withdrawal not found")
+	}
+
+	if withdrawal.Status != enums.WithdrawalStatusPending {
+		return nil, errors.New("withdrawal is not pending, cannot reject")
+	}
+
+	// Reverse the withdrawal: return amount to balance and adjust totals
+	account.Balance += withdrawal.Amount
+	if account.TotalWithdrawn >= withdrawal.Amount {
+		account.TotalWithdrawn -= withdrawal.Amount
+	} else {
+		account.TotalWithdrawn = 0
+	}
+
+	account.Withdrawals[withdrawalIndex].Status = enums.WithdrawalStatusRejected
 	account.UpdatedAt = time.Now()
 
 	filter := bson.M{"_id": account.Id}
