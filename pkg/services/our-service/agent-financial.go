@@ -205,12 +205,15 @@ func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *
 	}
 
 	withdrawal := models.AgentWithdrawal{
-		Id:     primitive.NewObjectID(),
-		Amount: req.Amount,
-		Method: req.Method,
-		Note:   req.Note,
-		Status: enums.WithdrawalStatusPending,
-		Date:   time.Now(),
+		Id:      primitive.NewObjectID(),
+		Amount:  req.Amount,
+		Method:  req.Method,
+		Note:    req.Note,
+		Status:  enums.WithdrawalStatusPending,
+		Name:    req.Name,
+		Date:    req.Date,
+		Email:   req.Email,
+		Receipt: req.Receipt,
 	}
 
 	account.TotalWithdrawn += req.Amount

@@ -4,6 +4,7 @@ import (
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/transl"
+	"larsa-tourism-microservices/pkg/types"
 	"time"
 
 	"github.com/go-playground/validator/v10"
@@ -11,12 +12,15 @@ import (
 )
 
 type AgentWithdrawal struct {
-	Id     primitive.ObjectID     `bson:"_id,omitempty" json:"_id,omitempty"`
-	Amount float64                `bson:"amount" json:"amount"`
-	Method string                 `bson:"method" json:"method"`
-	Note   string                 `bson:"note" json:"note"`
-	Status enums.WithdrawalStatus `bson:"status" json:"status"`
-	Date   time.Time              `bson:"date" json:"date"`
+	Id      primitive.ObjectID     `bson:"_id,omitempty" json:"_id,omitempty"`
+	Amount  float64                `bson:"amount" json:"amount"`
+	Method  string                 `bson:"method" json:"method"`
+	Name    string                 `bson:"name" json:"name"`
+	Email   string                 `bson:"email" json:"email"`
+	Receipt []types.FileField      `bson:"receipt" json:"receipt"`
+	Note    string                 `bson:"note" json:"note"`
+	Status  enums.WithdrawalStatus `bson:"status" json:"status"`
+	Date    time.Time              `bson:"date" json:"date"`
 }
 
 type AgentFinancialAccount struct {
@@ -43,7 +47,11 @@ func (a *AgentFinancialAccountDto) Validate(v *validator.Validate) error {
 }
 
 type AgentWithdrawRequest struct {
-	Amount float64 `json:"amount"`
-	Method string  `json:"method"`
-	Note   string  `json:"note"`
+	Amount  float64           `json:"amount"`
+	Method  string            `json:"method"`
+	Note    string            `json:"note"`
+	Name    string            `json:"name"`
+	Date    time.Time         `json:"date"`
+	Email   string            `json:"email"`
+	Receipt []types.FileField `json:"receipt"`
 }
