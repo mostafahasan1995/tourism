@@ -36,6 +36,7 @@ type AgentSvcs interface {
 	GetAll(ctx context.Context, query string) ([]models.Agent, error)
 	Add(ctx context.Context, data *models.AgentDto) (*models.Agent, error)
 	Update(ctx context.Context, agentId string, data *models.AgentDto) (*models.Agent, error)
+	UpdateBankAccount(ctx context.Context, agentId string, data *models.AgentBankAccountDto) (*models.Agent, error)
 	UpdateStatus(ctx context.Context, agentId string, status string) (*models.Agent, error)
 	Delete(ctx context.Context, agentId string) error
 	//agent join
@@ -309,6 +310,35 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 	}
 
 	return result.(*models.Agent), nil
+}
+
+// UpdateBankAccount patches only the bank account information for an agent.
+func (a *agentsvcs) UpdateBankAccount(ctx context.Context, agentId string, data *models.AgentBankAccountDto) (*models.Agent, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_id, err := primitive.ObjectIDFromHex(agentId)
+	if err != nil {
+		return nil, err
+	}
+
+	filter := bson.M{"_id": _id, "trash": false}
+	update := bson.M{
+		"$set": bson.M{
+			"bankAccount": data.BankAccount,
+			"updatedAt":   time.Now(),
+			"updatedBy":   cfg.User.Id,
+		},
+	}
+
+	updated, err := a.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	return updated, nil
 }
 
 func (a *agentsvcs) UpdateStatus(ctx context.Context, agentId string, status string) (*models.Agent, error) {

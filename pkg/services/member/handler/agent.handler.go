@@ -34,6 +34,7 @@ func NewAgentHandler(i *do.Injector, r *chi.Mux) {
 		r.Get("/destinations", helpers.Make(h.GetDestinationAgents))
 		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
 		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
+		r.With(middleware.Auth("authenticate")).Patch("/{id}/bank-account", helpers.Make(h.UpdateBankAccount))
 		r.With(middleware.Auth("authenticate")).Patch("/{id}/status", helpers.Make(h.UpdateStatus))
 		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
 	})
@@ -128,6 +129,29 @@ func (h *AgentHandler) Update(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	result, err := h.agentsvcs.Update(ctx, agentId, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+// UpdateBankAccount patches only the bank account info for an agent without touching other fields.
+func (h *AgentHandler) UpdateBankAccount(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	agentId := chi.URLParam(r, "id")
+
+	var data models.AgentBankAccountDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return err
+	}
+
+	if err := data.Validate(h.validationInstance); err != nil {
+		return err
+	}
+
+	result, err := h.agentsvcs.UpdateBankAccount(ctx, agentId, &data)
 	if err != nil {
 		return err
 	}
