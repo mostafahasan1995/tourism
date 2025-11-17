@@ -265,6 +265,7 @@ type travelrequestsvcs struct {
 	customersvcs          member.CustomerSvcs
 	financialsettingssvcs FinancialSettingsSvcs
 	agentfinancialsvcs    AgentFinancialSvcs
+	programrepo           repo.ProgramRepo
 	withtxn               *db.WithTxn
 }
 
@@ -277,6 +278,7 @@ func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 		customersvcs:          do.MustInvoke[member.CustomerSvcs](i),
 		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
 		agentfinancialsvcs:    do.MustInvoke[AgentFinancialSvcs](i),
+		programrepo:           do.MustInvoke[repo.ProgramRepo](i),
 		withtxn:               do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -708,8 +710,18 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			Adjustments: []models.InvoiceAdjustment{},
 			Note:        "",
 		}
+		// Update program status to "approved" if it's "waiting"
 		if program.ProgramDto.Status == "waiting" {
-			program.ProgramDto.Status = "approved"
+			filter := bson.M{"_id": program.Id}
+			update := bson.M{"$set": bson.M{
+				"status":    "approved",
+				"updatedAt": time.Now(),
+				"updatedBy": cfg.User.Id,
+			}}
+			_, err := t.programrepo.Patch(ctx, filter, update)
+			if err != nil {
+				return nil, fmt.Errorf("error updating program status: %w", err)
+			}
 		}
 		svcss, err := program.CustomType.GetAllServicePricing()
 
@@ -759,19 +771,51 @@ func (t *travelrequestsvcs) Reject(ctx context.Context, id string, data *models.
 		return nil, err
 	}
 
+	// Get travel request to find associated program
+	travelReq, err := t.GetOne(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update travel request status
 	filter := bson.M{"_id": _id}
+	rejectReason := ""
+	if data != nil {
+		rejectReason = data.Reason
+	}
 	update := bson.M{"$set": bson.M{
 		"status":       enums.TravelReqStatusRejected,
-		"rejectReason": data.Reason,
+		"rejectReason": rejectReason,
 		"updatedAt":    time.Now(),
 		"updatedBy":    cfg.User.Id,
 	}}
-	if data.Reason == "waiting" {
-		update["status"] = "rejected"
-	}
+
 	updatedRequest, err := t.repo.Patch(ctx, filter, update)
 	if err != nil {
 		return nil, err
+	}
+
+	// Update program status to "rejected" if program exists
+	if travelReq.Program != primitive.NilObjectID {
+		// Get program to check current status
+		program, err := t.programrepo.GetByFilter(ctx, bson.M{"_id": travelReq.Program, "trash": false})
+		if err == nil && program != nil {
+			// Check if status is "waiting" or "pending" and update to "rejected"
+			currentStatus := program.ProgramDto.Status
+			if currentStatus == "waiting" || currentStatus == "pending" {
+				filter := bson.M{"_id": travelReq.Program}
+				update := bson.M{"$set": bson.M{
+					"status":    "rejected",
+					"updatedAt": time.Now(),
+					"updatedBy": cfg.User.Id,
+				}}
+				_, err := t.programrepo.Patch(ctx, filter, update)
+				if err != nil {
+					// Log error but don't fail the reject operation
+					fmt.Printf("error updating program status: %v\n", err)
+				}
+			}
+		}
 	}
 
 	return updatedRequest, nil
@@ -954,33 +998,54 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 			return nil, errors.New("invoice not found")
 		}
 
-		invoiceTotal := r.Invoice.Total
-		if invoiceTotal == 0 {
-			invoiceTotal = r.Invoice.SubTotal
+		// Use SubTotal for profit calculation (before fees)
+		// If SubTotal is 0, fallback to Total (for older invoices)
+		invoiceSubTotal := r.Invoice.SubTotal
+		if invoiceSubTotal == 0 {
+			invoiceSubTotal = r.Invoice.Total
 		}
 
-		clientProfit := invoiceTotal * (profitRatio / 100)
+		// Calculate client profit: invoiceSubTotal * (profitRatio / 100)
+
+		clientProfit := invoiceSubTotal * (profitRatio / 100)
+
+		// Initialize commission
 		var commission float64
 
-		if r.DepartureAgent == r.TripCoordinator {
-			financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
-			if err == nil && financial.ProfitOfTourismProgram {
-				commission = clientProfit * (financial.Ratio / 100)
-			}
+		// Determine which agent to calculate commission for
+		var targetFinancial membermodels.AgentFinancial
+		var hasValidFinancial bool
 
-		} else {
+		if r.DepartureAgent == r.TripCoordinator {
+			// Same agent for both roles
 			if r.DepartureAgent == _id {
 				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
-				if err == nil && financial.ProfitOfTourismProgram {
-					commission = clientProfit * (financial.Ratio / 100)
-				}
-
-			} else if r.TripCoordinator == _id {
-				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
-				if err == nil && financial.ProfitOfTourismProgram {
-					commission = clientProfit * (financial.Ratio / 100)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
 				}
 			}
+		} else {
+			// Different agents
+			if r.DepartureAgent == _id {
+				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			} else if r.TripCoordinator == _id {
+				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			}
+		}
+
+		// Calculate commission: clientProfit * (agentRatio / 100)
+		// Example: 82.5 * (5 / 100) = 4.125
+		if hasValidFinancial {
+			commission = clientProfit * (targetFinancial.Ratio / 100)
 		}
 
 		transaction := models.AgentTransaction{

@@ -590,7 +590,11 @@ func (p *programsvcs) Update(ctx context.Context, id string, data *models.Progra
 		if err != nil {
 			return nil, err
 		}
-		if data.Status == "rejected" {
+		oldProgram, err := p.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+		if err != nil {
+			return nil, errors.New("error fetching program")
+		}
+		if oldProgram.Status == "rejected" {
 			data.Status = "waiting"
 		}
 		program := &models.Program{

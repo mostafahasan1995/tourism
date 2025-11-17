@@ -45,7 +45,7 @@ type ProgramDto struct {
 	TravelReqId primitive.ObjectID         `bson:"travelReqId" json:"travelReqId" `
 	CustomerId  *primitive.ObjectID        `bson:"customerId" json:"customerId"`
 	AgentId     primitive.ObjectID         `bson:"agentId" json:"agentId"`
-	Status      string                     `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
+	Status      string                     `bson:"status" json:"status" `
 	Package     primitive.ObjectID         `bson:"package" json:"package" `
 	ProgramType enums.ProgramType          `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	TravelType  enums.TravelType           `bson:"travelType" json:"travelType"
