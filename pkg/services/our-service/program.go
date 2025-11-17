@@ -590,7 +590,9 @@ func (p *programsvcs) Update(ctx context.Context, id string, data *models.Progra
 		if err != nil {
 			return nil, err
 		}
-
+		if data.Status == "rejected" {
+			data.Status = "waiting"
+		}
 		program := &models.Program{
 			Id:         _id,
 			ProgramDto: *data,

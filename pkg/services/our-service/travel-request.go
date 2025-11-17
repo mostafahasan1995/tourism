@@ -766,7 +766,9 @@ func (t *travelrequestsvcs) Reject(ctx context.Context, id string, data *models.
 		"updatedAt":    time.Now(),
 		"updatedBy":    cfg.User.Id,
 	}}
-
+	if data.Reason == "waiting" {
+		update["status"] = "rejected"
+	}
 	updatedRequest, err := t.repo.Patch(ctx, filter, update)
 	if err != nil {
 		return nil, err
