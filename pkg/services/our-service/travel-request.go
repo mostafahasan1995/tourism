@@ -299,6 +299,13 @@ func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([
 	}
 
 	userId := cfg.User.Id
+
+	// Check if user is agent
+	isAgent, agentUserId, err := t.isUserAgent(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	//check if user can get other travel requests
 	check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
 	if !ok {
@@ -308,18 +315,58 @@ func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([
 	var pipeline []bson.M
 
 	if check.Capability == "tourismGetOtherTravelRequests" && check.IsAllowed {
+		// User has permission to get other travel requests
 		match := bson.M{"trash": false}
 
-		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
+		// Apply agent filter if user is agent
+		if isAgent {
+			match["program"] = bson.M{"$ne": primitive.NilObjectID}
+		}
 
+		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
 		if err != nil {
 			return nil, errors.New("invalid query")
 		}
 
 		pipeline = f.BuildPipeline(match)
 
-	} else {
+		// If agent, add program lookup and filter
+		if isAgent {
+			// Lookup program
+			pipeline = append(pipeline, bson.M{
+				"$lookup": bson.M{
+					"from":         "tourismPrograms",
+					"localField":   "program",
+					"foreignField": "_id",
+					"as":           "programForFilter",
+				},
+			})
 
+			// Unwind to filter out travel requests without programs
+			pipeline = append(pipeline, bson.M{
+				"$unwind": bson.M{
+					"path":                       "$programForFilter",
+					"preserveNullAndEmptyArrays": false,
+				},
+			})
+
+			// Filter by agentId
+			pipeline = append(pipeline, bson.M{
+				"$match": bson.M{
+					"programForFilter.agentId": agentUserId,
+				},
+			})
+
+			// Remove the temporary lookup field
+			pipeline = append(pipeline, bson.M{
+				"$project": bson.M{
+					"programForFilter": 0,
+				},
+			})
+		}
+
+	} else {
+		// User doesn't have permission, filter by their own travel requests
 		pipeline = []bson.M{
 			{"$match": bson.M{
 				"trash": false,
@@ -1270,137 +1317,117 @@ func (t *travelrequestsvcs) Count(ctx context.Context, filter any) (int64, error
 
 // v2
 
-func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *query.Conditions) ([]bson.M, error) {
+// isUserAgent checks if the user has agent role by checking roles array for agent role ID
+func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.ObjectID, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
-		return nil, err
+		return false, primitive.NilObjectID, err
 	}
 
 	userId := cfg.User.Id
+	agentRoleID, err := primitive.ObjectIDFromHex("686cd82c461edd73ba964477")
+	if err != nil {
+		return false, userId, err
+	}
 
-	// Check if user has agent role by checking roleNames
-	// Use reflection to access RoleNames field from UserData
-	isAgent := false
+	// Check roles array by reflection
 	userDataValue := reflect.ValueOf(cfg.User.UserData)
-
 	if userDataValue.Kind() == reflect.Struct {
-		// Try "RoleNames" (capitalized) first
-		roleNamesField := userDataValue.FieldByName("RoleNames")
-		if !roleNamesField.IsValid() {
-			// Try "roleNames" (lowercase)
-			roleNamesField = userDataValue.FieldByName("roleNames")
+		// Try "Roles" (capitalized) first
+		rolesField := userDataValue.FieldByName("Roles")
+		if !rolesField.IsValid() {
+			// Try "roles" (lowercase)
+			rolesField = userDataValue.FieldByName("roles")
 		}
 
-		if roleNamesField.IsValid() && roleNamesField.Kind() == reflect.Slice {
-			// Handle different slice types
-			roleNamesInterface := roleNamesField.Interface()
+		if rolesField.IsValid() && rolesField.Kind() == reflect.Slice {
+			// Iterate through roles
+			for i := 0; i < rolesField.Len(); i++ {
+				roleValue := rolesField.Index(i)
+				var roleStr string
 
-			// Try []string first
-			if roleNames, ok := roleNamesInterface.([]string); ok {
-				for _, roleName := range roleNames {
-					if roleName == "agent" {
-						isAgent = true
-						break
+				if roleValue.Kind() == reflect.String {
+					roleStr = roleValue.String()
+				} else if roleValue.Kind() == reflect.Interface {
+					if str, ok := roleValue.Interface().(string); ok {
+						roleStr = str
 					}
 				}
-			} else if roleNamesInterfaceSlice, ok := roleNamesInterface.([]interface{}); ok {
-				// Handle []interface{} case (when JSON unmarshaling)
-				for _, roleNameInterface := range roleNamesInterfaceSlice {
-					if roleName, ok := roleNameInterface.(string); ok && roleName == "agent" {
-						isAgent = true
-						break
-					}
-				}
-			} else {
-				// Try to iterate using reflection
-				for i := 0; i < roleNamesField.Len(); i++ {
-					roleNameValue := roleNamesField.Index(i)
-					if roleNameValue.Kind() == reflect.String {
-						if roleNameValue.String() == "agent" {
-							isAgent = true
-							break
-						}
-					} else if roleNameValue.Kind() == reflect.Interface {
-						if roleName, ok := roleNameValue.Interface().(string); ok && roleName == "agent" {
-							isAgent = true
-							break
-						}
+
+				if roleStr != "" {
+					roleID, err := primitive.ObjectIDFromHex(roleStr)
+					if err == nil && roleID == agentRoleID {
+						return true, userId, nil
 					}
 				}
 			}
 		}
 	}
 
+	return false, userId, nil
+}
+
+func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *query.Conditions) ([]bson.M, error) {
+	isAgent, userId, err := t.isUserAgent(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	var pipeline []bson.M
 
+	// Base match filter
+	baseMatch := bson.M{"trash": false}
 	if isAgent {
-		// Agent: filter by program.agentId = userId
-		// Only return travel requests that have a program with agentId matching the user's ID
-		pipeline = []bson.M{
-			{"$match": bson.M{
-				"trash":   false,
-				"program": bson.M{"$ne": primitive.NilObjectID}, // Only travel requests with programs
-			}},
-		}
+		// For agents: also ensure program exists
+		baseMatch["program"] = bson.M{"$ne": primitive.NilObjectID}
+	}
+	pipeline = append(pipeline, bson.M{"$match": baseMatch})
 
-		// Lookup program to check agentId
-		programLookupForFilter := []bson.M{
-			{
-				"$lookup": bson.M{
-					"from":         "tourismPrograms",
-					"localField":   "program",
-					"foreignField": "_id",
-					"as":           "programForFilter",
-				},
+	// If agent, add program lookup and filter BEFORE applying query filters
+	if isAgent {
+		// Lookup program - this will be used for filtering
+		pipeline = append(pipeline, bson.M{
+			"$lookup": bson.M{
+				"from":         "tourismPrograms",
+				"localField":   "program",
+				"foreignField": "_id",
+				"as":           "programForFilter",
 			},
-			{
-				"$unwind": bson.M{
-					"path":                       "$programForFilter",
-					"preserveNullAndEmptyArrays": false, // Only include travel requests with programs
-				},
+		})
+
+		// Unwind to filter out travel requests without programs
+		pipeline = append(pipeline, bson.M{
+			"$unwind": bson.M{
+				"path":                       "$programForFilter",
+				"preserveNullAndEmptyArrays": false,
 			},
-			{
-				"$match": bson.M{
-					"programForFilter.agentId": userId, // Match agentId exactly
-				},
+		})
+
+		// Filter by agentId
+		pipeline = append(pipeline, bson.M{
+			"$match": bson.M{
+				"programForFilter.agentId": userId,
 			},
-			{
-				"$project": bson.M{
-					"programForFilter": 0, // Remove the temporary lookup field
-				},
+		})
+
+		// Remove the temporary lookup field
+		pipeline = append(pipeline, bson.M{
+			"$project": bson.M{
+				"programForFilter": 0,
 			},
-		}
+		})
+	}
 
-		pipeline = append(pipeline, programLookupForFilter...)
-
-		// Apply additional query filters if provided
-		if err := query.CheckValid(); err != nil {
-			return nil, err
-		}
-		filter, err := query.ConvertToMongo()
-		if err != nil {
-			return nil, err
-		}
-		if len(filter) > 0 {
-			pipeline = append(pipeline, bson.M{"$match": filter})
-		}
-
-	} else {
-		// Administrator: return all travel requests (no agent filter)
-		if err := query.CheckValid(); err != nil {
-			return nil, err
-		}
-		filter, err := query.ConvertToMongo()
-		if err != nil {
-			return nil, err
-		}
-
-		pipeline = []bson.M{
-			{"$match": bson.M{"trash": false}},
-		}
-		if len(filter) > 0 {
-			pipeline = append(pipeline, bson.M{"$match": filter})
-		}
+	// Apply additional query filters if provided
+	if err := query.CheckValid(); err != nil {
+		return nil, err
+	}
+	filter, err := query.ConvertToMongo()
+	if err != nil {
+		return nil, err
+	}
+	if len(filter) > 0 {
+		pipeline = append(pipeline, bson.M{"$match": filter})
 	}
 
 	return pipeline, nil
