@@ -226,15 +226,17 @@ func (h *TravelRequestHandler) Approve(w http.ResponseWriter, r *http.Request) e
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
 }
-
 func (h *TravelRequestHandler) Reject(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
 	id := chi.URLParam(r, "id") // travel request id
 
 	var data models.RejectMyReq
-	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
-		return err
+	// Make request body optional - only decode if body is not empty
+	if r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+			return err
+		}
 	}
 
 	result, err := h.travelreqsvcs.Reject(ctx, id, &data)

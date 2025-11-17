@@ -497,7 +497,9 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 			UpdatedAt:  time.Now(),
 			UpdatedBy:  cfg.User.Id,
 		}
-
+		if program.ProgramType == "custom" {
+			program.ProgramDto.Status = "waiting"
+		}
 		if program.TravelReqId != primitive.NilObjectID {
 			if err := p.AssignProgramToTravelRequest(ctx, program); err != nil {
 				return nil, errors.New("error updating travel request, check if it is already assigned to a program")
@@ -588,7 +590,13 @@ func (p *programsvcs) Update(ctx context.Context, id string, data *models.Progra
 		if err != nil {
 			return nil, err
 		}
-
+		oldProgram, err := p.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+		if err != nil {
+			return nil, errors.New("error fetching program")
+		}
+		if oldProgram.Status == "rejected" {
+			data.Status = "waiting"
+		}
 		program := &models.Program{
 			Id:         _id,
 			ProgramDto: *data,

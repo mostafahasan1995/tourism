@@ -16,6 +16,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
+	"reflect"
 	"time"
 
 	"larsa-tourism-microservices/pkg/types"
@@ -264,6 +265,7 @@ type travelrequestsvcs struct {
 	customersvcs          member.CustomerSvcs
 	financialsettingssvcs FinancialSettingsSvcs
 	agentfinancialsvcs    AgentFinancialSvcs
+	programrepo           repo.ProgramRepo
 	withtxn               *db.WithTxn
 }
 
@@ -276,6 +278,7 @@ func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 		customersvcs:          do.MustInvoke[member.CustomerSvcs](i),
 		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
 		agentfinancialsvcs:    do.MustInvoke[AgentFinancialSvcs](i),
+		programrepo:           do.MustInvoke[repo.ProgramRepo](i),
 		withtxn:               do.MustInvoke[*db.WithTxn](i),
 	}, nil
 }
@@ -707,7 +710,19 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			Adjustments: []models.InvoiceAdjustment{},
 			Note:        "",
 		}
-
+		// Update program status to "approved" if it's "waiting"
+		if program.ProgramDto.Status == "waiting" {
+			filter := bson.M{"_id": program.Id}
+			update := bson.M{"$set": bson.M{
+				"status":    "approved",
+				"updatedAt": time.Now(),
+				"updatedBy": cfg.User.Id,
+			}}
+			_, err := t.programrepo.Patch(ctx, filter, update)
+			if err != nil {
+				return nil, fmt.Errorf("error updating program status: %w", err)
+			}
+		}
 		svcss, err := program.CustomType.GetAllServicePricing()
 
 		if err != nil {
@@ -756,10 +771,21 @@ func (t *travelrequestsvcs) Reject(ctx context.Context, id string, data *models.
 		return nil, err
 	}
 
+	// Get travel request to find associated program
+	travelReq, err := t.GetOne(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update travel request status
 	filter := bson.M{"_id": _id}
+	rejectReason := ""
+	if data != nil {
+		rejectReason = data.Reason
+	}
 	update := bson.M{"$set": bson.M{
 		"status":       enums.TravelReqStatusRejected,
-		"rejectReason": data.Reason,
+		"rejectReason": rejectReason,
 		"updatedAt":    time.Now(),
 		"updatedBy":    cfg.User.Id,
 	}}
@@ -767,6 +793,29 @@ func (t *travelrequestsvcs) Reject(ctx context.Context, id string, data *models.
 	updatedRequest, err := t.repo.Patch(ctx, filter, update)
 	if err != nil {
 		return nil, err
+	}
+
+	// Update program status to "rejected" if program exists
+	if travelReq.Program != primitive.NilObjectID {
+		// Get program to check current status
+		program, err := t.programrepo.GetByFilter(ctx, bson.M{"_id": travelReq.Program, "trash": false})
+		if err == nil && program != nil {
+			// Check if status is "waiting" or "pending" and update to "rejected"
+			currentStatus := program.ProgramDto.Status
+			if currentStatus == "waiting" || currentStatus == "pending" {
+				filter := bson.M{"_id": travelReq.Program}
+				update := bson.M{"$set": bson.M{
+					"status":    "rejected",
+					"updatedAt": time.Now(),
+					"updatedBy": cfg.User.Id,
+				}}
+				_, err := t.programrepo.Patch(ctx, filter, update)
+				if err != nil {
+					// Log error but don't fail the reject operation
+					fmt.Printf("error updating program status: %v\n", err)
+				}
+			}
+		}
 	}
 
 	return updatedRequest, nil
@@ -949,33 +998,54 @@ func (t *travelrequestsvcs) GetAgentTransactions(ctx context.Context, agentId st
 			return nil, errors.New("invoice not found")
 		}
 
-		invoiceTotal := r.Invoice.Total
-		if invoiceTotal == 0 {
-			invoiceTotal = r.Invoice.SubTotal
+		// Use SubTotal for profit calculation (before fees)
+		// If SubTotal is 0, fallback to Total (for older invoices)
+		invoiceSubTotal := r.Invoice.SubTotal
+		if invoiceSubTotal == 0 {
+			invoiceSubTotal = r.Invoice.Total
 		}
 
-		clientProfit := invoiceTotal * (profitRatio / 100)
+		// Calculate client profit: invoiceSubTotal * (profitRatio / 100)
+
+		clientProfit := invoiceSubTotal * (profitRatio / 100)
+
+		// Initialize commission
 		var commission float64
 
-		if r.DepartureAgent == r.TripCoordinator {
-			financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
-			if err == nil && financial.ProfitOfTourismProgram {
-				commission = clientProfit * (financial.Ratio / 100)
-			}
+		// Determine which agent to calculate commission for
+		var targetFinancial membermodels.AgentFinancial
+		var hasValidFinancial bool
 
-		} else {
+		if r.DepartureAgent == r.TripCoordinator {
+			// Same agent for both roles
 			if r.DepartureAgent == _id {
 				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
-				if err == nil && financial.ProfitOfTourismProgram {
-					commission = clientProfit * (financial.Ratio / 100)
-				}
-
-			} else if r.TripCoordinator == _id {
-				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
-				if err == nil && financial.ProfitOfTourismProgram {
-					commission = clientProfit * (financial.Ratio / 100)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
 				}
 			}
+		} else {
+			// Different agents
+			if r.DepartureAgent == _id {
+				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			} else if r.TripCoordinator == _id {
+				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			}
+		}
+
+		// Calculate commission: clientProfit * (agentRatio / 100)
+		// Example: 82.5 * (5 / 100) = 4.125
+		if hasValidFinancial {
+			commission = clientProfit * (targetFinancial.Ratio / 100)
 		}
 
 		transaction := models.AgentTransaction{
@@ -1207,15 +1277,74 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 	}
 
 	userId := cfg.User.Id
-	//check if user can get other travel requests
-	check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
-	if !ok {
-		return nil, errors.New("error check user capability")
+
+	// Check if user has agent role by checking roleNames
+	// Use reflection to access RoleNames field which might not be in the struct definition
+	isAgent := false
+	userDataValue := reflect.ValueOf(cfg.User.UserData)
+	if userDataValue.Kind() == reflect.Struct {
+		roleNamesField := userDataValue.FieldByName("RoleNames")
+		if roleNamesField.IsValid() && roleNamesField.Kind() == reflect.Slice {
+			roleNames := roleNamesField.Interface().([]string)
+			for _, roleName := range roleNames {
+				if roleName == "agent" {
+					isAgent = true
+					break
+				}
+			}
+		}
 	}
 
 	var pipeline []bson.M
 
-	if check.Capability == "tourismGetOtherTravelRequests" && check.IsAllowed {
+	if isAgent {
+		// Agent: filter by program.agentId = userId
+		pipeline = []bson.M{
+			{"$match": bson.M{"trash": false}},
+		}
+
+		// Lookup program to check agentId
+		programLookupForFilter := []bson.M{
+			{
+				"$lookup": bson.M{
+					"from":         "tourismPrograms",
+					"localField":   "program",
+					"foreignField": "_id",
+					"as":           "programForFilter",
+				},
+			},
+			{
+				"$unwind": bson.M{
+					"path":                       "$programForFilter",
+					"preserveNullAndEmptyArrays": false, // Only include travel requests with programs
+				},
+			},
+			{
+				"$match": bson.M{
+					"programForFilter.agentId": userId,
+				},
+			},
+			{
+				"$project": bson.M{
+					"programForFilter": 0,
+				},
+			},
+		}
+
+		pipeline = append(pipeline, programLookupForFilter...)
+
+		if err := query.CheckValid(); err != nil {
+			return nil, err
+		}
+		filter, err := query.ConvertToMongo()
+		if err != nil {
+			return nil, err
+		}
+
+		pipeline = append(pipeline, bson.M{"$match": filter})
+
+	} else {
+		// Administrator: return all travel requests (no agent filter)
 		if err := query.CheckValid(); err != nil {
 			return nil, err
 		}
@@ -1228,32 +1357,6 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 			{"$match": bson.M{"trash": false}},
 			{"$match": filter},
 		}
-
-	} else {
-
-		pipeline = []bson.M{
-			{"$match": bson.M{"trash": false}},
-		}
-
-		pipeline = append(pipeline, hotelLookup...)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{
-			"$or": bson.A{
-				bson.M{"departureAgent": userId},
-				bson.M{"tripCoordinator": userId},
-				bson.M{"hotelOwner": userId},
-			},
-		}})
-
-		if err := query.CheckValid(); err != nil {
-			return nil, err
-		}
-		filter, err := query.ConvertToMongo()
-		if err != nil {
-			return nil, err
-		}
-
-		pipeline = append(pipeline, bson.M{"$match": filter})
-
 	}
 
 	return pipeline, nil
