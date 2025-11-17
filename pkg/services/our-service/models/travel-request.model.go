@@ -109,6 +109,8 @@ type TravelRequestRes struct {
 	ProgramData   Program               `bson:"programData" json:"programData"`
 	CustomerData  membermodels.Customer `bson:"customerData" json:"customerData"`
 	PackageData   Package               `bson:"packageData" json:"packageData"`
+	TotalCost     float64               `bson:"totalCost" json:"totalCost"`
+	Fees          float64               `bson:"fees" json:"fees"`
 }
 
 type TravelRequestPagination struct {
