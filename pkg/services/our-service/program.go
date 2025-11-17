@@ -139,18 +139,20 @@ type ProgramSvcs interface {
 }
 
 type programsvcs struct {
-	repo           repo.ProgramRepo
-	travelreqsvcs  TravelRequestSvcs
-	withtxn        *db.WithTxn
-	activitiesSvcs picklist.ActivitiesSvcs
+	repo                  repo.ProgramRepo
+	travelreqsvcs         TravelRequestSvcs
+	withtxn               *db.WithTxn
+	activitiesSvcs        picklist.ActivitiesSvcs
+	financialsettingssvcs FinancialSettingsSvcs
 }
 
 func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 	return &programsvcs{
-		repo:           do.MustInvoke[repo.ProgramRepo](i),
-		travelreqsvcs:  do.MustInvoke[TravelRequestSvcs](i),
-		withtxn:        do.MustInvoke[*db.WithTxn](i),
-		activitiesSvcs: do.MustInvoke[picklist.ActivitiesSvcs](i),
+		repo:                  do.MustInvoke[repo.ProgramRepo](i),
+		travelreqsvcs:         do.MustInvoke[TravelRequestSvcs](i),
+		withtxn:               do.MustInvoke[*db.WithTxn](i),
+		activitiesSvcs:        do.MustInvoke[picklist.ActivitiesSvcs](i),
+		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
 	}, nil
 }
 
@@ -171,70 +173,71 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 			},
 		},
 	}
-// build totalCost aggregation stages
-totalCostStages := []bson.M{
-	// 1) build a single array with all possible destination sources
-	{
-		"$addFields": bson.M{
-			"resolvedDestinations": bson.M{
-				"$concatArrays": []interface{}{
-					bson.M{"$ifNull": []interface{}{"$customType.destinations", bson.A{}}},
-					bson.M{"$ifNull": []interface{}{"$customType.vipCar.destinations", bson.A{}}},
-					bson.M{"$ifNull": []interface{}{"$customType.flightTicketRequest.destinations", bson.A{}}},
+	// build totalCost aggregation stages
+	totalCostStages := []bson.M{
+		// 1) build a single array with all possible destination sources
+		{
+			"$addFields": bson.M{
+				"resolvedDestinations": bson.M{
+					"$concatArrays": []interface{}{
+						bson.M{"$ifNull": []interface{}{"$customType.destinations", bson.A{}}},
+						bson.M{"$ifNull": []interface{}{"$customType.vipCar.destinations", bson.A{}}},
+						bson.M{"$ifNull": []interface{}{"$customType.flightTicketRequest.destinations", bson.A{}}},
+					},
 				},
 			},
 		},
-	},
 
-	// 2) compute per-destination cost array (including accommodation reduce)
-	{
-		"$addFields": bson.M{
-			"destinationCosts": bson.M{
-				"$map": bson.M{
-					"input": "$resolvedDestinations",
-					"as":    "d",
-					"in": bson.M{
-						"$let": bson.M{
-							"vars": bson.M{
-								"accomSum": bson.M{
-									"$cond": bson.M{
-										"if": bson.M{"$isArray": "$$d.accommodation"},
-										"then": bson.M{
-											"$reduce": bson.M{
-												"input":        "$$d.accommodation",
-												"initialValue": 0,
-												"in": bson.M{
-													"$add": []interface{}{
-														"$$value",
-														bson.M{"$ifNull": []interface{}{"$$this.totalStayCost", 0}},
+		// 2) compute per-destination cost array (including accommodation reduce)
+		{
+			"$addFields": bson.M{
+				"destinationCosts": bson.M{
+					"$map": bson.M{
+						"input": "$resolvedDestinations",
+						"as":    "d",
+						"in": bson.M{
+							"$let": bson.M{
+								"vars": bson.M{
+									"accomSum": bson.M{
+										"$cond": bson.M{
+											"if": bson.M{"$isArray": "$$d.accommodation"},
+											"then": bson.M{
+												"$reduce": bson.M{
+													"input":        "$$d.accommodation",
+													"initialValue": 0,
+													"in": bson.M{
+														"$add": []interface{}{
+															"$$value",
+															bson.M{"$ifNull": []interface{}{"$$this.totalStayCost", 0}},
+														},
 													},
 												},
 											},
+											"else": 0,
 										},
-										"else": 0,
 									},
 								},
-							},
-							"in": bson.M{
-								"$add": []interface{}{
-									// use precomputed destination totalCost if exists (vipCar often has this)
-									bson.M{"$ifNull": []interface{}{"$$d.totalCost", 0}},
-									// common per-destination parts (some may be absent)
-									bson.M{"$ifNull": []interface{}{"$$d.flightTickets.totalCost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.transportation.totalCost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.activities.totalCost", 0}},
-									"$$accomSum",
-									// per-destination service costs (guard with ifNull)
-									bson.M{"$ifNull": []interface{}{"$$d.services.onGroundAssistance.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.travelInsurance.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.visaAssistance.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.welcomeKit.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.freeSimCardWifi.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.complimentaryGifts.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.vipAirportServices.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.personalTravelConsultant.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.childcareServices.cost", 0}},
-									bson.M{"$ifNull": []interface{}{"$$d.services.accessibilitySupport.cost", 0}},
+								"in": bson.M{
+									"$add": []interface{}{
+										// use precomputed destination totalCost if exists (vipCar often has this)
+										bson.M{"$ifNull": []interface{}{"$$d.totalCost", 0}},
+										// common per-destination parts (some may be absent)
+										bson.M{"$ifNull": []interface{}{"$$d.flightTickets.totalCost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.transportation.totalCost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.activities.totalCost", 0}},
+										"$$accomSum",
+										// per-destination service costs (guard with ifNull)
+										bson.M{"$ifNull": []interface{}{"$$d.services.onGroundAssistance.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.travelInsurance.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.visaAssistance.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.welcomeKit.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.freeSimCardWifi.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.complimentaryGifts.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.vipAirportServices.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.personalTravelConsultant.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.childcareServices.cost", 0}},
+										bson.M{"$ifNull": []interface{}{"$$d.services.accessibilitySupport.cost", 0}},
+									},
 								},
 							},
 						},
@@ -242,68 +245,64 @@ totalCostStages := []bson.M{
 				},
 			},
 		},
-	},
 
-	// 3) sum destinationCosts -> totalDestinationsCost
-	{
-		"$addFields": bson.M{
-			"totalDestinationsCost": bson.M{
-				"$cond": bson.M{
-					"if":   bson.M{"$isArray": "$destinationCosts"},
-					"then": bson.M{"$sum": "$destinationCosts"},
-					"else": 0,
+		// 3) sum destinationCosts -> totalDestinationsCost
+		{
+			"$addFields": bson.M{
+				"totalDestinationsCost": bson.M{
+					"$cond": bson.M{
+						"if":   bson.M{"$isArray": "$destinationCosts"},
+						"then": bson.M{"$sum": "$destinationCosts"},
+						"else": 0,
+					},
 				},
 			},
 		},
-	},
 
-	// 4) compute fallback sum of top-level totals (used when resolvedDestinations is empty)
-	{
-		"$addFields": bson.M{
-			"topLevelTotalsSum": bson.M{
-				"$add": []interface{}{
-					bson.M{"$ifNull": []interface{}{"$customType.vipCar.totalCost", 0}},
-					bson.M{"$ifNull": []interface{}{"$customType.flightTicketRequest.totalCost", 0}},
-					bson.M{"$ifNull": []interface{}{"$customType.hotelBooking.totalCost", 0}},
-					// Add other top-level cost fields here if you have them
+		// 4) compute fallback sum of top-level totals (used when resolvedDestinations is empty)
+		{
+			"$addFields": bson.M{
+				"topLevelTotalsSum": bson.M{
+					"$add": []interface{}{
+						bson.M{"$ifNull": []interface{}{"$customType.vipCar.totalCost", 0}},
+						bson.M{"$ifNull": []interface{}{"$customType.flightTicketRequest.totalCost", 0}},
+						bson.M{"$ifNull": []interface{}{"$customType.hotelBooking.totalCost", 0}},
+						// Add other top-level cost fields here if you have them
+					},
 				},
 			},
 		},
-	},
 
-	// 5) set customType.totalCost: prefer destinations sum if any, else fallback to top-level totals
-	{
-		"$addFields": bson.M{
-			"customType.totalCost": bson.M{
-				"$cond": bson.M{
-					"if":   bson.M{"$gt": []interface{}{bson.M{"$size": "$resolvedDestinations"}, 0}},
-					"then": "$totalDestinationsCost",
-					"else": "$topLevelTotalsSum",
+		// 5) set customType.totalCost: prefer destinations sum if any, else fallback to top-level totals
+		{
+			"$addFields": bson.M{
+				"customType.totalCost": bson.M{
+					"$cond": bson.M{
+						"if":   bson.M{"$gt": []interface{}{bson.M{"$size": "$resolvedDestinations"}, 0}},
+						"then": "$totalDestinationsCost",
+						"else": "$topLevelTotalsSum",
+					},
 				},
 			},
 		},
-	},
 
-	// 6) expose root-level totalCost and cleanups
-	{
-		"$addFields": bson.M{
-			"totalCost": bson.M{"$ifNull": []interface{}{"$customType.totalCost", 0}},
+		// 6) expose root-level totalCost and cleanups
+		{
+			"$addFields": bson.M{
+				"totalCost": bson.M{"$ifNull": []interface{}{"$customType.totalCost", 0}},
+			},
 		},
-	},
-	{
-		"$project": bson.M{
-			"resolvedDestinations":  0,
-			"destinationCosts":      0,
-			"totalDestinationsCost": 0,
-			"topLevelTotalsSum":     0,
+		{
+			"$project": bson.M{
+				"resolvedDestinations":  0,
+				"destinationCosts":      0,
+				"totalDestinationsCost": 0,
+				"topLevelTotalsSum":     0,
+			},
 		},
-	},
-}
+	}
 
-pipeline = append(pipeline, totalCostStages...)
-
-// Append to your existing pipeline
-pipeline = append(pipeline, totalCostStages...)
+	pipeline = append(pipeline, totalCostStages...)
 
 	// Add lookups for comprehensive data
 	pipeline = append(pipeline, customerLookup...)
@@ -324,8 +323,18 @@ pipeline = append(pipeline, totalCostStages...)
 		return nil, errors.New("program not found")
 	}
 
-	// isFav is now populated directly from the pipeline
-	//result[0].IsFav = result[0].Program.IsFav
+	// Calculate fees using financial settings
+	financialSettings, err := p.financialsettingssvcs.Get(ctx)
+	if err != nil {
+		return nil, errors.New("error get settings")
+	}
+	profitRatio := financialSettings.ProfitRatio
+
+	// Calculate fees for the program
+	result[0].TotalCost = result[0].Program.CustomType.TotalCost
+	if result[0].TotalCost > 0 {
+		result[0].Fees = result[0].TotalCost * (profitRatio / 100)
+	}
 
 	return &result[0], nil
 }

@@ -27,7 +27,6 @@ type InvoiceStatusUpdateDto struct {
 	Status enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=waiting-payment paid unpaid waiting-approved"`
 }
 
-
 type InvoiceAdjustment struct {
 	Type    string  `bson:"type" json:"type"` //addition - substruction
 	Title   string  `bson:"title" json:"title"`
@@ -62,21 +61,22 @@ type Invoice struct {
 	Id           primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
 	InvoiceId    string             `bson:"invoiceId" json:"invoiceId"`
 	InvoiceDto   `bson:",inline"`
-	TravelReqId  primitive.ObjectID `bson:"travelReqId" json:"travelReqId"`
-	SubTotal     float64            `bson:"subTotal" json:"subTotal"`
-	Total        float64            `bson:"total" json:"total"`
-	PaidAmount   float64            `bson:"paidAmount" json:"paidAmount"`
-	UnpaidAmount float64            `bson:"unpaidAmount" json:"unpaidAmount"`
-	Payments     []Payment          `bson:"payments" json:"payments"`
+	TravelReqId  primitive.ObjectID  `bson:"travelReqId" json:"travelReqId"`
+	SubTotal     float64             `bson:"subTotal" json:"subTotal"`
+	Fees         float64             `bson:"fees" json:"fees"`
+	Total        float64             `bson:"total" json:"total"`
+	PaidAmount   float64             `bson:"paidAmount" json:"paidAmount"`
+	UnpaidAmount float64             `bson:"unpaidAmount" json:"unpaidAmount"`
+	Payments     []Payment           `bson:"payments" json:"payments"`
 	Status       enums.InvoiceStatus `bson:"status" json:"status" validate:"required,oneof=waiting-payment paid unpaid waiting-approved"`
-	Trash        bool               `bson:"trash" json:"trash"`
-	CreatedAt    time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
-	CreatedBy    primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
-	UpdatedAt    time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
-	UpdatedBy    primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+	Trash        bool                `bson:"trash" json:"trash"`
+	CreatedAt    time.Time           `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy    primitive.ObjectID  `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt    time.Time           `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy    primitive.ObjectID  `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
 }
 
-func (i *Invoice) SetTotals() error {
+func (i *Invoice) SetTotals(profitRatio float64) error {
 	var services []InvoiceService
 	var subTotal float64
 	for _, service := range i.Services {
@@ -110,8 +110,13 @@ func (i *Invoice) SetTotals() error {
 		}
 	}
 
+	// Calculate fees after adjustments
+	fees := total * (profitRatio / 100)
+	finalTotal := total + fees
+
 	i.SubTotal = subTotal
-	i.Total = total
+	i.Fees = fees
+	i.Total = finalTotal
 
 	var paidAmount float64
 	for _, payment := range i.Payments {

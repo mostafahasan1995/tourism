@@ -278,7 +278,7 @@ func TestInvoice_SetTotals(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.invoice.SetTotals()
+			err := tt.invoice.SetTotals(0) // Use 0 profitRatio for tests to match old behavior
 
 			if tt.want.err {
 				assert.Error(t, err)
@@ -315,7 +315,7 @@ func TestInvoice_SetTotals_AdjustmentValues(t *testing.T) {
 			},
 		}
 
-		err := invoice.SetTotals()
+		err := invoice.SetTotals(0) // Use 0 profitRatio for tests to match old behavior
 		assert.NoError(t, err)
 
 		// Check that Val fields are set correctly

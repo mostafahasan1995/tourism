@@ -591,10 +591,31 @@ func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]mo
 		return nil, err
 	}
 
+	// Calculate fees for each request
+	financialSettings, err := t.financialsettingssvcs.Get(ctx)
+	if err != nil {
+		return nil, errors.New("error get settings")
+	}
+	profitRatio := financialSettings.ProfitRatio
+
+	for i := range requests {
+		if requests[i].ProgramData.CustomType != nil && requests[i].ProgramData.CustomType.TotalCost > 0 {
+			requests[i].TotalCost = requests[i].ProgramData.CustomType.TotalCost
+			requests[i].Fees = requests[i].TotalCost * (profitRatio / 100)
+		}
+	}
+
 	return requests, nil
 }
 
 func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.TravelRequest, error) {
+	// Get profit ratio before transaction to avoid context issues
+	financialSettings, err := t.financialsettingssvcs.Get(ctx)
+	if err != nil {
+		return nil, errors.New("error get financial settings")
+	}
+	profitRatio := financialSettings.ProfitRatio
+
 	result, err := t.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		cfg, err := util.GetReqAppCfg(ctx)
 		if err != nil {
@@ -690,7 +711,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 
 		invoiceDto.Services = svcss
 
-		invoice, err := t.invoicesvcs.AddInvoiceForTravelRequest(ctx, request.Id, invoiceDto)
+		invoice, err := t.invoicesvcs.AddInvoiceForTravelRequest(ctx, request.Id, invoiceDto, profitRatio)
 		if err != nil {
 			return nil, errors.New("error add invoice")
 		}

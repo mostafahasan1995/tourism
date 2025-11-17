@@ -204,6 +204,12 @@ func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *
 		return nil, errors.New("insufficient balance")
 	}
 
+	// Set default date if not provided
+	withdrawalDate := req.Date
+	if withdrawalDate.IsZero() {
+		withdrawalDate = time.Now()
+	}
+
 	withdrawal := models.AgentWithdrawal{
 		Id:      primitive.NewObjectID(),
 		Amount:  req.Amount,
@@ -211,20 +217,35 @@ func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *
 		Note:    req.Note,
 		Status:  enums.WithdrawalStatusPending,
 		Name:    req.Name,
-		Date:    req.Date,
+		Date:    withdrawalDate,
 		Email:   req.Email,
 		Receipt: req.Receipt,
 	}
 
-	account.TotalWithdrawn += req.Amount
-	account.Balance -= req.Amount
-	account.Withdrawals = append([]models.AgentWithdrawal{withdrawal}, account.Withdrawals...)
-	account.UpdatedAt = time.Now()
-
 	filter := bson.M{"_id": account.Id}
-	update := bson.M{"$set": account}
+	update := bson.M{
+		"$push": bson.M{
+			"withdrawals": bson.M{
+				"$each":     []models.AgentWithdrawal{withdrawal},
+				"$position": 0, // Insert at the beginning
+			},
+		},
+		"$inc": bson.M{
+			"totalWithdrawn": req.Amount,
+			"balance":        -req.Amount,
+		},
+		"$set": bson.M{
+			"updatedAt": time.Now(),
+		},
+	}
 
-	updated, err := s.repo.Patch(ctx, filter, update)
+	_, err = s.repo.Patch(ctx, filter, update)
+	if err != nil {
+		return nil, err
+	}
+
+	// Reload the account to ensure all fields are properly retrieved
+	updated, err := s.repo.GetByFilter(ctx, bson.M{"_id": account.Id})
 	if err != nil {
 		return nil, err
 	}
