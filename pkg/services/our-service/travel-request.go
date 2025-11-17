@@ -16,6 +16,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/our-service/repo"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
+	"reflect"
 	"time"
 
 	"larsa-tourism-microservices/pkg/types"
@@ -707,7 +708,9 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			Adjustments: []models.InvoiceAdjustment{},
 			Note:        "",
 		}
-
+		if program.ProgramDto.Status == "waiting" {
+			program.ProgramDto.Status = "approved"
+		}
 		svcss, err := program.CustomType.GetAllServicePricing()
 
 		if err != nil {
@@ -1207,15 +1210,74 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 	}
 
 	userId := cfg.User.Id
-	//check if user can get other travel requests
-	check, ok := ctx.Value(util.ReqCapabilityCheck).(*types.CapabilityCheck)
-	if !ok {
-		return nil, errors.New("error check user capability")
+
+	// Check if user has agent role by checking roleNames
+	// Use reflection to access RoleNames field which might not be in the struct definition
+	isAgent := false
+	userDataValue := reflect.ValueOf(cfg.User.UserData)
+	if userDataValue.Kind() == reflect.Struct {
+		roleNamesField := userDataValue.FieldByName("RoleNames")
+		if roleNamesField.IsValid() && roleNamesField.Kind() == reflect.Slice {
+			roleNames := roleNamesField.Interface().([]string)
+			for _, roleName := range roleNames {
+				if roleName == "agent" {
+					isAgent = true
+					break
+				}
+			}
+		}
 	}
 
 	var pipeline []bson.M
 
-	if check.Capability == "tourismGetOtherTravelRequests" && check.IsAllowed {
+	if isAgent {
+		// Agent: filter by program.agentId = userId
+		pipeline = []bson.M{
+			{"$match": bson.M{"trash": false}},
+		}
+
+		// Lookup program to check agentId
+		programLookupForFilter := []bson.M{
+			{
+				"$lookup": bson.M{
+					"from":         "tourismPrograms",
+					"localField":   "program",
+					"foreignField": "_id",
+					"as":           "programForFilter",
+				},
+			},
+			{
+				"$unwind": bson.M{
+					"path":                       "$programForFilter",
+					"preserveNullAndEmptyArrays": false, // Only include travel requests with programs
+				},
+			},
+			{
+				"$match": bson.M{
+					"programForFilter.agentId": userId,
+				},
+			},
+			{
+				"$project": bson.M{
+					"programForFilter": 0,
+				},
+			},
+		}
+
+		pipeline = append(pipeline, programLookupForFilter...)
+
+		if err := query.CheckValid(); err != nil {
+			return nil, err
+		}
+		filter, err := query.ConvertToMongo()
+		if err != nil {
+			return nil, err
+		}
+
+		pipeline = append(pipeline, bson.M{"$match": filter})
+
+	} else {
+		// Administrator: return all travel requests (no agent filter)
 		if err := query.CheckValid(); err != nil {
 			return nil, err
 		}
@@ -1228,32 +1290,6 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 			{"$match": bson.M{"trash": false}},
 			{"$match": filter},
 		}
-
-	} else {
-
-		pipeline = []bson.M{
-			{"$match": bson.M{"trash": false}},
-		}
-
-		pipeline = append(pipeline, hotelLookup...)
-		pipeline = append(pipeline, bson.M{"$match": bson.M{
-			"$or": bson.A{
-				bson.M{"departureAgent": userId},
-				bson.M{"tripCoordinator": userId},
-				bson.M{"hotelOwner": userId},
-			},
-		}})
-
-		if err := query.CheckValid(); err != nil {
-			return nil, err
-		}
-		filter, err := query.ConvertToMongo()
-		if err != nil {
-			return nil, err
-		}
-
-		pipeline = append(pipeline, bson.M{"$match": filter})
-
 	}
 
 	return pipeline, nil

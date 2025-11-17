@@ -497,7 +497,9 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 			UpdatedAt:  time.Now(),
 			UpdatedBy:  cfg.User.Id,
 		}
-
+		if program.ProgramType == "custom" {
+			program.ProgramDto.Status = "waiting"
+		}
 		if program.TravelReqId != primitive.NilObjectID {
 			if err := p.AssignProgramToTravelRequest(ctx, program); err != nil {
 				return nil, errors.New("error updating travel request, check if it is already assigned to a program")

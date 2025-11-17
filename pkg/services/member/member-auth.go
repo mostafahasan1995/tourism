@@ -48,6 +48,7 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
+			"roles":     []string{"686cd82c461edd73ba964477"},
 		}
 		password = member.Security.NewPassword
 	case *models.Customer:
