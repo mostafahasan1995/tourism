@@ -113,6 +113,8 @@ type ProgramRes struct {
 	PackageName   transl.Localizable[string] `bson:"packageName" json:"packageName"`
 	Duration      int                        `bson:"duration" json:"duration"`
 	IsFav         bool                       `bson:"isFav" json:"isFav"`
+	TotalCost     float64                    `bson:"totalCost" json:"totalCost"`
+	Fees          float64                    `bson:"fees" json:"fees"`
 }
 
 func (p *ProgramDto) Validate(v *validator.Validate) error {

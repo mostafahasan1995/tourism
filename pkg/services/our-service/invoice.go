@@ -37,26 +37,39 @@ type InvoiceSvcs interface {
 	DeletePayment(ctx context.Context, invoiceId, paymentId string) (*models.Invoice, error)
 	PayOrder(ctx context.Context, invoiceId string, data *models.PayOrder) (*models.Invoice, error)
 	//
-	AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error)
+	AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto, profitRatio ...float64) (*models.Invoice, error)
 	SendInvoice(ctx context.Context, data *models.SendInvoiceDto) error
 	//v2
 	GetV2(ctx context.Context, skip, limit int64, query *query.Conditions) (*models.InvoicePagination, error)
 }
 
 type invoiceSvcs struct {
-	repo        repo.InvoiceRepo
-	sortingsvcs dbsvcs.SortingSvcs
-	messagesvcs messaging.MessageSvcs
-	withtxn     *db.WithTxn
+	repo                  repo.InvoiceRepo
+	sortingsvcs           dbsvcs.SortingSvcs
+	messagesvcs           messaging.MessageSvcs
+	financialsettingssvcs FinancialSettingsSvcs
+	withtxn               *db.WithTxn
 }
 
 func NewInvoiceSvcs(i *do.Injector) (InvoiceSvcs, error) {
 	return &invoiceSvcs{
-		repo:        do.MustInvoke[repo.InvoiceRepo](i),
-		sortingsvcs: do.MustInvoke[dbsvcs.SortingSvcs](i),
-		messagesvcs: do.MustInvoke[messaging.MessageSvcs](i),
-		withtxn:     do.MustInvoke[*db.WithTxn](i),
+		repo:                  do.MustInvoke[repo.InvoiceRepo](i),
+		sortingsvcs:           do.MustInvoke[dbsvcs.SortingSvcs](i),
+		messagesvcs:           do.MustInvoke[messaging.MessageSvcs](i),
+		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
+		withtxn:               do.MustInvoke[*db.WithTxn](i),
 	}, nil
+}
+
+func (i *invoiceSvcs) getProfitRatio(ctx context.Context) (float64, error) {
+	financialSettings, err := i.financialsettingssvcs.Get(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("error getting financial settings: %w", err)
+	}
+	if financialSettings == nil {
+		return 0, errors.New("financial settings not found")
+	}
+	return financialSettings.ProfitRatio, nil
 }
 
 func (i *invoiceSvcs) GetOne(ctx context.Context, id string) (*models.Invoice, error) {
@@ -112,15 +125,20 @@ func (i *invoiceSvcs) Get(ctx context.Context, skip, limit int64, query string) 
 }
 
 func (i *invoiceSvcs) Add(ctx context.Context, data *models.InvoiceDto) (*models.Invoice, error) {
+	// Get profit ratio before transaction
+	profitRatio, err := i.getProfitRatio(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice := &models.Invoice{
 			Id:         primitive.NewObjectID(),
 			InvoiceDto: *data,
 			Payments:   []models.Payment{},
-		
 		}
 		invoice.Status = enums.InvoiceStatusPending
-		if err := invoice.SetTotals(); err != nil {
+		if err := invoice.SetTotals(profitRatio); err != nil {
 			return nil, err
 		}
 
@@ -152,6 +170,12 @@ func (i *invoiceSvcs) Update(ctx context.Context, id string, data *models.Invoic
 		return nil, err
 	}
 
+	// Get profit ratio before transaction
+	profitRatio, err := i.getProfitRatio(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
 		if err != nil {
@@ -160,7 +184,7 @@ func (i *invoiceSvcs) Update(ctx context.Context, id string, data *models.Invoic
 
 		invoice.InvoiceDto = *data
 
-		if err := invoice.SetTotals(); err != nil {
+		if err := invoice.SetTotals(profitRatio); err != nil {
 			return nil, err
 		}
 
@@ -242,6 +266,12 @@ func (i *invoiceSvcs) AddPayment(ctx context.Context, invoiceId string, data *mo
 		return nil, err
 	}
 
+	// Get profit ratio before transaction
+	profitRatio, err := i.getProfitRatio(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id})
 		if err != nil {
@@ -260,7 +290,7 @@ func (i *invoiceSvcs) AddPayment(ctx context.Context, invoiceId string, data *mo
 		payments = append(payments, newPayment)
 		invoice.Payments = payments
 
-		if err := invoice.SetTotals(); err != nil {
+		if err := invoice.SetTotals(profitRatio); err != nil {
 			return nil, err
 		}
 
@@ -300,6 +330,12 @@ func (i *invoiceSvcs) UpdatePayment(ctx context.Context, invoiceId, paymentId st
 		return nil, err
 	}
 
+	// Get profit ratio before transaction
+	profitRatio, err := i.getProfitRatio(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id})
 		if err != nil {
@@ -324,7 +360,7 @@ func (i *invoiceSvcs) UpdatePayment(ctx context.Context, invoiceId, paymentId st
 
 		invoice.Payments = payments
 
-		if err := invoice.SetTotals(); err != nil {
+		if err := invoice.SetTotals(profitRatio); err != nil {
 			return nil, err
 		}
 
@@ -358,6 +394,12 @@ func (i *invoiceSvcs) DeletePayment(ctx context.Context, invoiceId, paymentId st
 		return nil, err
 	}
 
+	// Get profit ratio before transaction
+	profitRatio, err := i.getProfitRatio(ctx)
+	if err != nil {
+		return nil, err
+	}
+
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice, err := i.repo.GetByFilter(ctx, bson.M{"_id": _id})
 		if err != nil {
@@ -369,7 +411,7 @@ func (i *invoiceSvcs) DeletePayment(ctx context.Context, invoiceId, paymentId st
 		})
 
 		invoice.Payments = payments
-		if err := invoice.SetTotals(); err != nil {
+		if err := invoice.SetTotals(profitRatio); err != nil {
 			return nil, err
 		}
 
@@ -407,7 +449,20 @@ func (i *invoiceSvcs) PayOrder(ctx context.Context, invoiceId string, data *mode
 }
 
 // add invoice for travel request
-func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto) (*models.Invoice, error) {
+func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqId primitive.ObjectID, data *models.InvoiceDto, profitRatio ...float64) (*models.Invoice, error) {
+	// Get profit ratio - use provided value or fetch it
+	var ratio float64
+	var err error
+	if len(profitRatio) > 0 && profitRatio[0] > 0 {
+		ratio = profitRatio[0]
+	} else {
+		// Get profit ratio with current context
+		ratio, err = i.getProfitRatio(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	result, err := i.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
 		invoice := &models.Invoice{
 			Id:          primitive.NewObjectID(),
@@ -416,10 +471,9 @@ func (i *invoiceSvcs) AddInvoiceForTravelRequest(ctx context.Context, travelReqI
 			//DepartureAgent:   invoiceTravelRequestData.DepartureAgent,
 			// DestinationAgent: invoiceTravelRequestData.DestinationAgent,
 			Payments: []models.Payment{},
-			
 		}
-        invoice.Status = enums.InvoiceStatusPending
-		if err := invoice.SetTotals(); err != nil {
+		invoice.Status = enums.InvoiceStatusPending
+		if err := invoice.SetTotals(ratio); err != nil {
 			return nil, err
 		}
 
