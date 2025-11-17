@@ -600,8 +600,13 @@ func (t *travelrequestsvcs) MyRequests(ctx context.Context, status string) ([]mo
 
 	for i := range requests {
 		if requests[i].ProgramData.CustomType != nil && requests[i].ProgramData.CustomType.TotalCost > 0 {
-			requests[i].TotalCost = requests[i].ProgramData.CustomType.TotalCost
-			requests[i].Fees = requests[i].TotalCost * (profitRatio / 100)
+			subTotal := requests[i].ProgramData.CustomType.TotalCost
+			fees := subTotal * (profitRatio / 100)
+			total := subTotal + fees
+
+			requests[i].SubTotal = subTotal
+			requests[i].Fees = fees
+			requests[i].Total = total
 		}
 	}
 

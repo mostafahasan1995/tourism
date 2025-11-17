@@ -330,10 +330,15 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 	}
 	profitRatio := financialSettings.ProfitRatio
 
-	// Calculate fees for the program
-	result[0].TotalCost = result[0].Program.CustomType.TotalCost
-	if result[0].TotalCost > 0 {
-		result[0].Fees = result[0].TotalCost * (profitRatio / 100)
+	// Calculate subTotal, fees, and total for the program
+	if result[0].Program.CustomType != nil && result[0].Program.CustomType.TotalCost > 0 {
+		subTotal := result[0].Program.CustomType.TotalCost
+		fees := subTotal * (profitRatio / 100)
+		total := subTotal + fees
+
+		result[0].SubTotal = subTotal
+		result[0].Fees = fees
+		result[0].Total = total
 	}
 
 	return &result[0], nil
