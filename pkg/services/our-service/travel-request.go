@@ -1279,17 +1279,53 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 	userId := cfg.User.Id
 
 	// Check if user has agent role by checking roleNames
-	// Use reflection to access RoleNames field which might not be in the struct definition
+	// Use reflection to access RoleNames field from UserData
 	isAgent := false
 	userDataValue := reflect.ValueOf(cfg.User.UserData)
+
 	if userDataValue.Kind() == reflect.Struct {
+		// Try "RoleNames" (capitalized) first
 		roleNamesField := userDataValue.FieldByName("RoleNames")
+		if !roleNamesField.IsValid() {
+			// Try "roleNames" (lowercase)
+			roleNamesField = userDataValue.FieldByName("roleNames")
+		}
+
 		if roleNamesField.IsValid() && roleNamesField.Kind() == reflect.Slice {
-			roleNames := roleNamesField.Interface().([]string)
-			for _, roleName := range roleNames {
-				if roleName == "agent" {
-					isAgent = true
-					break
+			// Handle different slice types
+			roleNamesInterface := roleNamesField.Interface()
+
+			// Try []string first
+			if roleNames, ok := roleNamesInterface.([]string); ok {
+				for _, roleName := range roleNames {
+					if roleName == "agent" {
+						isAgent = true
+						break
+					}
+				}
+			} else if roleNamesInterfaceSlice, ok := roleNamesInterface.([]interface{}); ok {
+				// Handle []interface{} case (when JSON unmarshaling)
+				for _, roleNameInterface := range roleNamesInterfaceSlice {
+					if roleName, ok := roleNameInterface.(string); ok && roleName == "agent" {
+						isAgent = true
+						break
+					}
+				}
+			} else {
+				// Try to iterate using reflection
+				for i := 0; i < roleNamesField.Len(); i++ {
+					roleNameValue := roleNamesField.Index(i)
+					if roleNameValue.Kind() == reflect.String {
+						if roleNameValue.String() == "agent" {
+							isAgent = true
+							break
+						}
+					} else if roleNameValue.Kind() == reflect.Interface {
+						if roleName, ok := roleNameValue.Interface().(string); ok && roleName == "agent" {
+							isAgent = true
+							break
+						}
+					}
 				}
 			}
 		}
@@ -1299,8 +1335,12 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 
 	if isAgent {
 		// Agent: filter by program.agentId = userId
+		// Only return travel requests that have a program with agentId matching the user's ID
 		pipeline = []bson.M{
-			{"$match": bson.M{"trash": false}},
+			{"$match": bson.M{
+				"trash":   false,
+				"program": bson.M{"$ne": primitive.NilObjectID}, // Only travel requests with programs
+			}},
 		}
 
 		// Lookup program to check agentId
@@ -1321,18 +1361,19 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 			},
 			{
 				"$match": bson.M{
-					"programForFilter.agentId": userId,
+					"programForFilter.agentId": userId, // Match agentId exactly
 				},
 			},
 			{
 				"$project": bson.M{
-					"programForFilter": 0,
+					"programForFilter": 0, // Remove the temporary lookup field
 				},
 			},
 		}
 
 		pipeline = append(pipeline, programLookupForFilter...)
 
+		// Apply additional query filters if provided
 		if err := query.CheckValid(); err != nil {
 			return nil, err
 		}
@@ -1340,8 +1381,9 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 		if err != nil {
 			return nil, err
 		}
-
-		pipeline = append(pipeline, bson.M{"$match": filter})
+		if len(filter) > 0 {
+			pipeline = append(pipeline, bson.M{"$match": filter})
+		}
 
 	} else {
 		// Administrator: return all travel requests (no agent filter)
@@ -1355,7 +1397,9 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 
 		pipeline = []bson.M{
 			{"$match": bson.M{"trash": false}},
-			{"$match": filter},
+		}
+		if len(filter) > 0 {
+			pipeline = append(pipeline, bson.M{"$match": filter})
 		}
 	}
 
