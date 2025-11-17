@@ -1207,12 +1207,15 @@ func (t *travelrequestsvcs) GetCompanyTransactions(ctx context.Context, skip, li
 			continue
 		}
 
-		invoiceTotal := r.Invoice.Total
-		if invoiceTotal == 0 {
-			invoiceTotal = r.Invoice.SubTotal
+		// Use SubTotal for profit calculation (before fees) for consistency with GetAgentTransactions
+		// If SubTotal is 0, fallback to Total (for older invoices)
+		invoiceSubTotal := r.Invoice.SubTotal
+		if invoiceSubTotal == 0 {
+			invoiceSubTotal = r.Invoice.Total
 		}
 
-		profit := invoiceTotal * (profitRatio / 100)
+		// Calculate profit: invoiceSubTotal * (profitRatio / 100)
+		profit := invoiceSubTotal * (profitRatio / 100)
 
 		transaction := models.CompanyTransaction{
 			TravelRequestId: r.Id,

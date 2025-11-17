@@ -26,12 +26,14 @@ type AgentFinancialSvcs interface {
 }
 
 type agentfinancialsvcs struct {
-	repo repo.AgentFinancialRepo
+	repo          repo.AgentFinancialRepo
+	travelreqsvcs TravelRequestSvcs
 }
 
 func NewAgentFinancialSvcs(i *do.Injector) (AgentFinancialSvcs, error) {
 	return &agentfinancialsvcs{
-		repo: do.MustInvoke[repo.AgentFinancialRepo](i),
+		repo:          do.MustInvoke[repo.AgentFinancialRepo](i),
+		travelreqsvcs: do.MustInvoke[TravelRequestSvcs](i),
 	}, nil
 }
 
@@ -89,6 +91,36 @@ func (s *agentfinancialsvcs) GetAccount(ctx context.Context, agentId string, lim
 	if err != nil {
 		return nil, err
 	}
+
+	// Recalculate balance based on actual transactions from GetAgentTransactions
+	// Get all transactions (use a large limit to get all)
+	transactions, err := s.travelreqsvcs.GetAgentTransactions(ctx, agentId, 0, 10000, nil)
+	if err != nil {
+		// If error getting transactions, return account with stored values
+		// This ensures backward compatibility
+		s.limitWithdrawals(account, limit)
+		return account, nil
+	}
+
+	// Calculate total profit from all commissions
+	var totalProfitFromTransactions float64
+	for _, tx := range transactions.Transactions {
+		totalProfitFromTransactions += tx.Commission
+	}
+
+	// Calculate total withdrawn (only approved + pending withdrawals reduce balance)
+	// Rejected withdrawals don't reduce balance as they are returned
+	var actualWithdrawn float64
+	for _, withdrawal := range account.Withdrawals {
+		if withdrawal.Status == enums.WithdrawalStatusApproved || withdrawal.Status == enums.WithdrawalStatusPending {
+			actualWithdrawn += withdrawal.Amount
+		}
+	}
+
+	// Update account with calculated values based on actual transactions
+	account.TotalProfit = totalProfitFromTransactions
+	account.TotalWithdrawn = actualWithdrawn
+	account.Balance = totalProfitFromTransactions - actualWithdrawn
 
 	// Limit withdrawals for performance
 	s.limitWithdrawals(account, limit)
