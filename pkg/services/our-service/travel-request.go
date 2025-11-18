@@ -743,6 +743,7 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 		invoiceDto := &models.InvoiceDto{
 			DateOfIssue: time.Now(),
 			Customer: models.InvoiceContact{
+				Id:      customer.Id,
 				Name:    customer.Name,
 				Address: "",
 				Phone:   customer.ClientContact.Mobile,
