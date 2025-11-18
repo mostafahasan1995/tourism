@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"larsa-tourism-microservices/pkg/services/member"
 	membermodels "larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -14,6 +15,7 @@ import (
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type AgentFinancialSvcs interface {
@@ -26,14 +28,18 @@ type AgentFinancialSvcs interface {
 }
 
 type agentfinancialsvcs struct {
-	repo          repo.AgentFinancialRepo
-	travelreqsvcs TravelRequestSvcs
+	repo                  repo.AgentFinancialRepo
+	travelrequestrepo     repo.TravelRequestRepo
+	agentsvcs             member.AgentSvcs
+	financialsettingssvcs FinancialSettingsSvcs
 }
 
 func NewAgentFinancialSvcs(i *do.Injector) (AgentFinancialSvcs, error) {
 	return &agentfinancialsvcs{
-		repo:          do.MustInvoke[repo.AgentFinancialRepo](i),
-		travelreqsvcs: do.MustInvoke[TravelRequestSvcs](i),
+		repo:                  do.MustInvoke[repo.AgentFinancialRepo](i),
+		travelrequestrepo:     do.MustInvoke[repo.TravelRequestRepo](i),
+		agentsvcs:             do.MustInvoke[member.AgentSvcs](i),
+		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
 	}, nil
 }
 
@@ -92,20 +98,13 @@ func (s *agentfinancialsvcs) GetAccount(ctx context.Context, agentId string, lim
 		return nil, err
 	}
 
-	// Recalculate balance based on actual transactions from GetAgentTransactions
-	// Get all transactions (use a large limit to get all)
-	transactions, err := s.travelreqsvcs.GetAgentTransactions(ctx, agentId, 0, 10000, nil)
+	// Recalculate balance based on actual transactions (replicate GetAgentTransactions logic)
+	// This avoids circular dependency with TravelRequestSvcs
+	totalProfitFromTransactions, err := s.calculateTotalCommission(ctx, agentObjectID)
 	if err != nil {
-		// If error getting transactions, return account with stored values
-		// This ensures backward compatibility
+		// If error calculating, return account with stored values for backward compatibility
 		s.limitWithdrawals(account, limit)
 		return account, nil
-	}
-
-	// Calculate total profit from all commissions
-	var totalProfitFromTransactions float64
-	for _, tx := range transactions.Transactions {
-		totalProfitFromTransactions += tx.Commission
 	}
 
 	// Calculate total withdrawn (only approved + pending withdrawals reduce balance)
@@ -126,6 +125,157 @@ func (s *agentfinancialsvcs) GetAccount(ctx context.Context, agentId string, lim
 	s.limitWithdrawals(account, limit)
 
 	return account, nil
+}
+
+// calculateTotalCommission replicates the commission calculation from GetAgentTransactions
+// to avoid circular dependency
+func (s *agentfinancialsvcs) calculateTotalCommission(ctx context.Context, agentObjectID primitive.ObjectID) (float64, error) {
+	match := bson.M{
+		"status": enums.TravelReqStatusCompleted,
+		"trash":  false,
+		"$or": []bson.M{
+			{"departureAgent": agentObjectID},
+			{"tripCoordinator": agentObjectID},
+		},
+	}
+
+	pipeline := []bson.M{
+		{"$match": match},
+	}
+
+	// Lookup invoices
+	invoiceLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "tourismInvoices",
+			"localField":   "invoiceId",
+			"foreignField": "_id",
+			"as":           "invoice",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$invoice",
+			"preserveNullAndEmptyArrays": true,
+		}},
+	}
+
+	// Lookup agents
+	departureAgentLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "tourismAgents",
+			"localField":   "departureAgent",
+			"foreignField": "_id",
+			"as":           "departureAgentData",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$departureAgentData",
+			"preserveNullAndEmptyArrays": true,
+		}},
+	}
+
+	tripCoordinatorAgentLookup := []bson.M{
+		{"$lookup": bson.M{
+			"from":         "tourismAgents",
+			"localField":   "tripCoordinator",
+			"foreignField": "_id",
+			"as":           "tripCoordinatorData",
+		}},
+		{"$unwind": bson.M{
+			"path":                       "$tripCoordinatorData",
+			"preserveNullAndEmptyArrays": true,
+		}},
+	}
+
+	pipeline = append(pipeline, invoiceLookup...)
+	pipeline = append(pipeline, departureAgentLookup...)
+	pipeline = append(pipeline, tripCoordinatorAgentLookup...)
+
+	type aux struct {
+		models.TravelRequest `bson:",inline"`
+		Invoice              models.Invoice     `bson:"invoice" json:"invoice"`
+		DepartureAgentData   membermodels.Agent `bson:"departureAgentData" json:"departureAgentData"`
+		TripCoordinatorData  membermodels.Agent `bson:"tripCoordinatorData" json:"tripCoordinatorData"`
+	}
+
+	var result []aux
+	err := s.travelrequestrepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &result)
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
+	financialSettings, err := s.financialsettingssvcs.Get(ctx)
+	if err != nil {
+		return 0, errors.New("error get settings")
+	}
+
+	profitRatio := financialSettings.ProfitRatio // platform profit ratio
+	var totalCommission float64
+
+	loadAgentFinancial := func(agentData membermodels.Agent, agentID primitive.ObjectID) (membermodels.AgentFinancial, error) {
+		financial := agentData.Financial
+		if !financial.ProfitOfTourismProgram || financial.Ratio == 0 {
+			agentDoc, err := s.agentsvcs.GetByFilter(ctx, bson.M{"_id": agentID, "trash": false})
+			if err != nil {
+				return financial, err
+			}
+			financial = agentDoc.Financial
+		}
+		return financial, nil
+	}
+
+	for _, r := range result {
+		if r.Invoice.Id == primitive.NilObjectID {
+			continue
+		}
+
+		// Use SubTotal for profit calculation (before fees)
+		invoiceSubTotal := r.Invoice.SubTotal
+		if invoiceSubTotal == 0 {
+			invoiceSubTotal = r.Invoice.Total
+		}
+
+		// Calculate client profit: invoiceSubTotal * (profitRatio / 100)
+		clientProfit := invoiceSubTotal * (profitRatio / 100)
+
+		// Determine which agent to calculate commission for
+		var targetFinancial membermodels.AgentFinancial
+		var hasValidFinancial bool
+
+		if r.DepartureAgent == r.TripCoordinator {
+			// Same agent for both roles
+			if r.DepartureAgent == agentObjectID {
+				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			}
+		} else {
+			// Different agents
+			if r.DepartureAgent == agentObjectID {
+				financial, err := loadAgentFinancial(r.DepartureAgentData, r.DepartureAgent)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			} else if r.TripCoordinator == agentObjectID {
+				financial, err := loadAgentFinancial(r.TripCoordinatorData, r.TripCoordinator)
+				if err == nil && financial.ProfitOfTourismProgram && financial.Ratio > 0 {
+					targetFinancial = financial
+					hasValidFinancial = true
+				}
+			}
+		}
+
+		// Calculate commission: clientProfit * (agentRatio / 100)
+		if hasValidFinancial {
+			commission := clientProfit * (targetFinancial.Ratio / 100)
+			totalCommission += commission
+		}
+	}
+
+	return totalCommission, nil
 }
 
 func (s *agentfinancialsvcs) CreateOrUpdateAccount(ctx context.Context, agentId string, dto *models.AgentFinancialAccountDto) (*models.AgentFinancialAccount, error) {
