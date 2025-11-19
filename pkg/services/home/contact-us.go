@@ -206,12 +206,7 @@ func (l *contactUssvcs) AddMany(ctx context.Context, data []models.ContactUsDto)
 func (l *contactUssvcs) SendContactUsEmail(ctx context.Context, data *models.ContactUsDto) error {
 	settings, err := l.GetSettings(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to get contact us settings: %w", err)
-	}
-
-	// Validate that email recipients are configured
-	if len(settings.Emails) == 0 {
-		return fmt.Errorf("no email recipients configured in contact us settings")
+		return err
 	}
 
 	tplData := template.ContactUsTplData{
@@ -224,10 +219,8 @@ func (l *contactUssvcs) SendContactUsEmail(ctx context.Context, data *models.Con
 	}
 	body, subject, err := l.messagesvcs.GetTemplateMessage(ctx, messagingenums.CONTACTUS, &tplData)
 	if err != nil {
-		return fmt.Errorf("failed to generate email template: %w", err)
+		return err
 	}
-
-	var emailErrors []error
 	for _, email := range settings.Emails {
 		emailMsg := &messagingmodels.Message{
 			Type:        messagingenums.CONTACTUS,
@@ -236,32 +229,13 @@ func (l *contactUssvcs) SendContactUsEmail(ctx context.Context, data *models.Con
 			Message:     body,
 			MessageHtml: body,
 			Target:      "email",
-			Others: map[string]any{
-				// Add Reply-To header so recipients can reply directly to the submitter
-				"replyTo":      data.EmailAddress,
-				"replyToName":  data.FullName,
-				"fromName":     "Contact Form", // Friendly sender name
-				"contactEmail": data.EmailAddress,
-				"contactName":  data.FullName,
-			},
+			Others:      map[string]any{},
 		}
 		err = l.messagesvcs.SendEmail(ctx, emailMsg)
 		if err != nil {
-			emailErrors = append(emailErrors, fmt.Errorf("failed to send email to %s: %w", email, err))
+			return err
 		}
 	}
-
-	// If all emails failed, return error
-	if len(emailErrors) == len(settings.Emails) {
-		return fmt.Errorf("failed to send emails to all recipients: %v", emailErrors)
-	}
-
-	// If some emails failed, log but don't fail the request
-	if len(emailErrors) > 0 {
-		// Log partial failures (you might want to use a proper logger here)
-		fmt.Printf("Warning: Failed to send emails to some recipients: %v\n", emailErrors)
-	}
-
 	return nil
 }
 func (a *contactUssvcs) Update(ctx context.Context, id string, data *models.ContactUsDto) error {
