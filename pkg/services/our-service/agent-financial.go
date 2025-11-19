@@ -3,6 +3,7 @@ package ourservice
 import (
 	"context"
 	"errors"
+	"math"
 	"time"
 
 	"larsa-tourism-microservices/pkg/services/member"
@@ -117,9 +118,9 @@ func (s *agentfinancialsvcs) GetAccount(ctx context.Context, agentId string, lim
 	}
 
 	// Update account with calculated values based on actual transactions
-	account.TotalProfit = totalProfitFromTransactions
-	account.TotalWithdrawn = actualWithdrawn
-	account.Balance = totalProfitFromTransactions - actualWithdrawn
+	account.TotalProfit = roundTo3Decimals(totalProfitFromTransactions)
+	account.TotalWithdrawn = roundTo3Decimals(actualWithdrawn)
+	account.Balance = roundTo3Decimals(totalProfitFromTransactions - actualWithdrawn)
 
 	// Limit withdrawals for performance
 	s.limitWithdrawals(account, limit)
@@ -348,8 +349,8 @@ func (s *agentfinancialsvcs) AddProfit(ctx context.Context, agent *membermodels.
 		return nil, err
 	}
 
-	account.TotalProfit += amount
-	account.Balance += amount
+	account.TotalProfit = roundTo3Decimals(account.TotalProfit + amount)
+	account.Balance = roundTo3Decimals(account.Balance + amount)
 	account.UpdatedAt = time.Now()
 
 	filter := bson.M{"_id": account.Id}
@@ -432,6 +433,11 @@ func (s *agentfinancialsvcs) Withdraw(ctx context.Context, agentId string, req *
 		return nil, err
 	}
 
+	// Round balance, totalProfit, and totalWithdrawn to 3 decimal places
+	updated.Balance = roundTo3Decimals(updated.Balance)
+	updated.TotalProfit = roundTo3Decimals(updated.TotalProfit)
+	updated.TotalWithdrawn = roundTo3Decimals(updated.TotalWithdrawn)
+
 	// Limit withdrawals for performance
 	s.limitWithdrawals(updated, limit)
 
@@ -485,6 +491,11 @@ func (s *agentfinancialsvcs) ApproveWithdrawal(ctx context.Context, agentId stri
 		return nil, err
 	}
 
+	// Round balance, totalProfit, and totalWithdrawn to 3 decimal places
+	updated.Balance = roundTo3Decimals(updated.Balance)
+	updated.TotalProfit = roundTo3Decimals(updated.TotalProfit)
+	updated.TotalWithdrawn = roundTo3Decimals(updated.TotalWithdrawn)
+
 	return updated, nil
 }
 
@@ -524,9 +535,9 @@ func (s *agentfinancialsvcs) RejectWithdrawal(ctx context.Context, agentId strin
 	}
 
 	// Reverse the withdrawal: return amount to balance and adjust totals
-	account.Balance += withdrawal.Amount
+	account.Balance = roundTo3Decimals(account.Balance + withdrawal.Amount)
 	if account.TotalWithdrawn >= withdrawal.Amount {
-		account.TotalWithdrawn -= withdrawal.Amount
+		account.TotalWithdrawn = roundTo3Decimals(account.TotalWithdrawn - withdrawal.Amount)
 	} else {
 		account.TotalWithdrawn = 0
 	}
@@ -541,6 +552,11 @@ func (s *agentfinancialsvcs) RejectWithdrawal(ctx context.Context, agentId strin
 	if err != nil {
 		return nil, err
 	}
+
+	// Round balance, totalProfit, and totalWithdrawn to 3 decimal places
+	updated.Balance = roundTo3Decimals(updated.Balance)
+	updated.TotalProfit = roundTo3Decimals(updated.TotalProfit)
+	updated.TotalWithdrawn = roundTo3Decimals(updated.TotalWithdrawn)
 
 	return updated, nil
 }
@@ -566,4 +582,9 @@ func equalLocalizable(a transl.Localizable[string], b transl.Localizable[string]
 		}
 	}
 	return true
+}
+
+// roundTo3Decimals rounds a float64 to 3 decimal places
+func roundTo3Decimals(value float64) float64 {
+	return math.Round(value*1000) / 1000
 }
