@@ -47,20 +47,83 @@ var Templates = map[enums.MsgTyps]MsgTpl{
 
 	enums.CONTACTUS: &ContactUsTpl{
 		Subject: "New Contact Us Submission",
-		Message: `<div dir="ltr">
-		<p><strong>New Contact Us Submission</strong></p>
-		<p><strong>Full Name:</strong> {{.FullName}}</p>
-		<p><strong>Email Address:</strong> {{.EmailAddress}}</p>
-		<p><strong>Phone Number:</strong> {{.PhoneNumber}}</p>
-		<p><strong>How Did You Find Us:</strong> {{.HowDidYouFindUs}}</p>
-		<p><strong>Message:</strong> {{.Message}}</p>
-		{{if .Additional}}
-		<p><strong>Additional Fields:</strong></p>
-		<ul>
-		{{range $k, $v := .Additional}}<li>{{$k}}: {{$v}}</li>{{end}}
-		</ul>
-		{{end}}
-	</div>`,
+		Message: `<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>New Contact Us Submission</title>
+</head>
+<body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f4f4f4;">
+	<table role="presentation" style="width:100%;border-collapse:collapse;margin:0;padding:0;background-color:#f4f4f4;">
+		<tr>
+			<td style="padding:20px 0;">
+				<table role="presentation" style="width:600px;border-collapse:collapse;margin:0 auto;background-color:#ffffff;border-radius:8px;box-shadow:0 2px 4px rgba(0,0,0,0.1);">
+					<tr>
+						<td style="padding:30px;background-color:#ffffff;border-radius:8px 8px 0 0;">
+							<h1 style="margin:0 0 20px 0;color:#333333;font-size:24px;font-weight:bold;">New Contact Us Submission</h1>
+						</td>
+					</tr>
+					<tr>
+						<td style="padding:0 30px 30px 30px;">
+							<table role="presentation" style="width:100%;border-collapse:collapse;">
+								<tr>
+									<td style="padding:10px 0;border-bottom:1px solid #eeeeee;">
+										<strong style="color:#333333;font-size:14px;">Full Name:</strong>
+										<span style="color:#666666;font-size:14px;margin-left:10px;">{{.FullName}}</span>
+									</td>
+								</tr>
+								<tr>
+									<td style="padding:10px 0;border-bottom:1px solid #eeeeee;">
+										<strong style="color:#333333;font-size:14px;">Email Address:</strong>
+										<a href="mailto:{{.EmailAddress}}" style="color:#0066cc;font-size:14px;margin-left:10px;text-decoration:none;">{{.EmailAddress}}</a>
+									</td>
+								</tr>
+								<tr>
+									<td style="padding:10px 0;border-bottom:1px solid #eeeeee;">
+										<strong style="color:#333333;font-size:14px;">Phone Number:</strong>
+										<span style="color:#666666;font-size:14px;margin-left:10px;">{{.PhoneNumber}}</span>
+									</td>
+								</tr>
+								<tr>
+									<td style="padding:10px 0;border-bottom:1px solid #eeeeee;">
+										<strong style="color:#333333;font-size:14px;">How Did You Find Us:</strong>
+										<span style="color:#666666;font-size:14px;margin-left:10px;">{{.HowDidYouFindUs}}</span>
+									</td>
+								</tr>
+								<tr>
+									<td style="padding:15px 0;">
+										<strong style="color:#333333;font-size:14px;display:block;margin-bottom:10px;">Message:</strong>
+										<div style="color:#333333;font-size:14px;line-height:1.6;background-color:#f9f9f9;padding:15px;border-radius:4px;border-left:4px solid #0066cc;">
+											{{.Message}}
+										</div>
+									</td>
+								</tr>
+								{{if .Additional}}
+								<tr>
+									<td style="padding:15px 0;border-top:1px solid #eeeeee;">
+										<strong style="color:#333333;font-size:14px;display:block;margin-bottom:10px;">Additional Fields:</strong>
+										<ul style="margin:0;padding-left:20px;color:#666666;font-size:14px;">
+											{{range $k, $v := .Additional}}<li style="margin-bottom:5px;"><strong>{{$k}}:</strong> {{$v}}</li>{{end}}
+										</ul>
+									</td>
+								</tr>
+								{{end}}
+							</table>
+						</td>
+					</tr>
+					<tr>
+						<td style="padding:20px 30px;background-color:#f9f9f9;border-radius:0 0 8px 8px;border-top:1px solid #eeeeee;">
+							<p style="margin:0;color:#999999;font-size:12px;text-align:center;">This is an automated message from your contact form.</p>
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>
+</html>`,
 	},
 
 	enums.WELCOME_NEWSLETTER: &NewsletterWelcomeTpl{
