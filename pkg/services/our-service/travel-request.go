@@ -318,9 +318,9 @@ func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([
 		// User has permission to get other travel requests
 		match := bson.M{"trash": false}
 
-		// Apply agent filter if user is agent
+		// Apply agent filter if user is agent - filter by departureAgent directly
 		if isAgent {
-			match["program"] = bson.M{"$ne": primitive.NilObjectID}
+			match["departureAgent"] = agentUserId
 		}
 
 		f, err := helpers.ParseFilters[filter.TravelReqFilters](query)
@@ -329,41 +329,6 @@ func (t *travelrequestsvcs) buildUserPipeline(ctx context.Context, query any) ([
 		}
 
 		pipeline = f.BuildPipeline(match)
-
-		// If agent, add program lookup and filter
-		if isAgent {
-			// Lookup program
-			pipeline = append(pipeline, bson.M{
-				"$lookup": bson.M{
-					"from":         "tourismPrograms",
-					"localField":   "program",
-					"foreignField": "_id",
-					"as":           "programForFilter",
-				},
-			})
-
-			// Unwind to filter out travel requests without programs
-			pipeline = append(pipeline, bson.M{
-				"$unwind": bson.M{
-					"path":                       "$programForFilter",
-					"preserveNullAndEmptyArrays": false,
-				},
-			})
-
-			// Filter by agentId
-			pipeline = append(pipeline, bson.M{
-				"$match": bson.M{
-					"programForFilter.agentId": agentUserId,
-				},
-			})
-
-			// Remove the temporary lookup field
-			pipeline = append(pipeline, bson.M{
-				"$project": bson.M{
-					"programForFilter": 0,
-				},
-			})
-		}
 
 	} else {
 		// User doesn't have permission, filter by their own travel requests
@@ -1382,45 +1347,10 @@ func (t *travelrequestsvcs) buildUserPipelineV2(ctx context.Context, query *quer
 	// Base match filter
 	baseMatch := bson.M{"trash": false}
 	if isAgent {
-		// For agents: also ensure program exists
-		baseMatch["program"] = bson.M{"$ne": primitive.NilObjectID}
+		// For agents: filter by departureAgent field directly
+		baseMatch["departureAgent"] = userId
 	}
 	pipeline = append(pipeline, bson.M{"$match": baseMatch})
-
-	// If agent, add program lookup and filter BEFORE applying query filters
-	if isAgent {
-		// Lookup program - this will be used for filtering
-		pipeline = append(pipeline, bson.M{
-			"$lookup": bson.M{
-				"from":         "tourismPrograms",
-				"localField":   "program",
-				"foreignField": "_id",
-				"as":           "programForFilter",
-			},
-		})
-
-		// Unwind to filter out travel requests without programs
-		pipeline = append(pipeline, bson.M{
-			"$unwind": bson.M{
-				"path":                       "$programForFilter",
-				"preserveNullAndEmptyArrays": false,
-			},
-		})
-
-		// Filter by agentId
-		pipeline = append(pipeline, bson.M{
-			"$match": bson.M{
-				"programForFilter.agentId": userId,
-			},
-		})
-
-		// Remove the temporary lookup field
-		pipeline = append(pipeline, bson.M{
-			"$project": bson.M{
-				"programForFilter": 0,
-			},
-		})
-	}
 
 	// Apply additional query filters if provided
 	if err := query.CheckValid(); err != nil {
