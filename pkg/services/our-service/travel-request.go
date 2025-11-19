@@ -724,7 +724,8 @@ func (t *travelrequestsvcs) Approve(ctx context.Context, id string) (*models.Tra
 			Note:        "",
 		}
 		// Update program status to "approved" if it's "waiting"
-		if program.ProgramDto.Status == "waiting" {
+		if program.ProgramDto.Status == "waiting" || program.ProgramDto.Status == "pending" {
+
 			filter := bson.M{"_id": program.Id}
 			update := bson.M{"$set": bson.M{
 				"status":    "approved",
