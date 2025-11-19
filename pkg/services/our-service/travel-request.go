@@ -862,6 +862,10 @@ func (t *travelrequestsvcs) SetAsCompleted(ctx context.Context, id string) (*mod
 		return nil, errors.New("travel request has no program")
 	}
 
+	program, err := t.programrepo.GetByFilter(ctx, bson.M{"_id": travelReq.Program, "trash": false})
+	if program.ProgramDto.Status == "approved" {
+		program.ProgramDto.Status = "approved"
+	}
 	filter := bson.M{"_id": _id, "program": bson.M{"$ne": primitive.NilObjectID}}
 	update := bson.M{"$set": bson.M{"status": enums.TravelReqStatusCompleted}}
 
