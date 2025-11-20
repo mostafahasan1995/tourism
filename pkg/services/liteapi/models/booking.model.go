@@ -187,3 +187,15 @@ type UserBooking struct {
 	CreatedAt  time.Time          `bson:"createdAt" json:"createdAt"`
 	UpdatedAt  time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
+
+// CachedBookingList represents a cached list of bookings with metadata
+type CachedBookingList struct {
+	Id        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Email     string             `bson:"email" json:"email"`
+	FromDate  time.Time          `bson:"fromDate" json:"fromDate"`
+	ToDate    time.Time          `bson:"toDate" json:"toDate"`
+	Bookings  []Booking          `bson:"bookings" json:"bookings"`
+	IsAdmin   bool               `bson:"isAdmin" json:"isAdmin"` // true for admin queries
+	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
+	ExpiresAt time.Time          `bson:"expiresAt" json:"expiresAt"`
+}
