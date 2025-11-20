@@ -1,11 +1,14 @@
 package handler
 
 import (
+	"fmt"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/middleware"
 	"larsa-tourism-microservices/pkg/services/liteapi"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/goccy/go-json"
@@ -41,6 +44,10 @@ func NewRatesHandler(i *do.Injector, r *chi.Mux) {
 	r.Route("/bookings", func(r chi.Router) {
 		r.With(middleware.Auth("authenticate")).Get("/prebook/me", helpers.Make(h.MyPrebooks))
 		r.With(middleware.Auth("authenticate")).Get("/book/me", helpers.Make(h.MyBookings))
+		// User endpoint - gets bookings by email from token
+		r.With(middleware.Auth("authenticate")).Get("/by-email", helpers.Make(h.GetBookingsByEmail))
+		// Admin endpoint - requires admin capability
+		r.With(middleware.Auth("authenticate"), middleware.CapabilityCheck("admin")).Get("/admin", helpers.Make(h.GetBookingsAdmin))
 	})
 
 }
@@ -159,4 +166,90 @@ func (h *RatesHandler) GetHotelsRatesStream(w http.ResponseWriter, r *http.Reque
 	}
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, result)
+}
+
+func (h *RatesHandler) GetBookingsByEmail(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	params := r.URL.Query()
+
+	var fromDate, toDate *time.Time
+
+	// Parse fromDate if provided
+	if fromDateStr := params.Get("fromDate"); fromDateStr != "" {
+		// Trim quotes and whitespace
+		fromDateStr = strings.Trim(fromDateStr, `"' `)
+		parsed, err := time.Parse("2006-01-02", fromDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid fromDate format, use YYYY-MM-DD: %w", err)
+		}
+		fromDate = &parsed
+	}
+
+	// Parse toDate if provided
+	if toDateStr := params.Get("toDate"); toDateStr != "" {
+		// Trim quotes and whitespace
+		toDateStr = strings.Trim(toDateStr, `"' `)
+		parsed, err := time.Parse("2006-01-02", toDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid toDate format, use YYYY-MM-DD: %w", err)
+		}
+		toDate = &parsed
+	}
+
+	result, err := h.ratessvcs.GetBookingsByEmail(ctx, fromDate, toDate)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]interface{}{
+		"data": result,
+	})
+}
+
+func (h *RatesHandler) GetBookingsAdmin(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	params := r.URL.Query()
+
+	var email *string
+	var fromDate, toDate *time.Time
+
+	// Parse email if provided
+	if emailStr := params.Get("email"); emailStr != "" {
+		// Trim quotes and whitespace
+		emailStr = strings.Trim(emailStr, `"' `)
+		email = &emailStr
+	}
+
+	// Parse fromDate if provided
+	if fromDateStr := params.Get("fromDate"); fromDateStr != "" {
+		// Trim quotes and whitespace
+		fromDateStr = strings.Trim(fromDateStr, `"' `)
+		parsed, err := time.Parse("2006-01-02", fromDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid fromDate format, use YYYY-MM-DD: %w", err)
+		}
+		fromDate = &parsed
+	}
+
+	// Parse toDate if provided
+	if toDateStr := params.Get("toDate"); toDateStr != "" {
+		// Trim quotes and whitespace
+		toDateStr = strings.Trim(toDateStr, `"' `)
+		parsed, err := time.Parse("2006-01-02", toDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid toDate format, use YYYY-MM-DD: %w", err)
+		}
+		toDate = &parsed
+	}
+
+	result, err := h.ratessvcs.GetBookingsAdmin(ctx, email, fromDate, toDate)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]interface{}{
+		"data": result,
+	})
 }

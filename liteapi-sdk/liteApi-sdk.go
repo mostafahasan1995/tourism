@@ -365,6 +365,21 @@ func (sdk *LiteApiSdk) GetBookingsList(clientReference string) (*APIResponse, er
 	return sdk.makeRequest("GET", url, nil)
 }
 
+// GetBookingsByEmail returns bookings for a given email (clientReference)
+// This method uses email as clientReference to fetch bookings
+func (sdk *LiteApiSdk) GetBookingsByEmail(email string) (*APIResponse, error) {
+	if email == "" {
+		return &APIResponse{
+			Status: "failed",
+			Code:   http.StatusBadRequest,
+			Err: map[string]any{
+				"errors": []string{"The email is required"},
+			},
+		}, nil
+	}
+	return sdk.GetBookingsList(email)
+}
+
 // RetrieveBooking returns the status and the details for a specific booking Id
 // The API returns the status and the details for the a specific booking Id.
 func (sdk *LiteApiSdk) RetrieveBooking(bookingId string) (*APIResponse, error) {
