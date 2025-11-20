@@ -36,6 +36,7 @@ type InvoiceAdjustment struct {
 }
 
 type InvoiceContact struct {
+	Id      primitive.ObjectID         `bson:"_id,omitempty" json:"_id,omitempty"`
 	Name    transl.Localizable[string] `bson:"name" json:"name" validate:"required"`
 	Address string                     `bson:"address" json:"address" validate:"required"`
 	Phone   types.PhoneNumber          `bson:"phone" json:"phone" validate:"required"`

@@ -3,9 +3,12 @@ package ourservice
 import (
 	"context"
 	"errors"
+	"fmt"
 	"larsa-tourism-microservices/pkg/db"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
+	dbsvcs "larsa-tourism-microservices/pkg/services/db"
+	"larsa-tourism-microservices/pkg/services/member"
 	"larsa-tourism-microservices/pkg/services/our-service/enums"
 	"larsa-tourism-microservices/pkg/services/our-service/filter"
 	"larsa-tourism-microservices/pkg/services/our-service/models"
@@ -141,18 +144,26 @@ type ProgramSvcs interface {
 type programsvcs struct {
 	repo                  repo.ProgramRepo
 	travelreqsvcs         TravelRequestSvcs
+	travelrequestrepo     repo.TravelRequestRepo
 	withtxn               *db.WithTxn
 	activitiesSvcs        picklist.ActivitiesSvcs
 	financialsettingssvcs FinancialSettingsSvcs
+	customersvcs          member.CustomerSvcs
+	sortingsvcs           dbsvcs.SortingSvcs
+	agentsvcs             member.AgentSvcs
 }
 
 func NewProgramSvcs(i *do.Injector) (ProgramSvcs, error) {
 	return &programsvcs{
 		repo:                  do.MustInvoke[repo.ProgramRepo](i),
 		travelreqsvcs:         do.MustInvoke[TravelRequestSvcs](i),
+		travelrequestrepo:     do.MustInvoke[repo.TravelRequestRepo](i),
 		withtxn:               do.MustInvoke[*db.WithTxn](i),
 		activitiesSvcs:        do.MustInvoke[picklist.ActivitiesSvcs](i),
 		financialsettingssvcs: do.MustInvoke[FinancialSettingsSvcs](i),
+		customersvcs:          do.MustInvoke[member.CustomerSvcs](i),
+		sortingsvcs:           do.MustInvoke[dbsvcs.SortingSvcs](i),
+		agentsvcs:             do.MustInvoke[member.AgentSvcs](i),
 	}, nil
 }
 
@@ -330,10 +341,15 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 	}
 	profitRatio := financialSettings.ProfitRatio
 
-	// Calculate fees for the program
-	result[0].TotalCost = result[0].Program.CustomType.TotalCost
-	if result[0].TotalCost > 0 {
-		result[0].Fees = result[0].TotalCost * (profitRatio / 100)
+	// Calculate subTotal, fees, and total for the program
+	if result[0].Program.CustomType != nil && result[0].Program.CustomType.TotalCost > 0 {
+		subTotal := result[0].Program.CustomType.TotalCost
+		fees := subTotal * (profitRatio / 100)
+		total := subTotal + fees
+
+		result[0].SubTotal = subTotal
+		result[0].Fees = fees
+		result[0].Total = total
 	}
 
 	return &result[0], nil
@@ -492,11 +508,21 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 			UpdatedAt:  time.Now(),
 			UpdatedBy:  cfg.User.Id,
 		}
-
+		if program.ProgramType == "custom" {
+			program.ProgramDto.Status = "waiting"
+		}
 		if program.TravelReqId != primitive.NilObjectID {
 			if err := p.AssignProgramToTravelRequest(ctx, program); err != nil {
 				return nil, errors.New("error updating travel request, check if it is already assigned to a program")
 			}
+		} else if program.ProgramType == "custom" && program.CustomerId != nil {
+			// Reverse flow: Create travel request from program when no TravelReqId is provided
+			travelReq, err := p.createTravelRequestFromProgram(ctx, program)
+			if err != nil {
+				return nil, fmt.Errorf("error creating travel request from program: %w", err)
+			}
+			// Link program to the created travel request
+			program.TravelReqId = travelReq.Id
 		}
 
 		if err := p.repo.Add(ctx, program); err != nil {
@@ -534,6 +560,212 @@ func (p *programsvcs) AssignProgramToTravelRequest(ctx context.Context, program 
 	}
 
 	return nil
+}
+
+// createTravelRequestFromProgram creates a travel request from a custom program (reverse flow)
+// This is called when admin creates a custom program without a travel request
+func (p *programsvcs) createTravelRequestFromProgram(ctx context.Context, program *models.Program) (*models.TravelRequest, error) {
+	if program.CustomerId == nil {
+		return nil, errors.New("customerId is required to create travel request from program")
+	}
+
+	if program.CustomType == nil {
+		return nil, errors.New("customType is required for custom program")
+	}
+
+	// Get customer information
+	customer, err := p.customersvcs.GetByFilter(ctx, bson.M{"_id": *program.CustomerId, "trash": false})
+	if err != nil {
+		return nil, fmt.Errorf("error getting customer: %w", err)
+	}
+
+	// Map ProgramServiceType to ServiceType
+	serviceType, err := p.mapProgramServiceTypeToServiceType(program.ServiceType)
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate trip duration from program dates
+	tripDuration := 0
+	if !program.StartDate.IsZero() && !program.EndDate.IsZero() {
+		duration := program.EndDate.Sub(program.StartDate)
+		tripDuration = int(duration.Hours() / 24)
+		if tripDuration < 1 {
+			tripDuration = 1
+		}
+	}
+
+	// Build TravelRequestDto from Program
+	travelReqDto := &models.TravelRequestDto{
+		Package:         program.Package,
+		ClientName:      customer.Name.GetContentByLang("en"), // Default to English
+		ClientPhone:     customer.ClientContact.Mobile,
+		ClientEmail:     customer.Security.Email,
+		Nationality:     customer.Nationality,
+		TripDuration:    tripDuration,
+		ServiceType:     serviceType,
+		TripCoordinator: program.AgentId,
+		ContactMethod:   []string{"email"}, // Default contact method
+		SpecialReq:      program.Purpose,
+	}
+
+	// Map CustomType fields to TravelRequestDto
+	if program.CustomType.Delegation.OrganizationName != nil {
+		travelReqDto.Delegation = &program.CustomType.Delegation
+	}
+	if program.CustomType.BusinessMan.Purpose != "" {
+		travelReqDto.BusinessMan = &program.CustomType.BusinessMan
+	}
+	if program.CustomType.CustomPlan.TripType != "" {
+		travelReqDto.CustomPlan = &program.CustomType.CustomPlan
+	}
+	if program.CustomType.HotelBooking.HotelId != primitive.NilObjectID {
+		travelReqDto.HotelBooking = &program.CustomType.HotelBooking
+	}
+
+	// Convert ProgramDestination to Destination
+	if len(program.CustomType.Destinations) > 0 {
+		destinations := make([]models.Destination, 0, len(program.CustomType.Destinations))
+		for _, pd := range program.CustomType.Destinations {
+			dest := models.Destination{
+				DestinationFrom: pd.DestinationFrom,
+				DestinationTo:   pd.DestinationTo,
+				TripDetails:     pd.TripDetails,
+				Accommodation:   make([]models.Accommodation, 0, len(pd.Accommodation)),
+				FlightTickets:   pd.FlightTickets.FlightTicket,
+				Transportation:  pd.Transportation.Transportation,
+				Activities:      []string{}, // ProgramActivities uses transl.Localizable, convert if needed
+				Agenda:          pd.Agenda,
+				Services:        p.convertProgramServicesToServices(pd.Services),
+			}
+
+			// Convert ProgramAccommodation to Accommodation
+			for _, pa := range pd.Accommodation {
+				dest.Accommodation = append(dest.Accommodation, pa.Accommodation)
+			}
+
+			destinations = append(destinations, dest)
+		}
+		travelReqDto.Destinations = destinations
+	}
+
+	// Convert ProgramVipCar to VipCar
+	if len(program.CustomType.VipCar.Destinations) > 0 {
+		vipCarDests := make([]models.VipCarDest, 0, len(program.CustomType.VipCar.Destinations))
+		for _, pvd := range program.CustomType.VipCar.Destinations {
+			// ProgramTransportation embeds Transportation, access embedded fields directly
+			vipCarDest := models.VipCarDest{
+				DestinationFrom: pvd.DestinationFrom,
+				DestinationTo:   pvd.DestinationTo,
+				Transportation: models.Transportation{
+					TransType:             pvd.Transportation.TransType,
+					Capacity:              pvd.Transportation.Capacity,
+					DriverLanguagesSpoken: pvd.Transportation.DriverLanguagesSpoken,
+					LuxuryFeatures:        pvd.Transportation.LuxuryFeatures,
+					StartDate:             pvd.Transportation.StartDate,
+					EndDate:               pvd.Transportation.EndDate,
+					StartTime:             pvd.Transportation.StartTime,
+					EndTime:               pvd.Transportation.EndTime,
+					CarTypeId:             pvd.Transportation.CarTypeId,
+				},
+				Services: p.convertProgramServicesToServices(pvd.Services),
+			}
+			vipCarDests = append(vipCarDests, vipCarDest)
+		}
+		travelReqDto.VipCar = &models.VipCar{
+			Destinations: vipCarDests,
+		}
+	}
+
+	// Convert ProgramFlightTicketRequest to FlightTicketRequest
+	if len(program.CustomType.FlightTicketRequest.Destinations) > 0 {
+		flightDests := make([]models.FlightTicketDestination, 0, len(program.CustomType.FlightTicketRequest.Destinations))
+		for _, pft := range program.CustomType.FlightTicketRequest.Destinations {
+			flightDests = append(flightDests, models.FlightTicketDestination{
+				FlightTicket: pft.FlightTicket,
+				Services:     p.convertProgramServicesToServices(pft.Services),
+			})
+		}
+		travelReqDto.FlightTicketRequest = &models.FlightTicketRequest{
+			Destinations: flightDests,
+		}
+	}
+
+	// Create travel request
+	seq, err := p.sortingsvcs.GetAndUpdateSourceSeq(ctx, "travelRequest")
+	if err != nil {
+		return nil, fmt.Errorf("error getting sequence: %w", err)
+	}
+
+	reqId := fmt.Sprintf("RQ-%d-%d", time.Now().Year(), seq)
+
+	travelReq := &models.TravelRequest{
+		Id:               primitive.NewObjectID(),
+		ReqId:            reqId,
+		TravelRequestDto: *travelReqDto,
+		Date:             time.Now(),
+		Status:           enums.TravelReqStatusWaiting,
+		CustomerId:       *program.CustomerId,
+		Program:          program.Id, // Link to program
+		CreatedAt:        time.Now(),
+		CreatedBy:        program.CreatedBy,
+	}
+
+	// Get departure agent using the same logic as normal flow
+	departureDestinationId, err := travelReq.GetDepartureDestinationId()
+	if err != nil {
+		return nil, fmt.Errorf("error getting departure destination: %w", err)
+	}
+
+	agent, err := p.agentsvcs.GetAgentByDestination(ctx, departureDestinationId.Hex())
+	if err != nil {
+		return nil, fmt.Errorf("error get departure destination agent, check if agent has destination and is active: %w", err)
+	}
+
+	travelReq.DepartureAgent = agent.Id
+
+	// Save travel request
+	if err := p.travelrequestrepo.Add(ctx, travelReq); err != nil {
+		return nil, fmt.Errorf("error saving travel request: %w", err)
+	}
+
+	return travelReq, nil
+}
+
+// mapProgramServiceTypeToServiceType maps ProgramServiceType to ServiceType
+func (p *programsvcs) mapProgramServiceTypeToServiceType(programServiceType enums.ProgramServiceType) (enums.ServiceType, error) {
+	switch programServiceType {
+	case enums.ProgramServiceTypeDelegation:
+		return enums.ServiceTypeDelegation, nil
+	case enums.ProgramServiceTypeCustomProgram:
+		return enums.ServiceTypeCustomPlan, nil
+	case enums.ProgramServiceTypeBusinessManTravel:
+		return enums.ServiceTypeBusinessMan, nil
+	case enums.ProgramServiceTypeVipCar:
+		return enums.ServiceTypeVipCar, nil
+	case enums.ProgramServiceTypeFlightTicket:
+		return enums.ServiceTypeFlightRequest, nil
+	case enums.ProgramServiceTypeHotelBooking:
+		return enums.ServiceTypeHotelBooking, nil
+	default:
+		return "", fmt.Errorf("unsupported program service type: %s", programServiceType)
+	}
+}
+
+// convertProgramServicesToServices converts ProgramServices to Services
+func (p *programsvcs) convertProgramServicesToServices(ps models.ProgramServices) models.Services {
+	return models.Services{
+		OnGroundAssistance:       ps.OnGroundAssistance.Active,
+		TravelInsurance:          ps.TravelInsurance.Active,
+		VisaAssistance:           ps.VisaAssistance.Active,
+		WelcomeKit:               ps.WelcomeKit.Active,
+		FreeSimCardWifi:          ps.FreeSimCardWifi.Active,
+		ComplimentaryGifts:       ps.ComplimentaryGifts.Active,
+		VipAirportServices:       ps.VipAirportServices.Active,
+		PersonalTravelConsultant: ps.PersonalTravelConsultant.Active,
+		ChildcareServices:        ps.ChildcareServices.Active,
+		AccessibilitySupport:     ps.AccessibilitySupport.Active,
+	}
 }
 
 func (p *programsvcs) UnassignProgramFromTravelRequest(ctx context.Context, program *models.Program) error {
@@ -583,7 +815,13 @@ func (p *programsvcs) Update(ctx context.Context, id string, data *models.Progra
 		if err != nil {
 			return nil, err
 		}
-
+		oldProgram, err := p.repo.GetByFilter(ctx, bson.M{"_id": _id, "trash": false})
+		if err != nil {
+			return nil, errors.New("error fetching program")
+		}
+		if oldProgram.Status == "rejected" {
+			data.Status = "waiting"
+		}
 		program := &models.Program{
 			Id:         _id,
 			ProgramDto: *data,

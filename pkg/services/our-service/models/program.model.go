@@ -45,7 +45,7 @@ type ProgramDto struct {
 	TravelReqId primitive.ObjectID         `bson:"travelReqId" json:"travelReqId" `
 	CustomerId  *primitive.ObjectID        `bson:"customerId" json:"customerId"`
 	AgentId     primitive.ObjectID         `bson:"agentId" json:"agentId"`
-	Status      string                     `bson:"status" json:"status" validate:"required,oneof=pending active inactive"`
+	Status      string                     `bson:"status" json:"status" `
 	Package     primitive.ObjectID         `bson:"package" json:"package" `
 	ProgramType enums.ProgramType          `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
 	TravelType  enums.TravelType           `bson:"travelType" json:"travelType"
@@ -113,8 +113,9 @@ type ProgramRes struct {
 	PackageName   transl.Localizable[string] `bson:"packageName" json:"packageName"`
 	Duration      int                        `bson:"duration" json:"duration"`
 	IsFav         bool                       `bson:"isFav" json:"isFav"`
-	TotalCost     float64                    `bson:"totalCost" json:"totalCost"`
+	SubTotal      float64                    `bson:"subTotal" json:"subTotal"`
 	Fees          float64                    `bson:"fees" json:"fees"`
+	Total         float64                    `bson:"total" json:"total"`
 }
 
 func (p *ProgramDto) Validate(v *validator.Validate) error {
