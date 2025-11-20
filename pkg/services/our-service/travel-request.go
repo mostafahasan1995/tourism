@@ -1299,10 +1299,16 @@ func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.Ob
 	}
 
 	userId := cfg.User.Id
-	agentRoleID, err := primitive.ObjectIDFromHex("686cd82c461edd73ba964477")
+	// Define allowed agent role IDs
+	agentRoleID1, err := primitive.ObjectIDFromHex("686cd82c461edd73ba964477")
 	if err != nil {
 		return false, userId, err
 	}
+	agentRoleID2, err := primitive.ObjectIDFromHex("67a499580187a3ee0f873597")
+	if err != nil {
+		return false, userId, err
+	}
+	agentRoleIDs := []primitive.ObjectID{agentRoleID1, agentRoleID2}
 
 	// Check roles array by reflection
 	userDataValue := reflect.ValueOf(cfg.User.UserData)
@@ -1330,8 +1336,13 @@ func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.Ob
 
 				if roleStr != "" {
 					roleID, err := primitive.ObjectIDFromHex(roleStr)
-					if err == nil && roleID == agentRoleID {
-						return true, userId, nil
+					if err == nil {
+						// Check if roleID matches any of the allowed agent role IDs
+						for _, agentRoleID := range agentRoleIDs {
+							if roleID == agentRoleID {
+								return true, userId, nil
+							}
+						}
 					}
 				}
 			}
