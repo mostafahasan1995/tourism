@@ -9,6 +9,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
 	"larsa-tourism-microservices/pkg/services/home/repo"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"time"
@@ -320,7 +321,19 @@ func (a *contactUssvcs) Patch(ctx context.Context, id string, updates map[string
 		case "emailAddress":
 			updateDoc["emailAddress"] = value
 		case "phoneNumber":
-			updateDoc["phoneNumber"] = value
+			// Handle phoneNumber as PhoneNumber struct
+			if phoneMap, ok := value.(map[string]interface{}); ok {
+				phoneNumber := types.PhoneNumber{}
+				if pre, ok := phoneMap["pre"].(string); ok {
+					phoneNumber.Pre = pre
+				}
+				if content, ok := phoneMap["content"].(string); ok {
+					phoneNumber.Content = content
+				}
+				updateDoc["phoneNumber"] = phoneNumber
+			} else {
+				updateDoc["phoneNumber"] = value
+			}
 		case "howDidYouFindUs":
 			updateDoc["howDidYouFindUs"] = value
 		case "message":
