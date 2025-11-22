@@ -1346,16 +1346,23 @@ func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.Ob
 	// Fetch all roles from auth service to get role names
 	resp, err := t.gateway.Request(ctx, "users", "roles/all", "GET", "", map[string]any{})
 	if err != nil {
-		return false, userId, err
+		return false, userId, fmt.Errorf("error requesting roles: %w", err)
 	}
-	if resp.StatusCode != 200 {
-		return false, userId, errors.New("error getting roles from auth service")
-	}
+	defer resp.Body.Close()
 
-	// Read response body into bytes
+	// Read response body into bytes (only once - body can only be read once)
 	bodyBytes, errRead := io.ReadAll(resp.Body)
 	if errRead != nil {
-		return false, userId, errors.New("error reading roles response")
+		return false, userId, fmt.Errorf("error reading roles response: %w", errRead)
+	}
+
+	if resp.StatusCode != 200 {
+		return false, userId, fmt.Errorf("error getting roles from auth service (status %d): %s", resp.StatusCode, string(bodyBytes))
+	}
+
+	// Check if body is empty
+	if len(bodyBytes) == 0 {
+		return false, userId, errors.New("empty response body from roles service")
 	}
 
 	// Parse roles response
@@ -1375,9 +1382,29 @@ func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.Ob
 		CreatedBy    primitive.ObjectID `json:"createdBy,omitempty"`
 	}
 
+	// Try to parse as direct array first
 	var roles []Role
 	if errDec := json.Unmarshal(bodyBytes, &roles); errDec != nil {
-		return false, userId, errors.New("error parsing roles response: " + errDec.Error())
+		// If that fails, try parsing as wrapped object
+		var wrappedResponse struct {
+			Roles []Role `json:"roles"`
+			Data  []Role `json:"data"`
+		}
+		if errDec2 := json.Unmarshal(bodyBytes, &wrappedResponse); errDec2 != nil {
+			// Show first 200 chars of body for debugging
+			bodyPreview := string(bodyBytes)
+			if len(bodyPreview) > 200 {
+				bodyPreview = bodyPreview[:200] + "..."
+			}
+			return false, userId, fmt.Errorf("error parsing roles response (body length: %d, preview: %s): %w", len(bodyBytes), bodyPreview, errDec)
+		}
+		if len(wrappedResponse.Roles) > 0 {
+			roles = wrappedResponse.Roles
+		} else if len(wrappedResponse.Data) > 0 {
+			roles = wrappedResponse.Data
+		} else {
+			return false, userId, errors.New("no roles found in response")
+		}
 	}
 
 	// Create a map of role ID to role name for quick lookup
