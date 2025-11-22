@@ -8,6 +8,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/home"
 	"larsa-tourism-microservices/pkg/services/home/filter"
 	"larsa-tourism-microservices/pkg/services/home/models"
+	"larsa-tourism-microservices/pkg/types"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
 	"strconv"
@@ -41,8 +42,21 @@ func (l *ContactUsHandler) parseContactUsData(rawData map[string]interface{}) mo
 		}
 	}
 	if val, ok := rawData["phoneNumber"]; ok {
-		if str, ok := val.(string); ok {
-			data.PhoneNumber = str
+		// Handle phoneNumber as object with pre and content fields
+		if phoneMap, ok := val.(map[string]interface{}); ok {
+			phoneNumber := types.PhoneNumber{}
+			if pre, ok := phoneMap["pre"].(string); ok {
+				phoneNumber.Pre = pre
+			}
+			if content, ok := phoneMap["content"].(string); ok {
+				phoneNumber.Content = content
+			}
+			data.PhoneNumber = phoneNumber
+		} else if str, ok := val.(string); ok {
+			// Fallback: if it's a string, use as content only
+			data.PhoneNumber = types.PhoneNumber{
+				Content: str,
+			}
 		}
 	}
 	if val, ok := rawData["howDidYouFindUs"]; ok {

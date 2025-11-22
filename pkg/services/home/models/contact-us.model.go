@@ -3,6 +3,7 @@ package models
 import (
 	// "larsa-tourism-microservices/pkg/types"
 	// "larsa-tourism-microservices/pkg/types"
+	"larsa-tourism-microservices/pkg/types"
 	"time"
 
 	"git.larsa.io/mahdawi/microservices-commons.git/common"
@@ -12,7 +13,7 @@ import (
 type ContactUsDto struct {
 	FullName         string                 `bson:"fullName" json:"fullName"`
 	EmailAddress     string                 `bson:"emailAddress" json:"emailAddress"`
-	PhoneNumber      string                 `bson:"phoneNumber" json:"phoneNumber"`
+	PhoneNumber      types.PhoneNumber      `bson:"phoneNumber" json:"phoneNumber"`
 	HowDidYouFindUs  string                 `bson:"howDidYouFindUs" json:"howDidYouFindUs"`
 	Message          string                 `bson:"message" json:"message"`
 	AdditionalFields map[string]interface{} `bson:"additionalFields,omitempty" json:"additionalFields,omitempty"`
