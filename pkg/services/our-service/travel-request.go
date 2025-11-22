@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"larsa-tourism-microservices/pkg/db"
+	"larsa-tourism-microservices/pkg/gateway"
 	"larsa-tourism-microservices/pkg/helpers"
 	"larsa-tourism-microservices/pkg/query"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db"
@@ -17,10 +19,12 @@ import (
 	"larsa-tourism-microservices/pkg/util"
 	"math"
 	"reflect"
+	"strings"
 	"time"
 
 	"larsa-tourism-microservices/pkg/types"
 
+	"github.com/goccy/go-json"
 	"github.com/samber/do"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -267,6 +271,7 @@ type travelrequestsvcs struct {
 	agentfinancialsvcs    AgentFinancialSvcs
 	programrepo           repo.ProgramRepo
 	withtxn               *db.WithTxn
+	gateway               gateway.Gateway
 }
 
 func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
@@ -280,6 +285,7 @@ func NewTravelRequestSvcs(i *do.Injector) (TravelRequestSvcs, error) {
 		agentfinancialsvcs:    do.MustInvoke[AgentFinancialSvcs](i),
 		programrepo:           do.MustInvoke[repo.ProgramRepo](i),
 		withtxn:               do.MustInvoke[*db.WithTxn](i),
+		gateway:               do.MustInvoke[gateway.Gateway](i),
 	}, nil
 }
 
@@ -1291,7 +1297,7 @@ func (t *travelrequestsvcs) Count(ctx context.Context, filter any) (int64, error
 
 // v2
 
-// isUserAgent checks if the user has agent role by checking roles array for agent role ID
+// isUserAgent checks if the user has agent role by checking role names from auth service
 func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.ObjectID, error) {
 	cfg, err := util.GetReqAppCfg(ctx)
 	if err != nil {
@@ -1299,18 +1305,9 @@ func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.Ob
 	}
 
 	userId := cfg.User.Id
-	// Define allowed agent role IDs
-	agentRoleID1, err := primitive.ObjectIDFromHex("686cd82c461edd73ba964477")
-	if err != nil {
-		return false, userId, err
-	}
-	agentRoleID2, err := primitive.ObjectIDFromHex("67a499580187a3ee0f873597")
-	if err != nil {
-		return false, userId, err
-	}
-	agentRoleIDs := []primitive.ObjectID{agentRoleID1, agentRoleID2}
 
-	// Check roles array by reflection
+	// Get user's role IDs from user data
+	var userRoleIDs []string
 	userDataValue := reflect.ValueOf(cfg.User.UserData)
 	if userDataValue.Kind() == reflect.Struct {
 		// Try "Roles" (capitalized) first
@@ -1335,16 +1332,66 @@ func (t *travelrequestsvcs) isUserAgent(ctx context.Context) (bool, primitive.Ob
 				}
 
 				if roleStr != "" {
-					roleID, err := primitive.ObjectIDFromHex(roleStr)
-					if err == nil {
-						// Check if roleID matches any of the allowed agent role IDs
-						for _, agentRoleID := range agentRoleIDs {
-							if roleID == agentRoleID {
-								return true, userId, nil
-							}
-						}
-					}
+					userRoleIDs = append(userRoleIDs, roleStr)
 				}
+			}
+		}
+	}
+
+	// If user has no roles, they're not an agent
+	if len(userRoleIDs) == 0 {
+		return false, userId, nil
+	}
+
+	// Fetch all roles from auth service to get role names
+	resp, err := t.gateway.Request(ctx, "users", "roles/all", "GET", "", map[string]any{})
+	if err != nil {
+		return false, userId, err
+	}
+	if resp.StatusCode != 200 {
+		return false, userId, errors.New("error getting roles from auth service")
+	}
+
+	// Read response body into bytes
+	bodyBytes, errRead := io.ReadAll(resp.Body)
+	if errRead != nil {
+		return false, userId, errors.New("error reading roles response")
+	}
+
+	// Parse roles response
+	type Capability struct {
+		Id       primitive.ObjectID `json:"_id"`
+		Name     string             `json:"name"`
+		Label    string             `json:"label"`
+		Reserved bool               `json:"reserved"`
+	}
+
+	type Role struct {
+		Id           primitive.ObjectID `json:"_id"`
+		Name         string             `json:"name"`
+		Label        string             `json:"label"`
+		Reserved     bool               `json:"reserved"`
+		Capabilities []Capability       `json:"capabilities"`
+		CreatedBy    primitive.ObjectID `json:"createdBy,omitempty"`
+	}
+
+	var roles []Role
+	if errDec := json.Unmarshal(bodyBytes, &roles); errDec != nil {
+		return false, userId, errors.New("error parsing roles response: " + errDec.Error())
+	}
+
+	// Create a map of role ID to role name for quick lookup
+	roleIDToName := make(map[string]string)
+	for _, role := range roles {
+		roleIDToName[role.Id.Hex()] = role.Name
+	}
+
+	// Check if any of the user's role IDs correspond to an agent role
+	for _, userRoleID := range userRoleIDs {
+		if roleName, exists := roleIDToName[userRoleID]; exists {
+			// Check if role name contains "agent" (case-insensitive)
+			if strings.Contains(strings.ToLower(roleName), "agent") {
+				return true, userId, nil
 			}
 		}
 	}

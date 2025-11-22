@@ -3,6 +3,7 @@ package member
 import (
 	"context"
 	"errors"
+	"io"
 	"larsa-tourism-microservices/pkg/gateway"
 	"larsa-tourism-microservices/pkg/services/member/models"
 	"larsa-tourism-microservices/pkg/services/messaging"
@@ -10,6 +11,7 @@ import (
 	messagingmodels "larsa-tourism-microservices/pkg/services/messaging/models"
 	messagingtpls "larsa-tourism-microservices/pkg/services/messaging/template"
 	"larsa-tourism-microservices/pkg/util"
+	"strings"
 
 	"github.com/goccy/go-json"
 
@@ -42,13 +44,64 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 	var user map[string]any
 	var password string
 
+	// Get all roles from auth service
+	resp2, err2 := m.gateway.Request(ctx, "users", "roles/all", "GET", "", map[string]any{})
+	if err2 != nil {
+		return primitive.NilObjectID, "", err2
+	}
+	if resp2.StatusCode != 200 {
+		return primitive.NilObjectID, "", errors.New("error getting roles")
+	}
+
+	// Read response body into bytes
+	bodyBytes, errRead := io.ReadAll(resp2.Body)
+	if errRead != nil {
+		return primitive.NilObjectID, "", errors.New("error reading roles response")
+	}
+
+	// Parse roles response - it's an array of role objects
+	type Capability struct {
+		Id       primitive.ObjectID `json:"_id"`
+		Name     string             `json:"name"`
+		Label    string             `json:"label"`
+		Reserved bool               `json:"reserved"`
+	}
+
+	type Role struct {
+		Id           primitive.ObjectID `json:"_id"`
+		Name         string             `json:"name"`
+		Label        string             `json:"label"`
+		Reserved     bool               `json:"reserved"`
+		Capabilities []Capability       `json:"capabilities"`
+		CreatedBy    primitive.ObjectID `json:"createdBy,omitempty"`
+	}
+
+	var roles []Role
+	if errDec := json.Unmarshal(bodyBytes, &roles); errDec != nil {
+		return primitive.NilObjectID, "", errors.New("error parsing roles response: " + errDec.Error())
+	}
+
+	// Find agent role IDs by searching for "agent" in role name (case-insensitive)
+	var agentRoleIDs []string
+	for _, role := range roles {
+		roleNameLower := strings.ToLower(role.Name)
+		if strings.Contains(roleNameLower, "agent") {
+			agentRoleIDs = append(agentRoleIDs, role.Id.Hex())
+		}
+	}
+
+	// If no agent roles found, return error
+	if len(agentRoleIDs) == 0 {
+		return primitive.NilObjectID, "", errors.New("no agent roles found in auth service")
+	}
+
 	switch member := data.(type) {
 	case *models.Agent:
 		user = map[string]any{
 			"firstName": member.Name.GetContentByLang("en"),
 			"lastName":  "-",
 			"email":     member.Security.Email,
-			"roles":     []string{"686cd82c461edd73ba964477", "67a499580187a3ee0f873597"},
+			"roles":     agentRoleIDs, // Use dynamically found agent role IDs
 		}
 		password = member.Security.NewPassword
 	case *models.Customer:
