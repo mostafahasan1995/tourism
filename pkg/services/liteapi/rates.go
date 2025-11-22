@@ -10,6 +10,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/liteapi/models"
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
 	"larsa-tourism-microservices/pkg/services/member"
+	"reflect"
 	"time"
 
 	"larsa-tourism-microservices/pkg/util"
@@ -29,21 +30,26 @@ type RatesSvcs interface {
 	CancelBooking(ctx context.Context, bookingId string) (any, error)
 	//
 	GetFullRatesStream(ctx context.Context, data any) (any, error)
+	// New booking list methods
+	GetBookingsByEmail(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error)
+	GetBookingsAdmin(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
 }
 
 type ratessvcs struct {
-	liteApiInitFunc liteApiSdk.LiteApiInitFunc
-	preBookRepo     repo.PreBookRepo
-	bookingRepo     repo.BookingRepo
-	customersvcs    member.CustomerSvcs
+	liteApiInitFunc       liteApiSdk.LiteApiInitFunc
+	preBookRepo           repo.PreBookRepo
+	bookingRepo           repo.BookingRepo
+	cachedBookingListRepo repo.CachedBookingListRepo
+	customersvcs          member.CustomerSvcs
 }
 
 func NewRatesSvcs(i *do.Injector) (RatesSvcs, error) {
 	return &ratessvcs{
-		liteApiInitFunc: do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
-		preBookRepo:     do.MustInvoke[repo.PreBookRepo](i),
-		bookingRepo:     do.MustInvoke[repo.BookingRepo](i),
-		customersvcs:    do.MustInvoke[member.CustomerSvcs](i),
+		liteApiInitFunc:       do.MustInvoke[liteApiSdk.LiteApiInitFunc](i),
+		preBookRepo:           do.MustInvoke[repo.PreBookRepo](i),
+		bookingRepo:           do.MustInvoke[repo.BookingRepo](i),
+		cachedBookingListRepo: do.MustInvoke[repo.CachedBookingListRepo](i),
+		customersvcs:          do.MustInvoke[member.CustomerSvcs](i),
 	}, nil
 }
 
@@ -303,4 +309,193 @@ func (r *ratessvcs) GetFullRatesStream(ctx context.Context, data any) (any, erro
 
 	return nil, nil
 
+}
+
+// getEmailFromUser extracts email from user context using reflection
+func getEmailFromUser(ctx context.Context) (string, error) {
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	if cfg.User == nil {
+		return "", errors.New("user not authenticated")
+	}
+
+	// Use reflection to get Email field from common.User
+	userDataValue := reflect.ValueOf(cfg.User.UserData)
+	if userDataValue.Kind() == reflect.Ptr {
+		userDataValue = userDataValue.Elem()
+	}
+
+	if userDataValue.Kind() == reflect.Struct {
+		emailField := userDataValue.FieldByName("Email")
+		if emailField.IsValid() && emailField.Kind() == reflect.String {
+			return emailField.String(), nil
+		}
+	}
+
+	return "", errors.New("email not found in user data")
+}
+
+// filterBookingsByDate filters bookings by date range
+func filterBookingsByDate(bookings []models.Booking, fromDate, toDate time.Time) []models.Booking {
+	var filtered []models.Booking
+	for _, booking := range bookings {
+		// Parse booking createdAt date
+		bookingDate, err := time.Parse(time.RFC3339, booking.CreatedAt)
+		if err != nil {
+			// Try alternative format
+			bookingDate, err = time.Parse("2006-01-02T15:04:05Z07:00", booking.CreatedAt)
+			if err != nil {
+				continue // Skip if date parsing fails
+			}
+		}
+
+		// Check if booking date is within range
+		if (bookingDate.After(fromDate) || bookingDate.Equal(fromDate)) &&
+			(bookingDate.Before(toDate) || bookingDate.Equal(toDate)) {
+			filtered = append(filtered, booking)
+		}
+	}
+	return filtered
+}
+
+// GetBookingsByEmail gets bookings for authenticated user by email with date range from local database
+// Default date range: last year to now
+func (r *ratessvcs) GetBookingsByEmail(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error) {
+	email, err := getEmailFromUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set default date range: last year to now
+	now := time.Now()
+	if fromDate == nil {
+		oneYearAgo := now.AddDate(-1, 0, 0)
+		fromDate = &oneYearAgo
+	}
+	if toDate == nil {
+		toDate = &now
+	}
+
+	// Query local database for bookings by email
+	filter := bson.M{
+		"email": email,
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+	}
+
+	var userBookings []models.UserBooking
+	err = r.bookingRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &userBookings)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert UserBooking to Booking and filter by date
+	var bookings []models.Booking
+	for _, userBooking := range userBookings {
+		// Parse booking createdAt date from the Booking's CreatedAt field (string)
+		var bookingDate time.Time
+
+		if userBooking.Booking.CreatedAt != "" {
+			var err error
+			bookingDate, err = time.Parse(time.RFC3339, userBooking.Booking.CreatedAt)
+			if err != nil {
+				// Try alternative format
+				bookingDate, err = time.Parse("2006-01-02T15:04:05Z07:00", userBooking.Booking.CreatedAt)
+				if err != nil {
+					// Try simple date format
+					bookingDate, err = time.Parse("2006-01-02", userBooking.Booking.CreatedAt)
+					if err != nil {
+						// Fallback to UserBooking's CreatedAt (time.Time)
+						bookingDate = userBooking.CreatedAt
+					}
+				}
+			}
+		} else {
+			// Fallback to UserBooking's CreatedAt if Booking.CreatedAt is empty
+			bookingDate = userBooking.CreatedAt
+		}
+
+		// Check if booking date is within range
+		if (bookingDate.After(*fromDate) || bookingDate.Equal(*fromDate)) &&
+			(bookingDate.Before(*toDate) || bookingDate.Equal(*toDate)) {
+			bookings = append(bookings, userBooking.Booking)
+		}
+	}
+
+	return bookings, nil
+}
+
+// GetBookingsAdmin gets all bookings for admin with optional email filter from local database
+// Default date range: year start to now
+// Note: Admin authorization should be handled by middleware
+func (r *ratessvcs) GetBookingsAdmin(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error) {
+	// Set default date range: year start to now
+	now := time.Now()
+	if fromDate == nil {
+		yearStart := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
+		fromDate = &yearStart
+	}
+	if toDate == nil {
+		toDate = &now
+	}
+
+	// Build filter for local database query
+	filter := bson.M{}
+	if email != nil {
+		filter["email"] = *email
+	}
+
+	pipeline := []bson.M{
+		{"$match": filter},
+	}
+
+	var userBookings []models.UserBooking
+	err := r.bookingRepo.Aggregate(ctx, pipeline, func(cur *mongo.Cursor) error {
+		return cur.All(ctx, &userBookings)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert UserBooking to Booking and filter by date
+	var bookings []models.Booking
+	for _, userBooking := range userBookings {
+		// Parse booking createdAt date from the Booking's CreatedAt field (string)
+		var bookingDate time.Time
+
+		if userBooking.Booking.CreatedAt != "" {
+			var err error
+			bookingDate, err = time.Parse(time.RFC3339, userBooking.Booking.CreatedAt)
+			if err != nil {
+				// Try alternative format
+				bookingDate, err = time.Parse("2006-01-02T15:04:05Z07:00", userBooking.Booking.CreatedAt)
+				if err != nil {
+					// Try simple date format
+					bookingDate, err = time.Parse("2006-01-02", userBooking.Booking.CreatedAt)
+					if err != nil {
+						// Fallback to UserBooking's CreatedAt (time.Time)
+						bookingDate = userBooking.CreatedAt
+					}
+				}
+			}
+		} else {
+			// Fallback to UserBooking's CreatedAt if Booking.CreatedAt is empty
+			bookingDate = userBooking.CreatedAt
+		}
+
+		// Check if booking date is within range
+		if (bookingDate.After(*fromDate) || bookingDate.Equal(*fromDate)) &&
+			(bookingDate.Before(*toDate) || bookingDate.Equal(*toDate)) {
+			bookings = append(bookings, userBooking.Booking)
+		}
+	}
+
+	return bookings, nil
 }

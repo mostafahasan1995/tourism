@@ -29,6 +29,7 @@ func Init(i *do.Injector, r *chi.Mux) *do.Injector {
 	do.Provide(i, repo.NewHotelDetailsRepo)
 	do.Provide(i, repo.NewPreBookRepo)
 	do.Provide(i, repo.NewBookingRepo)
+	do.Provide(i, repo.NewCachedBookingListRepo)
 	do.Provide(i, repo.NewFacilityRepo)
 	do.Provide(i, repo.NewHotelReviewRepo)
 	//do.Provide(i, repo.NewLockRepo)
