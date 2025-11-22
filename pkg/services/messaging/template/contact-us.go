@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"html/template"
+	"larsa-tourism-microservices/pkg/types"
 )
 
 type ContactUsTpl struct {
@@ -15,7 +16,7 @@ type ContactUsTpl struct {
 type ContactUsTplData struct {
 	FullName        string
 	EmailAddress    string
-	PhoneNumber     string
+	PhoneNumber     types.PhoneNumber
 	HowDidYouFindUs string
 	Message         string
 	Additional      map[string]any
