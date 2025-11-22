@@ -3,6 +3,7 @@ package member
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"larsa-tourism-microservices/pkg/gateway"
 	"larsa-tourism-microservices/pkg/services/member/models"
@@ -47,16 +48,35 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 	// Get all roles from auth service
 	resp2, err2 := m.gateway.Request(ctx, "users", "roles/all", "GET", "", map[string]any{})
 	if err2 != nil {
-		return primitive.NilObjectID, "", err2
+		return primitive.NilObjectID, "", fmt.Errorf("error requesting roles: %w", err2)
 	}
-	if resp2.StatusCode != 200 {
-		return primitive.NilObjectID, "", errors.New("error getting roles")
-	}
+	defer resp2.Body.Close()
 
-	// Read response body into bytes
+	// Read response body into bytes (only once - body can only be read once)
 	bodyBytes, errRead := io.ReadAll(resp2.Body)
 	if errRead != nil {
-		return primitive.NilObjectID, "", errors.New("error reading roles response")
+		return primitive.NilObjectID, "", fmt.Errorf("error reading roles response: %w", errRead)
+	}
+
+	// Check status code after reading body
+	if resp2.StatusCode != 200 {
+		bodyStr := string(bodyBytes)
+		if len(bodyStr) > 500 {
+			bodyStr = bodyStr[:500] + "..."
+		}
+		return primitive.NilObjectID, "", fmt.Errorf("error getting roles from auth service (status %d): %s", resp2.StatusCode, bodyStr)
+	}
+
+	// Check if body is empty
+	if len(bodyBytes) == 0 {
+		return primitive.NilObjectID, "", errors.New("empty response body from roles service")
+	}
+
+	// Trim whitespace and check if it's just whitespace
+	bodyStr := string(bodyBytes)
+	bodyStr = strings.TrimSpace(bodyStr)
+	if bodyStr == "" || bodyStr == "null" || bodyStr == "[]" {
+		return primitive.NilObjectID, "", fmt.Errorf("empty or null response body from roles service (length: %d)", len(bodyBytes))
 	}
 
 	// Parse roles response - it's an array of role objects
@@ -76,9 +96,31 @@ func (m *memberAuthSvcs) AddCredentials(ctx context.Context, data any) (userId p
 		CreatedBy    primitive.ObjectID `json:"createdBy,omitempty"`
 	}
 
+	// Try to parse as direct array first
 	var roles []Role
-	if errDec := json.Unmarshal(bodyBytes, &roles); errDec != nil {
-		return primitive.NilObjectID, "", errors.New("error parsing roles response: " + errDec.Error())
+	// Use the trimmed string for parsing
+	trimmedBytes := []byte(bodyStr)
+	if errDec := json.Unmarshal(trimmedBytes, &roles); errDec != nil {
+		// If that fails, try parsing as wrapped object
+		var wrappedResponse struct {
+			Roles []Role `json:"roles"`
+			Data  []Role `json:"data"`
+		}
+		if errDec2 := json.Unmarshal(trimmedBytes, &wrappedResponse); errDec2 != nil {
+			// Show first 500 chars of body for debugging
+			bodyPreview := bodyStr
+			if len(bodyPreview) > 500 {
+				bodyPreview = bodyPreview[:500] + "..."
+			}
+			return primitive.NilObjectID, "", fmt.Errorf("error parsing roles response (body length: %d, status: %d, preview: %s, original error: %v, wrapped error: %v)", len(bodyBytes), resp2.StatusCode, bodyPreview, errDec, errDec2)
+		}
+		if len(wrappedResponse.Roles) > 0 {
+			roles = wrappedResponse.Roles
+		} else if len(wrappedResponse.Data) > 0 {
+			roles = wrappedResponse.Data
+		} else {
+			return primitive.NilObjectID, "", errors.New("no roles found in response")
+		}
 	}
 
 	// Find agent role IDs by searching for "agent" in role name (case-insensitive)
