@@ -706,6 +706,7 @@ func (p *programsvcs) createTravelRequestFromProgram(ctx context.Context, progra
 		Date:             time.Now(),
 		Status:           enums.TravelReqStatusWaiting,
 		CustomerId:       *program.CustomerId,
+		RevisionNum:      0,
 		Program:          program.Id, // Link to program
 		CreatedAt:        time.Now(),
 		CreatedBy:        program.CreatedBy,
