@@ -486,6 +486,15 @@ func (r *ratessvcs) GetBookingsByEmail(ctx context.Context, fromDate, toDate *ti
 	return bookings, nil
 }
 
+// getKeys returns all keys from a map (helper function)
+func getKeys(m map[string]interface{}) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	return keys
+}
+
 // GetBookingsAdmin2 gets bookings from LiteAPI by date range and filters by email in backend
 // Default date range: year start to now
 // Note: Admin authorization should be handled by middleware
@@ -512,36 +521,55 @@ func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDa
 
 	resp, err := liteApiSdk.GetBookingsByDateRange(startDateStr, endDateStr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to fetch bookings from LiteAPI: %v", err)
 	}
 
 	if resp.Status == "failed" {
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	// Parse response - LiteAPI returns: {"count": 25, "data": [...]}
-	// First unmarshal into flexible structure to handle type conversions
-	var rawResponse map[string]interface{}
-	if err := json.Unmarshal(resp.Data, &rawResponse); err != nil {
-		return nil, fmt.Errorf("failed to parse bookings response: %v", err)
+	// Check if response data is empty
+	if len(resp.Data) == 0 {
+		return []models.Booking{}, nil
 	}
 
-	// Extract the data array from the response
-	var bookingsArray []interface{}
-	if dataField, exists := rawResponse["data"]; exists {
-		if dataField == nil {
-			// If data is null, return empty array
-			return []models.Booking{}, nil
+	// Parse response - LiteAPI returns: {"count": 25, "data": [...]}
+	// Try to unmarshal as map first
+	var rawResponse map[string]interface{}
+	if err := json.Unmarshal(resp.Data, &rawResponse); err != nil {
+		// If that fails, try as direct array
+		var directArray []interface{}
+		if err2 := json.Unmarshal(resp.Data, &directArray); err2 != nil {
+			return nil, fmt.Errorf("failed to parse bookings response (tried as map and array): map error: %v, array error: %v, raw data: %s", err, err2, string(resp.Data))
 		}
-		if arr, ok := dataField.([]interface{}); ok {
-			bookingsArray = arr
-		} else {
-			// If data is not an array, return empty
-			return []models.Booking{}, nil
+		// It's a direct array
+		convertedBookings := convertBookingsArray(directArray)
+		// Filter by email if provided
+		if email != nil && *email != "" {
+			var filtered []models.Booking
+			for _, booking := range convertedBookings {
+				if booking.Email == *email {
+					filtered = append(filtered, booking)
+				}
+			}
+			return filtered, nil
 		}
-	} else {
-		// If no "data" field, return empty
+		return convertedBookings, nil
+	}
+
+	// Get the data field from the map
+	dataField, exists := rawResponse["data"]
+	if !exists {
+		return nil, fmt.Errorf("response missing 'data' field. Response keys: %v, raw: %s", getKeys(rawResponse), string(resp.Data))
+	}
+	if dataField == nil {
 		return []models.Booking{}, nil
+	}
+
+	// Convert to array
+	bookingsArray, ok := dataField.([]interface{})
+	if !ok {
+		return nil, fmt.Errorf("'data' field is not an array, type: %T, value: %v", dataField, dataField)
 	}
 
 	// Convert bookings array with type conversions
