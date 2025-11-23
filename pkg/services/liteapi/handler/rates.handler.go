@@ -7,6 +7,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/liteapi"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
+	"reflect"
 	"strings"
 	"time"
 
@@ -46,6 +47,8 @@ func NewRatesHandler(i *do.Injector, r *chi.Mux) {
 		r.With(middleware.Auth("authenticate")).Get("/book/me", helpers.Make(h.MyBookings))
 		// User endpoint - gets bookings by email from token
 		r.With(middleware.Auth("authenticate")).Get("/by-email", helpers.Make(h.GetBookingsByEmail))
+		// My bookings - gets bookings from LiteAPI using email from token
+		r.With(middleware.Auth("authenticate")).Get("/my-bookings", helpers.Make(h.GetMyBookings))
 		// Admin endpoint - requires admin capability (old - uses local DB)
 		r.With(middleware.Auth("authenticate"), middleware.CapabilityCheck("admin")).Get("/admin", helpers.Make(h.GetBookingsAdmin))
 		// Admin endpoint 2 - requires admin capability (new - uses LiteAPI with date range)
@@ -294,6 +297,72 @@ func (h *RatesHandler) GetBookingsAdmin2(w http.ResponseWriter, r *http.Request)
 	}
 
 	result, err := h.ratessvcs.GetBookingsAdmin2(ctx, email, fromDate, toDate)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, map[string]interface{}{
+		"data": result,
+	})
+}
+
+func (h *RatesHandler) GetMyBookings(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	// Get email from context using the same method as GetBookingsByEmail
+	cfg, err := util.GetReqAppCfg(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get context: %w", err)
+	}
+
+	if cfg.User == nil {
+		return fmt.Errorf("user not authenticated")
+	}
+
+	// Extract email using reflection
+	userDataValue := reflect.ValueOf(cfg.User)
+	if userDataValue.Kind() == reflect.Ptr {
+		userDataValue = userDataValue.Elem()
+	}
+
+	var email string
+	if userDataValue.Kind() == reflect.Struct {
+		emailField := userDataValue.FieldByName("Email")
+		if emailField.IsValid() && emailField.Kind() == reflect.String {
+			email = emailField.String()
+		}
+	}
+
+	if email == "" {
+		return fmt.Errorf("email not found in user data")
+	}
+
+	params := r.URL.Query()
+
+	var fromDate, toDate *time.Time
+
+	// Parse fromDate if provided
+	if fromDateStr := params.Get("fromDate"); fromDateStr != "" {
+		fromDateStr = strings.Trim(fromDateStr, `"' `)
+		parsed, err := time.Parse("2006-01-02", fromDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid fromDate format, use YYYY-MM-DD: %w", err)
+		}
+		fromDate = &parsed
+	}
+
+	// Parse toDate if provided
+	if toDateStr := params.Get("toDate"); toDateStr != "" {
+		toDateStr = strings.Trim(toDateStr, `"' `)
+		parsed, err := time.Parse("2006-01-02", toDateStr)
+		if err != nil {
+			return fmt.Errorf("invalid toDate format, use YYYY-MM-DD: %w", err)
+		}
+		toDate = &parsed
+	}
+
+	// Call GetBookingsAdmin2 with email from context
+	result, err := h.ratessvcs.GetBookingsAdmin2(ctx, &email, fromDate, toDate)
 	if err != nil {
 		return err
 	}
