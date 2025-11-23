@@ -391,7 +391,7 @@ func (sdk *LiteApiSdk) GetBookingsByDateRange(startDate, endDate string) (*APIRe
 		params.Add("endDate", endDate)
 	}
 
-	url := fmt.Sprintf("%s/bookings/?%s", sdk.ServiceURL, params.Encode())
+	url := fmt.Sprintf("%s/bookings?%s", sdk.ServiceURL, params.Encode())
 	return sdk.makeRequest("GET", url, nil)
 }
 
