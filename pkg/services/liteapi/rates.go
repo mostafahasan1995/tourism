@@ -33,6 +33,7 @@ type RatesSvcs interface {
 	GetFullRatesStream(ctx context.Context, data any) (any, error)
 	// New booking list methods
 	GetBookingsByEmail(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error)
+	GetMyBookings(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error)
 	GetBookingsAdmin(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
 	GetBookingsAdmin2(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
 }
@@ -484,6 +485,19 @@ func (r *ratessvcs) GetBookingsByEmail(ctx context.Context, fromDate, toDate *ti
 	}
 
 	return bookings, nil
+}
+
+// GetMyBookings gets bookings from LiteAPI for authenticated user (email from token)
+// Uses the same logic as GetBookingsAdmin2 but gets email from context
+func (r *ratessvcs) GetMyBookings(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error) {
+	// Get email from context (same as GetBookingsByEmail)
+	email, err := getEmailFromUser(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Call GetBookingsAdmin2 with the email from context
+	return r.GetBookingsAdmin2(ctx, &email, fromDate, toDate)
 }
 
 // GetBookingsAdmin2 gets bookings from LiteAPI by date range and filters by email

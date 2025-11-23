@@ -7,7 +7,6 @@ import (
 	"larsa-tourism-microservices/pkg/services/liteapi"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 
@@ -309,34 +308,6 @@ func (h *RatesHandler) GetBookingsAdmin2(w http.ResponseWriter, r *http.Request)
 func (h *RatesHandler) GetMyBookings(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	// Get email from context using the same method as GetBookingsByEmail
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to get context: %w", err)
-	}
-
-	if cfg.User == nil {
-		return fmt.Errorf("user not authenticated")
-	}
-
-	// Extract email using reflection
-	userDataValue := reflect.ValueOf(cfg.User)
-	if userDataValue.Kind() == reflect.Ptr {
-		userDataValue = userDataValue.Elem()
-	}
-
-	var email string
-	if userDataValue.Kind() == reflect.Struct {
-		emailField := userDataValue.FieldByName("Email")
-		if emailField.IsValid() && emailField.Kind() == reflect.String {
-			email = emailField.String()
-		}
-	}
-
-	if email == "" {
-		return fmt.Errorf("email not found in user data")
-	}
-
 	params := r.URL.Query()
 
 	var fromDate, toDate *time.Time
@@ -361,8 +332,8 @@ func (h *RatesHandler) GetMyBookings(w http.ResponseWriter, r *http.Request) err
 		toDate = &parsed
 	}
 
-	// Call GetBookingsAdmin2 with email from context
-	result, err := h.ratessvcs.GetBookingsAdmin2(ctx, &email, fromDate, toDate)
+	// Call service method which gets email from context and calls GetBookingsAdmin2
+	result, err := h.ratessvcs.GetMyBookings(ctx, fromDate, toDate)
 	if err != nil {
 		return err
 	}
