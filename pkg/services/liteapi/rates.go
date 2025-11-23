@@ -11,6 +11,7 @@ import (
 	"larsa-tourism-microservices/pkg/services/liteapi/repo"
 	"larsa-tourism-microservices/pkg/services/member"
 	"reflect"
+	"strconv"
 	"time"
 
 	"larsa-tourism-microservices/pkg/util"
@@ -33,6 +34,7 @@ type RatesSvcs interface {
 	// New booking list methods
 	GetBookingsByEmail(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error)
 	GetBookingsAdmin(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
+	GetBookingsAdmin2(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
 }
 
 type ratessvcs struct {
@@ -338,6 +340,58 @@ func getEmailFromUser(ctx context.Context) (string, error) {
 	return "", errors.New("email not found in user data")
 }
 
+// convertBookingsArray converts raw booking data and handles type conversions (e.g., string to int for guestId)
+func convertBookingsArray(rawBookings []interface{}) []models.Booking {
+	var bookings []models.Booking
+	for _, rawBooking := range rawBookings {
+		bookingMap, ok := rawBooking.(map[string]interface{})
+		if !ok {
+			continue
+		}
+
+		// Convert guestId from string to int if needed
+		if guestIdVal, exists := bookingMap["guestId"]; exists {
+			if guestIdStr, ok := guestIdVal.(string); ok {
+				if guestIdInt, err := strconv.Atoi(guestIdStr); err == nil {
+					bookingMap["guestId"] = guestIdInt
+				}
+			}
+		}
+
+		// Convert supplierId from string to int if needed
+		if supplierIdVal, exists := bookingMap["supplierId"]; exists {
+			if supplierIdStr, ok := supplierIdVal.(string); ok {
+				if supplierIdInt, err := strconv.Atoi(supplierIdStr); err == nil {
+					bookingMap["supplierId"] = supplierIdInt
+				}
+			}
+		}
+
+		// Convert userId from string to int if needed
+		if userIdVal, exists := bookingMap["userId"]; exists {
+			if userIdStr, ok := userIdVal.(string); ok {
+				if userIdInt, err := strconv.Atoi(userIdStr); err == nil {
+					bookingMap["userId"] = userIdInt
+				}
+			}
+		}
+
+		// Marshal back to JSON and unmarshal into Booking struct
+		bookingJSON, err := json.Marshal(bookingMap)
+		if err != nil {
+			continue
+		}
+
+		var booking models.Booking
+		if err := json.Unmarshal(bookingJSON, &booking); err != nil {
+			continue
+		}
+
+		bookings = append(bookings, booking)
+	}
+	return bookings
+}
+
 // filterBookingsByDate filters bookings by date range
 func filterBookingsByDate(bookings []models.Booking, fromDate, toDate time.Time) []models.Booking {
 	var filtered []models.Booking
@@ -427,6 +481,99 @@ func (r *ratessvcs) GetBookingsByEmail(ctx context.Context, fromDate, toDate *ti
 			(bookingDate.Before(*toDate) || bookingDate.Equal(*toDate)) {
 			bookings = append(bookings, userBooking.Booking)
 		}
+	}
+
+	return bookings, nil
+}
+
+// GetBookingsAdmin2 gets bookings from LiteAPI by date range and filters by email
+// Response format: {"count": 25, "data": [...]}
+func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error) {
+	// Set default date range: year start to now
+	now := time.Now()
+	if fromDate == nil {
+		yearStart := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
+		fromDate = &yearStart
+	}
+	if toDate == nil {
+		toDate = &now
+	}
+
+	// Format dates for LiteAPI (YYYY-MM-DD)
+	startDateStr := fromDate.Format("2006-01-02")
+	endDateStr := toDate.Format("2006-01-02")
+
+	// Call LiteAPI
+	liteApiSdk, err := r.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := liteApiSdk.GetBookingsByDateRange(startDateStr, endDateStr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch from LiteAPI: %v", err)
+	}
+
+	if resp.Status == "failed" {
+		return nil, helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	// Parse response: {"count": 25, "data": [...]}
+	var response struct {
+		Count int             `json:"count"`
+		Data  json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(resp.Data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
+	}
+
+	// Parse bookings array - handle guestId as string or int
+	var rawBookings []map[string]interface{}
+	if len(response.Data) > 0 && string(response.Data) != "null" {
+		if err := json.Unmarshal(response.Data, &rawBookings); err != nil {
+			return nil, fmt.Errorf("failed to parse bookings: %v", err)
+		}
+	}
+
+	// Convert to Booking models, handling guestId conversion
+	var bookings []models.Booking
+	for _, raw := range rawBookings {
+		// Convert guestId from string to int if needed
+		if guestIdVal, ok := raw["guestId"]; ok {
+			if guestIdStr, ok := guestIdVal.(string); ok && guestIdStr != "" {
+				if guestIdInt, err := strconv.Atoi(guestIdStr); err == nil {
+					raw["guestId"] = guestIdInt
+				} else {
+					raw["guestId"] = 0
+				}
+			} else if guestIdStr == "" {
+				raw["guestId"] = 0
+			}
+		}
+
+		// Marshal and unmarshal to convert to Booking struct
+		bookingJSON, err := json.Marshal(raw)
+		if err != nil {
+			continue
+		}
+
+		var booking models.Booking
+		if err := json.Unmarshal(bookingJSON, &booking); err != nil {
+			continue
+		}
+
+		bookings = append(bookings, booking)
+	}
+
+	// Filter by email if provided
+	if email != nil && *email != "" {
+		var filtered []models.Booking
+		for _, booking := range bookings {
+			if booking.Email == *email {
+				filtered = append(filtered, booking)
+			}
+		}
+		return filtered, nil
 	}
 
 	return bookings, nil

@@ -380,6 +380,21 @@ func (sdk *LiteApiSdk) GetBookingsByEmail(email string) (*APIResponse, error) {
 	return sdk.GetBookingsList(email)
 }
 
+// GetBookingsByDateRange returns all bookings for a given date range
+// This method calls the LiteAPI bookings endpoint with startDate and endDate parameters
+func (sdk *LiteApiSdk) GetBookingsByDateRange(startDate, endDate string) (*APIResponse, error) {
+	params := url.Values{}
+	if startDate != "" {
+		params.Add("startDate", startDate)
+	}
+	if endDate != "" {
+		params.Add("endDate", endDate)
+	}
+
+	url := fmt.Sprintf("%s/bookings/?%s", sdk.ServiceURL, params.Encode())
+	return sdk.makeRequest("GET", url, nil)
+}
+
 // RetrieveBooking returns the status and the details for a specific booking Id
 // The API returns the status and the details for the a specific booking Id.
 func (sdk *LiteApiSdk) RetrieveBooking(bookingId string) (*APIResponse, error) {
