@@ -33,6 +33,7 @@ type RatesSvcs interface {
 	// New booking list methods
 	GetBookingsByEmail(ctx context.Context, fromDate, toDate *time.Time) ([]models.Booking, error)
 	GetBookingsAdmin(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
+	GetBookingsAdmin2(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error)
 }
 
 type ratessvcs struct {
@@ -430,6 +431,68 @@ func (r *ratessvcs) GetBookingsByEmail(ctx context.Context, fromDate, toDate *ti
 	}
 
 	return bookings, nil
+}
+
+// GetBookingsAdmin2 gets bookings from LiteAPI by date range and filters by email in backend
+// Default date range: year start to now
+// Note: Admin authorization should be handled by middleware
+func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error) {
+	// Set default date range: year start to now
+	now := time.Now()
+	if fromDate == nil {
+		yearStart := time.Date(now.Year(), 1, 1, 0, 0, 0, 0, now.Location())
+		fromDate = &yearStart
+	}
+	if toDate == nil {
+		toDate = &now
+	}
+
+	// Format dates for LiteAPI (YYYY-MM-DD format)
+	startDateStr := fromDate.Format("2006-01-02")
+	endDateStr := toDate.Format("2006-01-02")
+
+	// Fetch from LiteAPI with date range
+	liteApiSdk, err := r.liteApiInitFunc(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := liteApiSdk.GetBookingsByDateRange(startDateStr, endDateStr)
+	if err != nil {
+		return nil, err
+	}
+
+	if resp.Status == "failed" {
+		return nil, helpers.LiteApiError(resp.Code, resp.Err)
+	}
+
+	// Parse response - LiteAPI returns bookings array
+	var bookingsData struct {
+		Data []models.Booking `json:"data"`
+	}
+	if err := json.Unmarshal(resp.Data, &bookingsData); err != nil {
+		// Try alternative format - might be direct array
+		var directBookings []models.Booking
+		if err2 := json.Unmarshal(resp.Data, &directBookings); err2 != nil {
+			return nil, fmt.Errorf("failed to parse bookings response: %v", err)
+		}
+		bookingsData.Data = directBookings
+	}
+
+	// Filter by email if provided
+	var filteredBookings []models.Booking
+	if email != nil && *email != "" {
+		for _, booking := range bookingsData.Data {
+			if booking.Email == *email {
+				filteredBookings = append(filteredBookings, booking)
+			}
+		}
+	} else {
+		// Return all bookings if no email filter
+		filteredBookings = bookingsData.Data
+	}
+
+	return filteredBookings, nil
 }
 
 // GetBookingsAdmin gets all bookings for admin with optional email filter from local database
