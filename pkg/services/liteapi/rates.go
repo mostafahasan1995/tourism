@@ -519,50 +519,45 @@ func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDa
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	// Parse response - LiteAPI returns bookings array
+	// Parse response - LiteAPI returns: {"count": 25, "data": [...]}
 	// First unmarshal into flexible structure to handle type conversions
-	var rawData interface{}
-	if err := json.Unmarshal(resp.Data, &rawData); err != nil {
+	var rawResponse map[string]interface{}
+	if err := json.Unmarshal(resp.Data, &rawResponse); err != nil {
 		return nil, fmt.Errorf("failed to parse bookings response: %v", err)
 	}
 
-	// Convert guestId and other numeric fields from string to int/float
-	var bookingsData struct {
-		Data []models.Booking `json:"data"`
+	// Extract the data array from the response
+	var bookingsArray []interface{}
+	if dataField, exists := rawResponse["data"]; exists {
+		if dataField == nil {
+			// If data is null, return empty array
+			return []models.Booking{}, nil
+		}
+		if arr, ok := dataField.([]interface{}); ok {
+			bookingsArray = arr
+		} else {
+			// If data is not an array, return empty
+			return []models.Booking{}, nil
+		}
+	} else {
+		// If no "data" field, return empty
+		return []models.Booking{}, nil
 	}
 
-	// Handle different response formats
-	switch v := rawData.(type) {
-	case map[string]interface{}:
-		// Response is wrapped in an object with "data" field
-		if dataField, ok := v["data"]; ok {
-			if bookingsArray, ok := dataField.([]interface{}); ok {
-				convertedBookings := convertBookingsArray(bookingsArray)
-				bookingsData.Data = convertedBookings
-			}
-		}
-	case []interface{}:
-		// Response is a direct array
-		convertedBookings := convertBookingsArray(v)
-		bookingsData.Data = convertedBookings
-	default:
-		// Try to unmarshal directly
-		if err := json.Unmarshal(resp.Data, &bookingsData); err != nil {
-			return nil, fmt.Errorf("failed to parse bookings response: %v", err)
-		}
-	}
+	// Convert bookings array with type conversions
+	convertedBookings := convertBookingsArray(bookingsArray)
 
 	// Filter by email if provided
 	var filteredBookings []models.Booking
 	if email != nil && *email != "" {
-		for _, booking := range bookingsData.Data {
+		for _, booking := range convertedBookings {
 			if booking.Email == *email {
 				filteredBookings = append(filteredBookings, booking)
 			}
 		}
 	} else {
 		// Return all bookings if no email filter
-		filteredBookings = bookingsData.Data
+		filteredBookings = convertedBookings
 	}
 
 	return filteredBookings, nil
