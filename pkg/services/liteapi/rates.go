@@ -486,18 +486,8 @@ func (r *ratessvcs) GetBookingsByEmail(ctx context.Context, fromDate, toDate *ti
 	return bookings, nil
 }
 
-// getKeys returns all keys from a map (helper function)
-func getKeys(m map[string]interface{}) []string {
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	return keys
-}
-
-// GetBookingsAdmin2 gets bookings from LiteAPI by date range and filters by email in backend
-// Default date range: year start to now
-// Note: Admin authorization should be handled by middleware
+// GetBookingsAdmin2 gets bookings from LiteAPI by date range and filters by email
+// Response format: {"count": 25, "data": [...]}
 func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDate, toDate *time.Time) ([]models.Booking, error) {
 	// Set default date range: year start to now
 	now := time.Now()
@@ -509,11 +499,11 @@ func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDa
 		toDate = &now
 	}
 
-	// Format dates for LiteAPI (YYYY-MM-DD format)
+	// Format dates for LiteAPI (YYYY-MM-DD)
 	startDateStr := fromDate.Format("2006-01-02")
 	endDateStr := toDate.Format("2006-01-02")
 
-	// Fetch from LiteAPI with date range
+	// Call LiteAPI
 	liteApiSdk, err := r.liteApiInitFunc(ctx)
 	if err != nil {
 		return nil, err
@@ -521,74 +511,72 @@ func (r *ratessvcs) GetBookingsAdmin2(ctx context.Context, email *string, fromDa
 
 	resp, err := liteApiSdk.GetBookingsByDateRange(startDateStr, endDateStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch bookings from LiteAPI: %v", err)
+		return nil, fmt.Errorf("failed to fetch from LiteAPI: %v", err)
 	}
 
 	if resp.Status == "failed" {
 		return nil, helpers.LiteApiError(resp.Code, resp.Err)
 	}
 
-	// Check if response data is empty
-	if len(resp.Data) == 0 {
-		return []models.Booking{}, nil
+	// Parse response: {"count": 25, "data": [...]}
+	var response struct {
+		Count int             `json:"count"`
+		Data  json.RawMessage `json:"data"`
+	}
+	if err := json.Unmarshal(resp.Data, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse response: %v", err)
 	}
 
-	// Parse response - LiteAPI returns: {"count": 25, "data": [...]}
-	// Try to unmarshal as map first
-	var rawResponse map[string]interface{}
-	if err := json.Unmarshal(resp.Data, &rawResponse); err != nil {
-		// If that fails, try as direct array
-		var directArray []interface{}
-		if err2 := json.Unmarshal(resp.Data, &directArray); err2 != nil {
-			return nil, fmt.Errorf("failed to parse bookings response (tried as map and array): map error: %v, array error: %v, raw data: %s", err, err2, string(resp.Data))
+	// Parse bookings array - handle guestId as string or int
+	var rawBookings []map[string]interface{}
+	if len(response.Data) > 0 && string(response.Data) != "null" {
+		if err := json.Unmarshal(response.Data, &rawBookings); err != nil {
+			return nil, fmt.Errorf("failed to parse bookings: %v", err)
 		}
-		// It's a direct array
-		convertedBookings := convertBookingsArray(directArray)
-		// Filter by email if provided
-		if email != nil && *email != "" {
-			var filtered []models.Booking
-			for _, booking := range convertedBookings {
-				if booking.Email == *email {
-					filtered = append(filtered, booking)
+	}
+
+	// Convert to Booking models, handling guestId conversion
+	var bookings []models.Booking
+	for _, raw := range rawBookings {
+		// Convert guestId from string to int if needed
+		if guestIdVal, ok := raw["guestId"]; ok {
+			if guestIdStr, ok := guestIdVal.(string); ok && guestIdStr != "" {
+				if guestIdInt, err := strconv.Atoi(guestIdStr); err == nil {
+					raw["guestId"] = guestIdInt
+				} else {
+					raw["guestId"] = 0
 				}
+			} else if guestIdStr == "" {
+				raw["guestId"] = 0
 			}
-			return filtered, nil
 		}
-		return convertedBookings, nil
-	}
 
-	// Get the data field from the map
-	dataField, exists := rawResponse["data"]
-	if !exists {
-		return nil, fmt.Errorf("response missing 'data' field. Response keys: %v, raw: %s", getKeys(rawResponse), string(resp.Data))
-	}
-	if dataField == nil {
-		return []models.Booking{}, nil
-	}
+		// Marshal and unmarshal to convert to Booking struct
+		bookingJSON, err := json.Marshal(raw)
+		if err != nil {
+			continue
+		}
 
-	// Convert to array
-	bookingsArray, ok := dataField.([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("'data' field is not an array, type: %T, value: %v", dataField, dataField)
-	}
+		var booking models.Booking
+		if err := json.Unmarshal(bookingJSON, &booking); err != nil {
+			continue
+		}
 
-	// Convert bookings array with type conversions
-	convertedBookings := convertBookingsArray(bookingsArray)
+		bookings = append(bookings, booking)
+	}
 
 	// Filter by email if provided
-	var filteredBookings []models.Booking
 	if email != nil && *email != "" {
-		for _, booking := range convertedBookings {
+		var filtered []models.Booking
+		for _, booking := range bookings {
 			if booking.Email == *email {
-				filteredBookings = append(filteredBookings, booking)
+				filtered = append(filtered, booking)
 			}
 		}
-	} else {
-		// Return all bookings if no email filter
-		filteredBookings = convertedBookings
+		return filtered, nil
 	}
 
-	return filteredBookings, nil
+	return bookings, nil
 }
 
 // GetBookingsAdmin gets all bookings for admin with optional email filter from local database
