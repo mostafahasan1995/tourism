@@ -254,7 +254,10 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 	if err != nil {
 		return nil, err
 	}
-
+	oldAgent, err := a.repo.GetByFilter(ctx, bson.M{"_id": _id})
+	if err != nil {
+		return nil, err
+	}
 	var msg *messagingmodels.Message
 
 	result, err := a.withtxn.Exec(ctx, func(ctx mongo.SessionContext) (any, error) {
@@ -263,6 +266,7 @@ func (a *agentsvcs) Update(ctx context.Context, agentId string, data *models.Age
 			AgentDto:  *data,
 			UpdatedAt: time.Now(),
 			UpdatedBy: cfg.User.Id,
+			Status:    oldAgent.Status,
 		}
 
 		pass := data.Security.NewPassword
