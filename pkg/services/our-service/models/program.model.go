@@ -99,7 +99,7 @@ type ProgramDto struct {
 	Purpose     string                     `bson:"purpose" json:"purpose"`
 	StartDate   time.Time                  `bson:"startDate" json:"startDate" `
 	EndDate     time.Time                  `bson:"endDate" json:"endDate" `
-	GroupSize   enums.GroupSize            `bson:"groupSize" json:"groupSize" validate:"required,oneof=solo couple family small large fixed custom medium"` //see group size values above
+	GroupSize   enums.GroupSize            `bson:"groupSize" json:"groupSize"` //see group size values above
 	CoverImage  types.FileField            `bson:"coverImage" json:"coverImage"`
 	//
 	GeneralType *GeneralProgram `bson:"generalType" json:"generalType" validate:"required_if=ProgramType general"`
