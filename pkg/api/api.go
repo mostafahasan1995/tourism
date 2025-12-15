@@ -21,6 +21,7 @@ import (
 
 	gateway "larsa-tourism-microservices/pkg/gateway/di"
 	dbsvcs "larsa-tourism-microservices/pkg/services/db/di"
+	exchange "larsa-tourism-microservices/pkg/services/exchange/di"
 	exhibitionmanagement "larsa-tourism-microservices/pkg/services/exhibition-management/di"
 	interactions "larsa-tourism-microservices/pkg/services/interactions/di"
 	liteapiPkg "larsa-tourism-microservices/pkg/services/liteapi"
@@ -127,6 +128,7 @@ func Start() error {
 	statistics.Init(injector, r)
 	transtest.Init(injector, r)
 	liteapi.Init(injector, r)
+	exchange.Init(injector, r)
 
 	updater := liteapiPkg.NewHotelsUpdater(
 		injector,
