@@ -554,9 +554,26 @@ func (p *programsvcs) AssignProgramToTravelRequest(ctx context.Context, program 
 		"status":      enums.TravelReqStatusWaiting,
 		"revisionNum": 1,
 	}}
-
-	if _, err := p.travelreqsvcs.Patch(ctx, filter, update); err != nil {
-		return errors.New("error updating travel request, check if it is already assigned to a program")
+	updateCustomerService := bson.M{"$set": bson.M{
+		"program":     program.Id,
+		"package":     program.Package,
+		"status":      enums.TravelReqStatusWaitingForCustomerService,
+		"revisionNum": 1,
+	}}
+	travelReq, err := p.travelreqsvcs.GetOne(ctx, program.TravelReqId.Hex())
+	if err != nil {
+		return errors.New("error getting travel request")
+	}
+	if travelReq.TravelRequestDto.CustomerService == true {
+		_, err := p.travelreqsvcs.Patch(ctx, filter, updateCustomerService)
+		if err != nil {
+			return errors.New("error updating travel request, check if it is already assigned to a program")
+		}
+	} else {
+		_, err := p.travelreqsvcs.Patch(ctx, filter, update)
+		if err != nil {
+			return errors.New("error updating travel request, check if it is already assigned to a program")
+		}
 	}
 
 	return nil
