@@ -40,6 +40,7 @@ type TravelRequestDto struct {
 	TripCoordinator primitive.ObjectID `bson:"tripCoordinator" json:"tripCoordinator" validate:"required"` // destination agent id
 	ContactMethod   []string           `bson:"contactMethod" json:"contactMethod" validate:"required"`
 	SpecialReq      string             `bson:"specialReq" json:"specialReq"`
+	CustomerService bool               `bson:"customerService" json:"customerService"`
 }
 
 func (t *TravelRequestDto) Validate(v *validator.Validate) error {

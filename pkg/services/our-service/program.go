@@ -126,6 +126,140 @@ var durationLookup = bson.M{
 	},
 }
 
+// activityLookup adds actionObjs field to each dailyItinerary item with full activity objects
+var activityLookup = []bson.M{
+	{
+		"$addFields": bson.M{
+			"generalType.dailyItinerary": bson.M{
+				"$map": bson.M{
+					"input": bson.M{"$ifNull": []interface{}{"$generalType.dailyItinerary", bson.A{}}},
+					"as":    "day",
+					"in": bson.M{
+						"$mergeObjects": []interface{}{
+							"$$day",
+							bson.M{
+								"actionObjs": bson.M{
+									"$cond": bson.M{
+										"if": bson.M{"$isArray": "$$day.actions"},
+										"then": bson.M{
+											"$map": bson.M{
+												"input": "$$day.actions",
+												"as":    "actId",
+												"in": bson.M{
+													"$arrayElemAt": []interface{}{
+														bson.M{
+															"$filter": bson.M{
+																"input": bson.M{"$ifNull": []interface{}{"$activityData", bson.A{}}},
+																"cond":  bson.M{"$eq": []interface{}{"$$this._id", "$$actId"}},
+															},
+														},
+														0,
+													},
+												},
+											},
+										},
+										"else": bson.A{},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	},
+}
+
+var activityLookupStage = bson.M{
+	"$lookup": bson.M{
+		"from":         "tourismActivities",
+		"localField":   "generalType.dailyItinerary.actions",
+		"foreignField": "_id",
+		"as":           "activityData",
+	},
+}
+
+// generalDurationCalculation recalculates generalDuration from destinations
+var generalDurationCalculation = bson.M{
+	"$addFields": bson.M{
+		"generalType.generalDuration": bson.M{
+			"$cond": bson.M{
+				"if": bson.M{
+					"$and": []interface{}{
+						bson.M{"$eq": []interface{}{"$programType", "general"}},
+						bson.M{"$isArray": "$generalType.destinations"},
+					},
+				},
+				"then": bson.M{
+					"$sum": bson.M{
+						"$map": bson.M{
+							"input": "$generalType.destinations",
+							"as":    "dest",
+							"in":    bson.M{"$ifNull": []interface{}{"$$dest.duration", 0}},
+						},
+					},
+				},
+				"else": bson.M{"$ifNull": []interface{}{"$generalType.generalDuration", 0}},
+			},
+		},
+	},
+}
+
+// ensureImagesPresent ensures images arrays are preserved in all language contexts
+var ensureImagesPresent = bson.M{
+	"$addFields": bson.M{
+		"generalType.destinations": bson.M{
+			"$cond": bson.M{
+				"if": bson.M{
+					"$and": []interface{}{
+						bson.M{"$eq": []interface{}{"$programType", "general"}},
+						bson.M{"$ne": []interface{}{"$generalType", nil}},
+						bson.M{"$isArray": "$generalType.destinations"},
+					},
+				},
+				"then": bson.M{
+					"$map": bson.M{
+						"input": "$generalType.destinations",
+						"as":    "dest",
+						"in": bson.M{
+							"from":        "$$dest.from",
+							"images":      bson.M{"$ifNull": []interface{}{"$$dest.images", bson.A{}}},
+							"duration":    "$$dest.duration",
+							"description": "$$dest.description",
+						},
+					},
+				},
+				"else": "$generalType.destinations",
+			},
+		},
+		"generalType.dailyItinerary": bson.M{
+			"$cond": bson.M{
+				"if": bson.M{
+					"$and": []interface{}{
+						bson.M{"$eq": []interface{}{"$programType", "general"}},
+						bson.M{"$ne": []interface{}{"$generalType", nil}},
+						bson.M{"$isArray": "$generalType.dailyItinerary"},
+					},
+				},
+				"then": bson.M{
+					"$map": bson.M{
+						"input": "$generalType.dailyItinerary",
+						"as":    "day",
+						"in": bson.M{
+							"title":      "$$day.title",
+							"actions":    "$$day.actions",
+							"actionObjs": bson.M{"$ifNull": []interface{}{"$$day.actionObjs", bson.A{}}},
+							"newActions": "$$day.newActions",
+							"images":     bson.M{"$ifNull": []interface{}{"$$day.images", bson.A{}}},
+						},
+					},
+				},
+				"else": "$generalType.dailyItinerary",
+			},
+		},
+	},
+}
+
 type ProgramSvcs interface {
 	GetOne(ctx context.Context, id string) (*models.ProgramRes, error)
 	Get(ctx context.Context, skip, limit int64, query string) (*models.ProgramPagination, error)
@@ -320,6 +454,15 @@ func (p *programsvcs) GetOne(ctx context.Context, id string) (*models.ProgramRes
 	pipeline = append(pipeline, packageLookup...)
 	pipeline = append(pipeline, updatedByUserLookup...)
 	pipeline = append(pipeline, durationLookup)
+	// calculate general duration from destinations
+	pipeline = append(pipeline, generalDurationCalculation)
+	// add activity lookup for general programs
+	pipeline = append(pipeline, activityLookupStage)
+	pipeline = append(pipeline, activityLookup...)
+	// ensure images arrays are preserved for all language contexts (after activity lookup)
+	pipeline = append(pipeline, ensureImagesPresent)
+	// cleanup activity data after processing
+	pipeline = append(pipeline, bson.M{"$project": bson.M{"activityData": 0}})
 	// add favorite pipeline
 	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 	var result []models.ProgramRes
@@ -373,6 +516,19 @@ func (p *programsvcs) Get(ctx context.Context, skip, limit int64, query string) 
 	// Calculate duration in days between startDate and endDate
 	pipeline = append(pipeline, durationLookup)
 
+	// calculate general duration from destinations
+	pipeline = append(pipeline, generalDurationCalculation)
+
+	// add activity lookup for general programs
+	pipeline = append(pipeline, activityLookupStage)
+	pipeline = append(pipeline, activityLookup...)
+
+	// ensure images arrays are preserved for all language contexts (after activity lookup)
+	pipeline = append(pipeline, ensureImagesPresent)
+
+	// cleanup activity data after processing
+	pipeline = append(pipeline, bson.M{"$project": bson.M{"activityData": 0}})
+
 	// add favorite pipeline
 	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 
@@ -421,6 +577,20 @@ func (p *programsvcs) GetAll(ctx context.Context, query string) ([]models.Progra
 	}
 
 	pipeline := filters.BuildPipeline(match)
+
+	// calculate general duration from destinations
+	pipeline = append(pipeline, generalDurationCalculation)
+
+	// add activity lookup for general programs
+	pipeline = append(pipeline, activityLookupStage)
+	pipeline = append(pipeline, activityLookup...)
+
+	// ensure images arrays are preserved for all language contexts (after activity lookup)
+	pipeline = append(pipeline, ensureImagesPresent)
+
+	// cleanup activity data after processing
+	pipeline = append(pipeline, bson.M{"$project": bson.M{"activityData": 0}})
+
 	// add favorite pipeline
 	pipeline = append(pipeline, interactionsModels.BuildFavoritePipelineWithAuth(ctx, interactionsModels.FaveTypeProgram)...)
 	var result []models.Program
@@ -554,9 +724,26 @@ func (p *programsvcs) AssignProgramToTravelRequest(ctx context.Context, program 
 		"status":      enums.TravelReqStatusWaiting,
 		"revisionNum": 1,
 	}}
-
-	if _, err := p.travelreqsvcs.Patch(ctx, filter, update); err != nil {
-		return errors.New("error updating travel request, check if it is already assigned to a program")
+	updateCustomerService := bson.M{"$set": bson.M{
+		"program":     program.Id,
+		"package":     program.Package,
+		"status":      enums.TravelReqStatusWaitingForCustomerService,
+		"revisionNum": 1,
+	}}
+	travelReq, err := p.travelreqsvcs.GetOne(ctx, program.TravelReqId.Hex())
+	if err != nil {
+		return errors.New("error getting travel request")
+	}
+	if travelReq.TravelRequestDto.CustomerService == true {
+		_, err := p.travelreqsvcs.Patch(ctx, filter, updateCustomerService)
+		if err != nil {
+			return errors.New("error updating travel request, check if it is already assigned to a program")
+		}
+	} else {
+		_, err := p.travelreqsvcs.Patch(ctx, filter, update)
+		if err != nil {
+			return errors.New("error updating travel request, check if it is already assigned to a program")
+		}
 	}
 
 	return nil
@@ -950,6 +1137,19 @@ func (p *programsvcs) GetV2(ctx context.Context, skip, limit int64, query *query
 	if err != nil {
 		return nil, err
 	}
+
+	// calculate general duration from destinations
+	pipeline = append(pipeline, generalDurationCalculation)
+
+	// add activity lookup for general programs
+	pipeline = append(pipeline, activityLookupStage)
+	pipeline = append(pipeline, activityLookup...)
+
+	// ensure images arrays are preserved for all language contexts (after activity lookup)
+	pipeline = append(pipeline, ensureImagesPresent)
+
+	// cleanup activity data after processing
+	pipeline = append(pipeline, bson.M{"$project": bson.M{"activityData": 0}})
 
 	pipeline = append(pipeline, bson.M{"$sort": bson.M{"_id": -1}})
 	pipeline = append(pipeline, bson.M{"$skip": skip})

@@ -4,6 +4,8 @@ import (
 	"larsa-tourism-microservices/pkg/transl"
 	"larsa-tourism-microservices/pkg/types"
 
+	pModels "larsa-tourism-microservices/pkg/services/picklist/models"
+
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -41,6 +43,7 @@ type Includes struct {
 type DailyItinerary struct {
 	Title      transl.Localizable[string]   `bson:"title" json:"title"`
 	Actions    []primitive.ObjectID         `bson:"actions" json:"actions"`
+	ActionObjs []pModels.Activities         `bson:"actionObjs,omitempty" json:"actionObjs,omitempty"`
 	NewActions []transl.Localizable[string] `bson:"newActions" json:"newActions"`
 	Images     []types.FileField            `bson:"images" json:"images"`
 }
