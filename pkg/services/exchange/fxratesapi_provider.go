@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
+	"strings"
 	"time"
 
 	"larsa-tourism-microservices/pkg/caching"
@@ -50,6 +52,36 @@ func buildCacheKey(clientID string) string {
 	return fmt.Sprintf("academy:exchange:rates:c:%s:fxratesapi", clientID)
 }
 
+// getCachedRates attempts to retrieve rates from cache
+func (p *FxRatesAPIProvider) getCachedRates(cacheKey string) (map[string]float64, bool) {
+	cached, err := caching.Rdb.GetByKey(cacheKey)
+	if err != nil {
+		slog.Debug("Cache miss or error", "key", cacheKey, "error", err)
+		return nil, false
+	}
+
+	// Check if cached value is non-empty
+	if strings.TrimSpace(cached) == "" {
+		slog.Debug("Cache returned empty value", "key", cacheKey)
+		return nil, false
+	}
+
+	var rates map[string]float64
+	if err := json.Unmarshal([]byte(cached), &rates); err != nil {
+		slog.Warn("Failed to unmarshal cached rates", "key", cacheKey, "error", err)
+		return nil, false
+	}
+
+	// Validate rates map is not empty
+	if len(rates) == 0 {
+		slog.Debug("Cached rates map is empty", "key", cacheKey)
+		return nil, false
+	}
+
+	slog.Info("Cache hit", "key", cacheKey, "currencies", len(rates))
+	return rates, true
+}
+
 // GetRates fetches exchange rates from fxratesapi.com with 4-hour caching
 func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, error) {
 	// Get clientID from context for cache key
@@ -61,14 +93,13 @@ func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, 
 	cacheKey := buildCacheKey(clientID)
 
 	// Try to get from cache first
-	if cached, err := caching.Rdb.GetByKey(cacheKey); err == nil {
-		var rates map[string]float64
-		if err := json.Unmarshal([]byte(cached), &rates); err == nil {
-			return rates, nil
-		}
+	if rates, found := p.getCachedRates(cacheKey); found {
+		return rates, nil
 	}
 
-	// Cache miss or invalid cache, fetch from API
+	slog.Info("Cache miss, fetching from API", "key", cacheKey)
+
+	// Cache miss, fetch from API
 	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -76,21 +107,59 @@ func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, 
 
 	resp, err := p.httpClient.Do(req)
 	if err != nil {
+		// On network error, try to return stale cache if available
+		slog.Warn("Network error fetching rates, checking for stale cache", "error", err)
+		if staleRates, found := p.getCachedRates(cacheKey); found {
+			slog.Info("Returning stale cache due to network error")
+			return staleRates, nil
+		}
 		return nil, fmt.Errorf("failed to fetch rates: %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Handle rate limit errors (429) by returning stale cache if available
+	if resp.StatusCode == http.StatusTooManyRequests {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		slog.Warn("Rate limit hit (429), checking for stale cache", "key", cacheKey)
+		
+		// Try to get stale cache before failing
+		if staleRates, found := p.getCachedRates(cacheKey); found {
+			slog.Info("Returning stale cache due to rate limit")
+			return staleRates, nil
+		}
+		
+		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes))
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, _ := io.ReadAll(resp.Body)
+		// For other errors, also try stale cache as fallback
+		slog.Warn("API error, checking for stale cache", "status", resp.StatusCode, "key", cacheKey)
+		if staleRates, found := p.getCachedRates(cacheKey); found {
+			slog.Info("Returning stale cache due to API error")
+			return staleRates, nil
+		}
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
 	var apiResp FxRatesAPIResponse
 	if err := json.NewDecoder(resp.Body).Decode(&apiResp); err != nil {
+		// On decode error, try stale cache
+		slog.Warn("Failed to decode API response, checking for stale cache", "error", err)
+		if staleRates, found := p.getCachedRates(cacheKey); found {
+			slog.Info("Returning stale cache due to decode error")
+			return staleRates, nil
+		}
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
 	if !apiResp.Success {
+		// On API failure, try stale cache
+		slog.Warn("API returned success=false, checking for stale cache")
+		if staleRates, found := p.getCachedRates(cacheKey); found {
+			slog.Info("Returning stale cache due to API failure")
+			return staleRates, nil
+		}
 		return nil, fmt.Errorf("API returned success=false")
 	}
 
@@ -107,6 +176,7 @@ func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, 
 
 	// Cache the result for 4 hours
 	caching.Rdb.CacheByKey(cacheKey, apiResp.Rates, cacheTTL)
+	slog.Info("Successfully cached rates", "key", cacheKey, "currencies", len(apiResp.Rates))
 
 	return apiResp.Rates, nil
 }
