@@ -2,7 +2,6 @@ package handler
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
-	"larsa-tourism-microservices/pkg/middleware"
 	exchangeService "larsa-tourism-microservices/pkg/services/exchange"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
@@ -23,8 +22,8 @@ func NewExchangeHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/exchange", func(r chi.Router) {
-		r.With(middleware.Auth("authenticate")).Get("/rates", helpers.Make(h.GetRates))
-		r.With(middleware.Auth("authenticate")).Post("/convert", helpers.Make(h.Convert))
+		r.Get("/rates", helpers.Make(h.GetRates))
+		r.Post("/convert", helpers.Make(h.Convert))
 	})
 }
 
@@ -87,3 +86,5 @@ func (h *ExchangeHandler) Convert(w http.ResponseWriter, r *http.Request) error 
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
+
+
