@@ -694,7 +694,12 @@ func (p *programsvcs) Add(ctx context.Context, data *models.ProgramDto) (*models
 			// Link program to the created travel request
 			program.TravelReqId = travelReq.Id
 		}
-
+		if program.ProgramDto.CustomerService == true {
+			_, err := p.travelreqsvcs.Patch(ctx, bson.M{"_id": program.TravelReqId}, bson.M{"$set": bson.M{"customerService": true, "status": enums.TravelReqStatusWaitingForCustomerService}})
+			if err != nil {
+				return nil, errors.New("error updating travel request, check if it is already assigned to a program")
+			}
+		}
 		if err := p.repo.Add(ctx, program); err != nil {
 			return nil, err
 		}
@@ -724,26 +729,10 @@ func (p *programsvcs) AssignProgramToTravelRequest(ctx context.Context, program 
 		"status":      enums.TravelReqStatusWaiting,
 		"revisionNum": 1,
 	}}
-	updateCustomerService := bson.M{"$set": bson.M{
-		"program":     program.Id,
-		"package":     program.Package,
-		"status":      enums.TravelReqStatusWaitingForCustomerService,
-		"revisionNum": 1,
-	}}
-	travelReq, err := p.travelreqsvcs.GetOne(ctx, program.TravelReqId.Hex())
+
+	_, err := p.travelreqsvcs.Patch(ctx, filter, update)
 	if err != nil {
-		return errors.New("error getting travel request")
-	}
-	if travelReq.TravelRequestDto.CustomerService == true {
-		_, err := p.travelreqsvcs.Patch(ctx, filter, updateCustomerService)
-		if err != nil {
-			return errors.New("error updating travel request, check if it is already assigned to a program")
-		}
-	} else {
-		_, err := p.travelreqsvcs.Patch(ctx, filter, update)
-		if err != nil {
-			return errors.New("error updating travel request, check if it is already assigned to a program")
-		}
+		return errors.New("error updating travel request, check if it is already assigned to a program")
 	}
 
 	return nil
