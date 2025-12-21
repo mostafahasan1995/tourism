@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,7 +10,6 @@ import (
 	"time"
 
 	"larsa-tourism-microservices/pkg/caching"
-	"larsa-tourism-microservices/pkg/util"
 )
 
 const (
@@ -48,8 +46,8 @@ type FxRatesAPIResponse struct {
 }
 
 // buildCacheKey builds a cache key following the pattern: academy:exchange:rates:c:{clientID}:fxratesapi
-func buildCacheKey(clientID string) string {
-	return fmt.Sprintf("academy:exchange:rates:c:%s:fxratesapi", clientID)
+func buildCacheKey() string {
+	return fmt.Sprintf("tourism:exchange:rates:fxratesapi")
 }
 
 // getCachedRates attempts to retrieve rates from cache
@@ -83,14 +81,10 @@ func (p *FxRatesAPIProvider) getCachedRates(cacheKey string) (map[string]float64
 }
 
 // GetRates fetches exchange rates from fxratesapi.com with 4-hour caching
-func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, error) {
+func (p *FxRatesAPIProvider) GetRates() (map[string]float64, error) {
 	// Get clientID from context for cache key
-	cfg, err := util.GetReqAppCfg(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get app config: %w", err)
-	}
-	clientID := cfg.Db
-	cacheKey := buildCacheKey(clientID)
+
+	cacheKey := buildCacheKey()
 
 	// Try to get from cache first
 	if rates, found := p.getCachedRates(cacheKey); found {
@@ -100,7 +94,7 @@ func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, 
 	slog.Info("Cache miss, fetching from API", "key", cacheKey)
 
 	// Cache miss, fetch from API
-	req, err := http.NewRequestWithContext(ctx, "GET", p.baseURL, nil)
+	req, err := http.NewRequest("GET", p.baseURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
@@ -121,13 +115,13 @@ func (p *FxRatesAPIProvider) GetRates(ctx context.Context) (map[string]float64, 
 	if resp.StatusCode == http.StatusTooManyRequests {
 		bodyBytes, _ := io.ReadAll(resp.Body)
 		slog.Warn("Rate limit hit (429), checking for stale cache", "key", cacheKey)
-		
+
 		// Try to get stale cache before failing
 		if staleRates, found := p.getCachedRates(cacheKey); found {
 			slog.Info("Returning stale cache due to rate limit")
 			return staleRates, nil
 		}
-		
+
 		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(bodyBytes))
 	}
 
