@@ -1,7 +1,6 @@
 package exchange
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -16,9 +15,9 @@ var (
 
 type ExchangeService interface {
 	// Convert converts an amount from one currency to another.
-	Convert(ctx context.Context, amount float64, fromCurrency, toCurrency string) (float64, error)
+	Convert(amount float64, fromCurrency, toCurrency string) (float64, error)
 	// GetRates returns all exchange rates relative to USD (from cache if available).
-	GetRates(ctx context.Context) (map[string]float64, error)
+	GetRates() (map[string]float64, error)
 }
 
 type exchangeService struct {
@@ -37,11 +36,11 @@ func NewExchangeService(i *do.Injector) (ExchangeService, error) {
 }
 
 // getRates tries each provider in order until one succeeds
-func (s *exchangeService) getRates(ctx context.Context) (map[string]float64, error) {
+func (s *exchangeService) getRates() (map[string]float64, error) {
 	var lastErr error
 
 	for _, provider := range s.providers {
-		rates, err := provider.GetRates(ctx)
+		rates, err := provider.GetRates()
 		if err == nil {
 			slog.Info("Successfully fetched rates", "provider", provider.Name())
 			return rates, nil
@@ -57,17 +56,17 @@ func (s *exchangeService) getRates(ctx context.Context) (map[string]float64, err
 }
 
 // GetRates returns all exchange rates relative to USD (from cache if available).
-func (s *exchangeService) GetRates(ctx context.Context) (map[string]float64, error) {
-	return s.getRates(ctx)
+func (s *exchangeService) GetRates() (map[string]float64, error) {
+	return s.getRates()
 }
 
-func (s *exchangeService) Convert(ctx context.Context, amount float64, fromCurrency, toCurrency string) (float64, error) {
+func (s *exchangeService) Convert(amount float64, fromCurrency, toCurrency string) (float64, error) {
 	if fromCurrency == toCurrency {
 		return amount, nil
 	}
 
 	// Get rates from available sources (with fallback)
-	rates, err := s.getRates(ctx)
+	rates, err := s.getRates()
 	if err != nil {
 		return 0, fmt.Errorf("%w: %v", ErrExchangeFailed, err)
 	}
