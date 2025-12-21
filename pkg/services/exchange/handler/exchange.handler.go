@@ -52,7 +52,7 @@ type RatesResponse struct {
 func (h *ExchangeHandler) GetRates(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	rates, err := h.exchangeSvc.GetRates(ctx)
+	rates, err := h.exchangeSvc.GetRates()
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (h *ExchangeHandler) Convert(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	convertedAmount, err := h.exchangeSvc.Convert(ctx, req.Amount, req.FromCurrency, req.ToCurrency)
+	convertedAmount, err := h.exchangeSvc.Convert(req.Amount, req.FromCurrency, req.ToCurrency)
 	if err != nil {
 		return err
 	}
