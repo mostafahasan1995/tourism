@@ -2,6 +2,7 @@ package handler
 
 import (
 	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/middleware"
 	exchangeService "larsa-tourism-microservices/pkg/services/exchange"
 	"larsa-tourism-microservices/pkg/util"
 	"net/http"
@@ -22,8 +23,8 @@ func NewExchangeHandler(i *do.Injector, r *chi.Mux) {
 	}
 
 	r.Route("/exchange", func(r chi.Router) {
-		r.Get("/rates", helpers.Make(h.GetRates))
-		r.Post("/convert", helpers.Make(h.Convert))
+		r.With(middleware.Auth("authenticate")).Get("/rates", helpers.Make(h.GetRates))
+		r.With(middleware.Auth("authenticate")).Post("/convert", helpers.Make(h.Convert))
 	})
 }
 
@@ -51,7 +52,7 @@ type RatesResponse struct {
 func (h *ExchangeHandler) GetRates(w http.ResponseWriter, r *http.Request) error {
 	ctx, _ := util.AddCtxAppCfg(r)
 
-	rates, err := h.exchangeSvc.GetRates(ctx)
+	rates, err := h.exchangeSvc.GetRates()
 	if err != nil {
 		return err
 	}
@@ -72,7 +73,7 @@ func (h *ExchangeHandler) Convert(w http.ResponseWriter, r *http.Request) error 
 		return err
 	}
 
-	convertedAmount, err := h.exchangeSvc.Convert(ctx, req.Amount, req.FromCurrency, req.ToCurrency)
+	convertedAmount, err := h.exchangeSvc.Convert(req.Amount, req.FromCurrency, req.ToCurrency)
 	if err != nil {
 		return err
 	}
@@ -86,5 +87,3 @@ func (h *ExchangeHandler) Convert(w http.ResponseWriter, r *http.Request) error 
 
 	return helpers.WriteJsonCtx(ctx, w, http.StatusOK, response)
 }
-
-
