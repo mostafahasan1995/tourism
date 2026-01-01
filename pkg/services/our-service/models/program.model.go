@@ -1,0 +1,129 @@
+package models
+
+import (
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/services/our-service/enums"
+	"larsa-tourism-microservices/pkg/transl"
+	"larsa-tourism-microservices/pkg/types"
+	"time"
+
+	"github.com/go-playground/validator/v10"
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+// Travel Type values:
+// Relaxation Trip (رحلة استجمام)
+// Adventure (مغامرة)
+// Family Trip (رحلة عائلية)
+// Romantic Trip (Honeymoon) (رحلة رومانسية – شهر عسل)
+// Cultural Trip (رحلة ثقافية)
+// Business Trip (رحلة عمل)
+// Shopping Trip (رحلة تسوق)
+// Wellness or Medical Tourism (رحلة صحية أو استشفائية)
+
+// ✅ عدد الأفراد (Group Size):
+// Solo Traveler (فردي)s
+// Couple (زوجان)
+// Family (عائلة)
+// Small Group (مجموعة صغيرة، عادة 4–8 أشخاص)
+// Large Group (مجموعة كبيرة، عادة أكثر من 8 أشخاص)
+
+type Program struct {
+	Id         primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	ProgramDto `bson:",inline"`
+	IsFav      bool               `bson:"isFav" json:"isFav"`
+	Trash      bool               `bson:"trash" json:"trash"`
+	CreatedAt  time.Time          `bson:"createdAt,omitempty" json:"createdAt,omitempty"`
+	CreatedBy  primitive.ObjectID `bson:"createdBy,omitempty" json:"createdBy,omitempty"`
+	UpdatedAt  time.Time          `bson:"updatedAt,omitempty" json:"updatedAt,omitempty"`
+	UpdatedBy  primitive.ObjectID `bson:"updatedBy,omitempty" json:"updatedBy,omitempty"`
+}
+
+type ProgramDto struct {
+	Title       transl.Localizable[string] `bson:"title" json:"title" validate:"required"`                                                                                                                                                                             // program title
+	ServiceType enums.ProgramServiceType   `bson:"serviceType" json:"serviceType" validate:"required,oneof=tourism-program custom-program flight-ticket vip-car hotel-booking family-travel luxury-travel religious-travel honeymoon business-man-travel delegation "` // e.g. delegation - custom-plan - business-man - vip-car - flight-request - partner-request
+	TravelReqId primitive.ObjectID         `bson:"travelReqId" json:"travelReqId" `
+	CustomerId  *primitive.ObjectID        `bson:"customerId" json:"customerId"`
+	AgentId     primitive.ObjectID         `bson:"agentId" json:"agentId"`
+	Status      string                     `bson:"status" json:"status" `
+	Package     primitive.ObjectID         `bson:"package" json:"package" `
+	ProgramType enums.ProgramType          `bson:"programType" json:"programType" validate:"required,oneof=general custom"` // general - custom
+	TravelType  enums.TravelType           `bson:"travelType" json:"travelType"
+	 validate:"required,oneof=
+	 relaxation-trip
+	  adventure-trip
+	   family-trip
+	    romantic-trip
+		 cultural-trip
+		  business-trip
+		   shopping-trip 
+		   wellness-medical-tourism
+		    leisure-travel
+			 adventure-travel 
+			 luxury-travel
+			  cultural-travel
+			   nature-wildlife-travel
+			    religious-travel
+				 romantic-travel
+				  family-travel 
+				  eco-travel
+				   cruise-travel
+				    multi-country-travel
+					 city-break-travel
+					  wellness-travel
+					   event-based-travel
+					    vip-celebrity-travel
+						 luxury-escape
+						 honeymoon
+						 family-luxury-holiday
+						 wellness-spa-retreat
+						 culinary-fine-dining-tour
+						 luxury-cruise-experience
+						 winter-ski-retreat
+						 custom-vip-tour
+						 exclusive-safari-nature
+						 beach-island-getaway
+						 cultural-heritage-journey
+						 religious-spiritual-journey
+						 iconic-landmarks-city-highlights
+						 private-guided-tour
+						 couples-private-tour
+						 festival-special-events
+						 photography-scenic-tour
+						 mice-business-travel  "`
+	ProgramType2 string `bson:"programType2" json:"programType2"`
+	//
+	Source          transl.Localizable[string] `bson:"source" json:"source"`
+	Company         transl.Localizable[string] `bson:"company" json:"company"`         // todo: maybe we need id here
+	Coordinator     string                     `bson:"coordinator" json:"coordinator"` // todo: maybe we need id here
+	Purpose         string                     `bson:"purpose" json:"purpose"`
+	StartDate       time.Time                  `bson:"startDate" json:"startDate" `
+	EndDate         time.Time                  `bson:"endDate" json:"endDate" `
+	GroupSize       enums.GroupSize            `bson:"groupSize" json:"groupSize"` //see group size values above
+	CoverImage      types.FileField            `bson:"coverImage" json:"coverImage"`
+	CustomerService bool                       `bson:"customerService" json:"customerService"`
+	//
+	GeneralType *GeneralProgram `bson:"generalType" json:"generalType" validate:"required_if=ProgramType general"`
+	CustomType  *CustomProgram  `bson:"customType" json:"customType" validate:"required_if=ProgramType custom"`
+}
+
+type ProgramRes struct {
+	Program       `bson:",inline"`
+	UpdatedByName string                     `bson:"updatedByName" json:"updatedByName"`
+	CustomerName  transl.Localizable[string] `bson:"customerName" json:"customerName"`
+	PackageName   transl.Localizable[string] `bson:"packageName" json:"packageName"`
+	Duration      int                        `bson:"duration" json:"duration"`
+	IsFav         bool                       `bson:"isFav" json:"isFav"`
+	SubTotal      float64                    `bson:"subTotal" json:"subTotal"`
+	Fees          float64                    `bson:"fees" json:"fees"`
+	Total         float64                    `bson:"total" json:"total"`
+}
+
+func (p *ProgramDto) Validate(v *validator.Validate) error {
+	return helpers.GenericValidation(v, p)
+}
+
+type ProgramPagination struct {
+	Programs   []ProgramRes     `bson:"programs" json:"programs"`
+	Pagination types.Pagination `bson:"pagination" json:"pagination"`
+}

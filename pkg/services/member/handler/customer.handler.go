@@ -1,0 +1,183 @@
+package handler
+
+import (
+	"larsa-tourism-microservices/pkg/helpers"
+	"larsa-tourism-microservices/pkg/middleware"
+	"larsa-tourism-microservices/pkg/query"
+	"larsa-tourism-microservices/pkg/services/member"
+	"larsa-tourism-microservices/pkg/services/member/models"
+	"larsa-tourism-microservices/pkg/util"
+	"net/http"
+
+	"github.com/goccy/go-json"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/samber/do"
+)
+
+type CustomerHandler struct {
+	customersvcs member.CustomerSvcs
+}
+
+func NewCustomerHandler(i *do.Injector, r *chi.Mux) {
+	h := &CustomerHandler{
+		customersvcs: do.MustInvoke[member.CustomerSvcs](i),
+	}
+
+	r.Route("/customers", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Get("/{id}", helpers.Make(h.GetOne))
+		r.With(middleware.Auth("authenticate")).Get("/", helpers.Make(h.Get))
+		r.With(middleware.Auth("authenticate")).Get("/all", helpers.Make(h.GetAll))
+		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.Add))
+		r.Post("/register", helpers.Make(h.Register))
+		r.With(middleware.Auth("authenticate")).Put("/{id}", helpers.Make(h.Update))
+		r.With(middleware.Auth("authenticate")).Delete("/{id}", helpers.Make(h.Delete))
+	})
+
+	r.Route("/customers/v2", func(r chi.Router) {
+		r.With(middleware.Auth("authenticate")).Post("/", helpers.Make(h.GetV2))
+		r.With(middleware.Auth("authenticate")).Post("/all", helpers.Make(h.GetAllV2))
+	})
+}
+
+func (h *CustomerHandler) GetOne(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	customerId := chi.URLParam(r, "id")
+
+	result, err := h.customersvcs.GetOne(ctx, customerId)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) Get(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	query := r.URL.Query().Get("query")
+
+	result, err := h.customersvcs.Get(ctx, skip, limit, query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) GetAll(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	result, err := h.customersvcs.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) Add(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.CustomerDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return err
+	}
+
+	result, err := h.customersvcs.Add(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) Register(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var data models.CustomerRegisterData
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return err
+	}
+
+	result, err := h.customersvcs.RegisterAsCustomer(ctx, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) Update(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	customerId := chi.URLParam(r, "id")
+
+	var data models.CustomerDto
+	if err := json.NewDecoder(r.Body).DecodeContext(ctx, &data); err != nil {
+		return err
+	}
+
+	result, err := h.customersvcs.Update(ctx, customerId, &data)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) Delete(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	customerId := chi.URLParam(r, "id")
+
+	if err := h.customersvcs.Delete(ctx, customerId); err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, "ok")
+}
+
+// v2
+func (h *CustomerHandler) GetV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	skip, limit, err := util.Paginate(r)
+	if err != nil {
+		return err
+	}
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.customersvcs.GetV2(ctx, skip, limit, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}
+
+func (h *CustomerHandler) GetAllV2(w http.ResponseWriter, r *http.Request) error {
+	ctx, _ := util.AddCtxAppCfg(r)
+
+	var query query.Conditions
+	if err := json.NewDecoder(r.Body).Decode(&query); err != nil {
+		return err
+	}
+
+	result, err := h.customersvcs.GetAllV2(ctx, &query)
+	if err != nil {
+		return err
+	}
+
+	return helpers.WriteJsonCtx(ctx, w, http.StatusCreated, result)
+}

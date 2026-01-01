@@ -1,0 +1,4145 @@
+
+
+{
+    "data": {
+      "id": "lp1897",
+      "name": "The Manhattan at Times Square",
+      "hotelDescription": "<p><strong>Central Manhattan Location</strong><br>The Manhattan at Times Square is perfectly situated in the heart of Manhattan, just steps away from iconic landmarks like Times Square and Rockefeller Centre.</p><p><strong>Comfortable Accommodations</strong><br>Each room at The Manhattan at Times Square is equipped with a work desk, and select rooms boast stunning skyline views and a cozy seating area for relaxation.</p><p><strong>Convenient Amenities</strong><br>Guests can enjoy a range of amenities at The Manhattan at Times Square, including a fitness centre, a business centre with fax and photocopying services, and attentive concierge services.</p><p>Book your stay at The Manhattan at Times Square to experience the best of New York City right at your doorstep.</p>",
+      "hotelImportantInformation": "Guests are required to show a photo identification and credit card upon check-in. Please note that all Special Requests are subject to availability and additional charges may apply.\nIn response to Coronavirus (COVID-19), additional safety and sanitation measures are in effect at this property.\nPlease inform The Manhattan at Times Square in advance of your expected arrival time. You can use the Special Requests box when booking, or contact the property directly with the contact details provided in your confirmation.\nA damage deposit of USD 50 is required on arrival. This will be collected by credit card. You should be reimbursed on check-out. Your deposit will be refunded in full via credit card, subject to an inspection of the property.\nPlease note that the Manhattan at Times Square Hotel has a mandatory Facilities Fee of $43.61 per room per night provides guests with the following inclusive services, amenities and added value offerings:\n\nAll local, long distance and international phone calls\nPremium high-speed wireless internet access for unlimited devices\nAn eco-friendly, collapsible 16 oz. water bottle to use at the hotel’s water filtration stations\nUnlimited use of our Business Center\nUnlimited use of our 24/7 Fitness Center with treadmills, bikes, elliptical machines and free weights\n25% discount on hop on/hop off bus tour with provided QR code\n*The Facilities Fee does not include service gratuity",
+      "checkinCheckoutTimes": {
+        "checkout": "12:00 PM",
+        "checkin": "4:00 PM"
+      },
+      "hotelImages": [
+        {
+          "url": "https://static.cupid.travel/hotels/524489007.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489007.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": true
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322069.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322069.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489033.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489033.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322042.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322042.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322046.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322046.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/333925043.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/333925043.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/333925055.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/333925055.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488993.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488993.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/589967135.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/589967135.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/548248042.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/548248042.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489040.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489040.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489121.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489121.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489139.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489139.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/333925044.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/333925044.jpg",
+          "caption": "lounge",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/528870648.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/528870648.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40401136.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40401136.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322120.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322120.jpg",
+          "caption": "activities & amenities",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/175344522.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/175344522.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/19121627.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/19121627.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/19121632.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/19121632.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/19121630.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/19121630.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322143.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322143.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322031.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322031.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322044.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322044.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40401143.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40401143.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322050.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322050.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489006.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489006.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/175355042.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/175355042.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/19121635.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/19121635.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40401147.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40401147.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40401108.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40401108.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322025.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322025.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/528870858.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/528870858.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/528870978.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/528870978.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489052.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489052.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489074.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489074.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40401151.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40401151.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488995.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488995.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489090.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489090.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489012.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489012.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/617474284.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/617474284.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322048.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322048.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489000.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489000.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488999.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488999.jpg",
+          "caption": "lounge",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322060.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322060.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/20455439.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/20455439.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/528870820.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/528870820.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/525283952.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/525283952.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/528869607.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/528869607.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/528870032.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/528870032.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524826961.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524826961.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489078.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489078.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933089.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933089.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933087.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933087.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524826953.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524826953.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489109.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489109.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/525283943.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/525283943.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489118.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489118.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489046.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489046.jpg",
+          "caption": "dining",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489131.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489131.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/527434935.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/527434935.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/525283947.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/525283947.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/525283955.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/525283955.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933064.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933064.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489113.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489113.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/527436794.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/527436794.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489030.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489030.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488996.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488996.jpg",
+          "caption": "activities & amenities",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489008.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489008.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/530169919.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/530169919.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489019.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489019.jpg",
+          "caption": "balance & terrace",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489132.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489132.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/589967128.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/589967128.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489101.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489101.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489124.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489124.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488997.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488997.jpg",
+          "caption": "recepcion & lobby",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489110.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489110.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/525298197.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/525298197.jpg",
+          "caption": "lounge",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/614428925.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/614428925.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299721.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299721.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/610114601.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/610114601.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299715.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299715.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299717.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299717.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489084.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489084.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489119.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489119.jpg",
+          "caption": "bedroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299716.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299716.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489122.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489122.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/617476584.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/617476584.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299723.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299723.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933076.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933076.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/548248032.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/548248032.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299710.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299710.jpg",
+          "caption": "lounge",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/548248036.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/548248036.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489106.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489106.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489032.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489032.jpg",
+          "caption": "kitchen",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489079.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489079.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299708.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299708.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489094.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489094.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/548248050.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/548248050.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/614428915.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/614428915.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489112.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489112.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/548248044.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/548248044.jpg",
+          "caption": "bedroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299718.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299718.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489089.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489089.jpg",
+          "caption": "dining",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933085.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933085.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/592392806.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/592392806.jpg",
+          "caption": "bedroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489114.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489114.jpg",
+          "caption": "bedroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489133.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489133.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489045.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489045.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489039.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489039.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489081.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489081.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489056.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489056.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/618690410.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/618690410.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/614428920.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/614428920.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489057.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489057.jpg",
+          "caption": "bathroom",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/538299724.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/538299724.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/610125544.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/610125544.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489116.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489116.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489065.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489065.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933091.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933091.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489080.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489080.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933082.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933082.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488985.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488985.jpg",
+          "caption": "dining",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/548248026.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/548248026.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40401140.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40401140.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/175344462.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/175344462.jpg",
+          "caption": "hotel room",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488986.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488986.jpg",
+          "caption": "building",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322040.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322040.jpg",
+          "caption": "roof",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933061.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933061.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489096.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489096.jpg",
+          "caption": "activities & amenities",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/175346994.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/175346994.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488988.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488988.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/175347409.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/175347409.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489044.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489044.jpg",
+          "caption": "meeting & event spaces",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322035.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322035.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/40322057.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/40322057.jpg",
+          "caption": "dining",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/175345211.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/175345211.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524488991.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524488991.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/523933056.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/523933056.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        },
+        {
+          "url": "https://static.cupid.travel/hotels/524489001.jpg",
+          "urlHd": "https://static.cupid.travel/hotels/524489001.jpg",
+          "caption": "other",
+          "order": 0,
+          "defaultImage": false
+        }
+      ],
+      "main_photo": "https://static.cupid.travel/hotels/524489007.jpg",
+      "thumbnail": "https://static.cupid.travel/hotels/thumbnail/524489007.jpg",
+      "country": "us",
+      "city": "New York",
+      "starRating": 4,
+      "location": {
+        "latitude": 40.76217,
+        "longitude": -73.98306
+      },
+      "address": "790 7th Avenue",
+      "hotelFacilities": [
+        "Fitness facilities (surcharge)",
+        "Non-smoking rooms",
+        "Air conditioning",
+        "Family rooms",
+        "Pets allowed",
+        "Lift / Elevator",
+        "Luggage storage",
+        "Express check-in/check-out",
+        "Safety deposit box",
+        "Fax/photocopying",
+        "Soundproof rooms",
+        "Facilities for disabled guests",
+        "Ironing service",
+        "Non-smoking throughout",
+        "Private check-in/check-out",
+        "Staff adhere to local safety protocols",
+        "Guest rooms disinfected between stays",
+        "Cleaning standards that are effective against Coronavirus",
+        "Physical distancing rules followed",
+        "Hand sanitizer in guest room and key areas",
+        "Cashless payment available",
+        "Fire extinguishers",
+        "First aid kit available",
+        "Sanitized tableware & silverware",
+        "Contactless check-in/check-out",
+        "Invoice provided",
+        "Guests can opt-out any cleaning services during stay",
+        "Smoke alarms",
+        "Shared stationery like menus, pens are removed",
+        "Guest room sealed after cleaning",
+        "Property cleaned by professional cleaning companies",
+        "Physical distancing in dining areas",
+        "Key access",
+        "Food delivered to guest room",
+        "CCTV outside property",
+        "Process in place to check health of guests",
+        "Screens / Barriers between staff and guests for safety",
+        "Face masks for guests available",
+        "24-hour security",
+        "Delivered food - securely covered",
+        "Security alarm",
+        "Key card access",
+        "ATM/banking",
+        "Shopping on site",
+        "Television in common areas",
+        "Front desk (limited hours)",
+        "Express check-in",
+        "Free wired internet",
+        "Fitness facilities (surcharge)",
+        "Internet access",
+        "Housekeeping on request",
+        "Covered parking",
+        "Secured parking",
+        "Garage"
+      ],
+      "zip": "NY 10019",
+      "chain": "Not Available",
+      "facilities": [
+        {
+          "facilityId": 6848,
+          "name": "Fitness facilities (surcharge)"
+        },
+        {
+          "facilityId": 16,
+          "name": "Non-smoking rooms"
+        },
+        {
+          "facilityId": 109,
+          "name": "Air conditioning"
+        },
+        {
+          "facilityId": 28,
+          "name": "Family rooms"
+        },
+        {
+          "facilityId": 4,
+          "name": "Pets allowed"
+        },
+        {
+          "facilityId": 48,
+          "name": "Lift / Elevator"
+        },
+        {
+          "facilityId": 91,
+          "name": "Luggage storage"
+        },
+        {
+          "facilityId": 49,
+          "name": "Express check-in/check-out"
+        },
+        {
+          "facilityId": 51,
+          "name": "Safety deposit box"
+        },
+        {
+          "facilityId": 81,
+          "name": "Fax/photocopying"
+        },
+        {
+          "facilityId": 64,
+          "name": "Soundproof rooms"
+        },
+        {
+          "facilityId": 25,
+          "name": "Facilities for disabled guests"
+        },
+        {
+          "facilityId": 44,
+          "name": "Ironing service"
+        },
+        {
+          "facilityId": 108,
+          "name": "Non-smoking throughout"
+        },
+        {
+          "facilityId": 127,
+          "name": "Private check-in/check-out"
+        },
+        {
+          "facilityId": 455,
+          "name": "Staff adhere to local safety protocols"
+        },
+        {
+          "facilityId": 451,
+          "name": "Guest rooms disinfected between stays"
+        },
+        {
+          "facilityId": 449,
+          "name": "Cleaning standards that are effective against Coronavirus"
+        },
+        {
+          "facilityId": 462,
+          "name": "Physical distancing rules followed"
+        },
+        {
+          "facilityId": 457,
+          "name": "Hand sanitizer in guest room and key areas"
+        },
+        {
+          "facilityId": 461,
+          "name": "Cashless payment available"
+        },
+        {
+          "facilityId": 425,
+          "name": "Fire extinguishers"
+        },
+        {
+          "facilityId": 459,
+          "name": "First aid kit available"
+        },
+        {
+          "facilityId": 467,
+          "name": "Sanitized tableware & silverware"
+        },
+        {
+          "facilityId": 460,
+          "name": "Contactless check-in/check-out"
+        },
+        {
+          "facilityId": 465,
+          "name": "Invoice provided"
+        },
+        {
+          "facilityId": 468,
+          "name": "Guests can opt-out any cleaning services during stay"
+        },
+        {
+          "facilityId": 422,
+          "name": "Smoke alarms"
+        },
+        {
+          "facilityId": 456,
+          "name": "Shared stationery like menus, pens are removed"
+        },
+        {
+          "facilityId": 452,
+          "name": "Guest room sealed after cleaning"
+        },
+        {
+          "facilityId": 466,
+          "name": "Property cleaned by professional cleaning companies"
+        },
+        {
+          "facilityId": 453,
+          "name": "Physical distancing in dining areas"
+        },
+        {
+          "facilityId": 419,
+          "name": "Key access"
+        },
+        {
+          "facilityId": 454,
+          "name": "Food delivered to guest room"
+        },
+        {
+          "facilityId": 424,
+          "name": "CCTV outside property"
+        },
+        {
+          "facilityId": 458,
+          "name": "Process in place to check health of guests"
+        },
+        {
+          "facilityId": 464,
+          "name": "Screens / Barriers between staff and guests for safety"
+        },
+        {
+          "facilityId": 488,
+          "name": "Face masks for guests available"
+        },
+        {
+          "facilityId": 418,
+          "name": "24-hour security"
+        },
+        {
+          "facilityId": 485,
+          "name": "Delivered food - securely covered"
+        },
+        {
+          "facilityId": 421,
+          "name": "Security alarm"
+        },
+        {
+          "facilityId": 420,
+          "name": "Key card access"
+        },
+        {
+          "facilityId": 497,
+          "name": "ATM/banking"
+        },
+        {
+          "facilityId": 500,
+          "name": "Shopping on site"
+        },
+        {
+          "facilityId": 521,
+          "name": "Television in common areas"
+        },
+        {
+          "facilityId": 540,
+          "name": "Front desk (limited hours)"
+        },
+        {
+          "facilityId": 568,
+          "name": "Express check-in"
+        },
+        {
+          "facilityId": 584,
+          "name": "Free wired internet"
+        },
+        {
+          "facilityId": 757,
+          "name": "Fitness facilities (surcharge)"
+        },
+        {
+          "facilityId": 761,
+          "name": "Internet access"
+        },
+        {
+          "facilityId": 784,
+          "name": "Housekeeping on request"
+        },
+        {
+          "facilityId": 857,
+          "name": "Covered parking"
+        },
+        {
+          "facilityId": 859,
+          "name": "Secured parking"
+        },
+        {
+          "facilityId": 880,
+          "name": "Garage"
+        }
+      ],
+      "rooms": [
+        {
+          "id": 2617264,
+          "roomName": "Standard Room",
+          "description": "The double room includes a private bathroom equipped with a hairdryer. The air-conditioned double room provides a TV with satellite channels, soundproof walls, a safe deposit box, heating as well as city views.",
+          "roomSizeSquare": 23,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/592392806.jpg",
+              "imageDescription": "Rest in comfort with plush pillows waiting for you!",
+              "imageClass1": "room & sleeping area",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/592392806.jpg?k=a4eb5eb9a6a889c0de416084b723b6697b3c5d2c84bd81413c95734b671aa6e1&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 159,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/592392806.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": ""
+        },
+        {
+          "id": 2617265,
+          "roomName": "Premium Room",
+          "description": "The double room includes a private bathroom fitted with a hairdryer. The spacious air-conditioned double room offers a TV with satellite channels, soundproof walls, a safe deposit box, heating as well as city views.",
+          "roomSizeSquare": 26,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489119.jpg",
+              "imageDescription": "Relax in luxurious comfort for a perfect night's sleep.",
+              "imageClass1": "room & sleeping area",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489119.jpg?k=0488a1da0924228e67bbd3df87c868a9d7d5019bb42cdfaf7a395dc2d4cab9df&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 159,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489119.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489114.jpg",
+              "imageDescription": "Relax in style with plush bedding and elegant decor.",
+              "imageClass1": "room & sleeping area",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489114.jpg?k=d2855ccba7916212023cfa373066f32eafb4d6b7ea5e98b3e74440fccd53df24&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 159,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489114.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg",
+              "imageDescription": "Refresh in this stylish modern shower space.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/527434935.jpg?k=c0d05d76c837a33c0df60899e25feb97cf8fecf8b89244422e63bdef2203157b&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": ""
+        },
+        {
+          "id": 2617266,
+          "roomName": "Standard Queen Room",
+          "description": "The double room includes a private bathroom fitted with a hairdryer. The air-conditioned double room offers a TV with satellite channels, soundproof walls, a safe deposit box, heating as well as city views. The unit has 1 bed.",
+          "roomSizeSquare": 23,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [
+            {
+              "quantity": 1,
+              "bedType": "Large bed (King size)",
+              "bedSize": "151-180 cm wide",
+              "id": 36
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/528870978.jpg",
+              "imageDescription": "Experience comfort in this stylish city retreat.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/528870978.jpg?k=ebb8f0bb34ad36718ced190d11fddd683a61100ac95a3b5fdf1f5c0194a5194d&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/528870978.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489106.jpg",
+              "imageDescription": "Comfortable rooms with stunning city views await you!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489106.jpg?k=438c14c18623b4c6ce67ba8b3b1343ce591f873ffd5940e34d1255a26a88ef4d&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489106.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Embrace your New York state of mind in comfort.",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.85,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617267,
+          "roomName": "Standard King Room",
+          "description": "The double room includes a private bathroom fitted with a hairdryer. The spacious air-conditioned double room features a TV with satellite channels, soundproof walls, a safe deposit box, heating as well as city views. The unit has 1 bed.",
+          "roomSizeSquare": 26,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [
+            {
+              "quantity": 1,
+              "bedType": "Extra-large double bed (Super-king size)",
+              "bedSize": "181-210 cm wide",
+              "id": 39
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/528870820.jpg",
+              "imageDescription": "Unwind in comfort with stunning city views!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/528870820.jpg?k=34baac1cd0442eaa0a3b12df5b678ab61f22c64d8c396dc8e470a8656b921a6e&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/528870820.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/528870858.jpg",
+              "imageDescription": "Relax in our luxurious, cozy hotel room.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/528870858.jpg?k=8a70f991486b34ba08fa88c9d18583b6b35d83f9bef71129157a8b625fa683af&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/528870858.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg",
+              "imageDescription": "Relax in comfort with city views and elegant decor.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489116.jpg?k=03e55f2f056007a3c9d123d1590a7349b4fffd8fe95a6b34c1bb12502ebd928f&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489133.jpg",
+              "imageDescription": "Relax in comfort with our stylish hotel rooms.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489133.jpg?k=8a31e539abdd92ca9b544a7b1b162c85483dd28611cd8f62f8a5d7411dad32a8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489133.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489106.jpg",
+              "imageDescription": "Relax in comfort with stunning city views.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489106.jpg?k=438c14c18623b4c6ce67ba8b3b1343ce591f873ffd5940e34d1255a26a88ef4d&o=",
+              "mainPhoto": false,
+              "score": 0.93,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489106.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Relax in your New York state of mind!",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.85,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617268,
+          "roomName": "Standard Double Room With Two Double Beds",
+          "description": "The double room includes a private bathroom equipped with a hairdryer. The spacious air-conditioned double room offers a TV with satellite channels, soundproof walls, a safe deposit box, heating as well as city views. The unit offers 2 beds.",
+          "roomSizeSquare": 27,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 4,
+          "maxChildren": 3,
+          "maxOccupancy": 4,
+          "bedTypes": [
+            {
+              "quantity": 2,
+              "bedType": "Double bed",
+              "bedSize": "131-150 cm wide",
+              "id": 2
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489056.jpg",
+              "imageDescription": "Relax in comfort and style with our spacious rooms!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489056.jpg?k=6e138c72f652812bde87f44ebf164ec3a2085ed10650caa87e0a4ce4e8ee9b0b&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489056.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Embrace tranquility with your own space to unwind.",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489039.jpg",
+              "imageDescription": "Comfortable stays with stunning views await you!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489039.jpg?k=8670f0f6b3e0888d7714dd4da3ba9a7d422e21b2580d066593e2c281161ea5dd&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489039.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617269,
+          "roomName": "Premium Queen Room - Manhattan Floor",
+          "description": "The double room features air conditioning, soundproof walls, as well as a private bathroom boasting a walk-in shower and a hairdryer. The unit has 1 bed.",
+          "roomSizeSquare": 23,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [
+            {
+              "quantity": 1,
+              "bedType": "Large bed (King size)",
+              "bedSize": "151-180 cm wide",
+              "id": 36
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489119.jpg",
+              "imageDescription": "Unwind in luxury and comfort every night.",
+              "imageClass1": "room & sleeping area",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489119.jpg?k=0488a1da0924228e67bbd3df87c868a9d7d5019bb42cdfaf7a395dc2d4cab9df&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 159,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489119.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg",
+              "imageDescription": "Enjoy a refreshing shower in this modern bathroom oasis!",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/527434935.jpg?k=c0d05d76c837a33c0df60899e25feb97cf8fecf8b89244422e63bdef2203157b&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg",
+              "imageDescription": "Relax in your luxurious spa-like retreat.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489094.jpg?k=d06c959703dd03ad7dd5515a91601fcdb3e7ac0d66e494a46fa1ab566c01bd10&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/523933085.jpg",
+              "imageDescription": "Rest in style and comfort in this inviting hotel room.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/523933085.jpg?k=b3dcaeea6fc047da6cc2e4ef9a1c43b17e71129e16662dc217b24384fc028cfb&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/523933085.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg",
+              "imageDescription": "Unwind in this luxurious and modern bathroom retreat.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489074.jpg?k=a95c4b2c1749966628b58726c5f75e6c1c0dc3147814f523cf2482a73cfcf063&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/618690410.jpg",
+              "imageDescription": "Experience luxury with stunning city views from your room!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/618690410.jpg?k=9792a5c999a98b01daed4502de27f2edaecf8cc3b705ca6e0d4adfcc1ad62d4c&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/618690410.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Unwind in your own New York sanctuary.",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.85,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617270,
+          "roomName": "Premium Queen Room",
+          "description": "The double room offers air conditioning, soundproof walls, as well as a private bathroom boasting a walk-in shower and a hairdryer. The unit has 1 bed.",
+          "roomSizeSquare": 23,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [
+            {
+              "quantity": 1,
+              "bedType": "Large bed (King size)",
+              "bedSize": "151-180 cm wide",
+              "id": 36
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248026.jpg",
+              "imageDescription": "Luxurious comfort awaits in your stylish getaway.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248026.jpg?k=9e4eefe74c27e61c09a5d806984a9971e09640532c6ad61f810c8df830662873&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248026.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Enjoy your peaceful retreat with a 'Do Not Disturb' sign!",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299724.jpg",
+              "imageDescription": "Relax in style with stunning city views!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299724.jpg?k=880cabdea90bc41acfb223ec5058d717911cdb0973113ac7e00f59e85ed106f8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299724.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg",
+              "imageDescription": "Relax in our modern, spacious shower experience.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/527434935.jpg?k=c0d05d76c837a33c0df60899e25feb97cf8fecf8b89244422e63bdef2203157b&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248050.jpg",
+              "imageDescription": "Experience luxury in our elegantly designed bathroom.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248050.jpg?k=f865f4402cee77bab41ba1f266f23939fdef97eae17453f1b370e5d3dbef3b42&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248050.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617271,
+          "roomName": "Premium King Room - Manhattan Floor",
+          "description": "The spacious double room provides air conditioning, soundproof walls, as well as a private bathroom featuring a walk-in shower and a hairdryer. The unit offers 1 bed.",
+          "roomSizeSquare": 26,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [
+            {
+              "quantity": 1,
+              "bedType": "Extra-large double bed (Super-king size)",
+              "bedSize": "181-210 cm wide",
+              "id": 39
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489119.jpg",
+              "imageDescription": "Relax in cozy luxury and sleep soundly.",
+              "imageClass1": "room & sleeping area",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489119.jpg?k=0488a1da0924228e67bbd3df87c868a9d7d5019bb42cdfaf7a395dc2d4cab9df&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 159,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489119.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/618690410.jpg",
+              "imageDescription": "Relax in style with a stunning city view!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/618690410.jpg?k=9792a5c999a98b01daed4502de27f2edaecf8cc3b705ca6e0d4adfcc1ad62d4c&o=",
+              "mainPhoto": false,
+              "score": 0.98,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/618690410.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Experience tranquility with a touch of New York charm.",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/614428920.jpg",
+              "imageDescription": "Experience luxury and comfort in your home away from home.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/614428920.jpg?k=72fb10f3e715bebfe88bbdf2b2dbc261e2ab4c65f2e3325e25f348318620b429&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/614428920.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/610125544.jpg",
+              "imageDescription": "Relax in luxury with stunning city views.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/610125544.jpg?k=fd8679f3991e3c78c5fb6d9961f54377667640be8cdda3ade8f3d903bbb1de55&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/610125544.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg",
+              "imageDescription": "Experience luxury in this serene spa-inspired space.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489074.jpg?k=a95c4b2c1749966628b58726c5f75e6c1c0dc3147814f523cf2482a73cfcf063&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg",
+              "imageDescription": "Experience luxury in a serene bathroom retreat.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489094.jpg?k=d06c959703dd03ad7dd5515a91601fcdb3e7ac0d66e494a46fa1ab566c01bd10&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg",
+              "imageDescription": "Refresh in a sleek, modern shower space.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/527434935.jpg?k=c0d05d76c837a33c0df60899e25feb97cf8fecf8b89244422e63bdef2203157b&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617272,
+          "roomName": "Premium King Room",
+          "description": "The spacious double room offers air conditioning, soundproof walls, as well as a private bathroom boasting a walk-in shower and a hairdryer. The unit has 1 bed.",
+          "roomSizeSquare": 26,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [
+            {
+              "quantity": 1,
+              "bedType": "Extra-large double bed (Super-king size)",
+              "bedSize": "181-210 cm wide",
+              "id": 39
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/528870648.jpg",
+              "imageDescription": "Experience luxury in this spacious, stylish hotel room.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/528870648.jpg?k=37dbb25d5990a6053a73d919be2217faa58cadd9cfcaa4667db60d9e087c2d7e&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/528870648.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Enjoy your peaceful retreat in the heart of the city!",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248036.jpg",
+              "imageDescription": "Relax in comfort with stunning city views!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248036.jpg?k=b6a4ca463dba66f81e476dd4ad7ecbc7fdb3c3684326caa6058325b3726468ef&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248036.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299723.jpg",
+              "imageDescription": "Cozy comfort awaits in your stylish retreat.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299723.jpg?k=0e63b68a600d1ae29eca2718bdd469ffdf783713b11b6742dc4dc8464eb2276f&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299723.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/617474284.jpg",
+              "imageDescription": "Relax in style in this modern hotel room.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/617474284.jpg?k=9d5ce2a917605355ab283335372c2cac75578e0950f1f4b9765468a28b58b6a5&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/617474284.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299718.jpg",
+              "imageDescription": "Experience comfort in a stylish, city-view retreat.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299718.jpg?k=8f26de7725c4f319b429b6fe434c2d06ddcba999c84442836172c3df7888ea59&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299718.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248032.jpg",
+              "imageDescription": "Relax in comfort with stunning city views.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248032.jpg?k=78ae63b9709028289f8bfc6c2ae2879cffd9e75eecd392b37fd09ecff3514b87&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248032.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg",
+              "imageDescription": "Relax in a modern and spacious shower experience.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/527434935.jpg?k=c0d05d76c837a33c0df60899e25feb97cf8fecf8b89244422e63bdef2203157b&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248050.jpg",
+              "imageDescription": "Enjoy a fresh and modern bathroom experience!",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248050.jpg?k=f865f4402cee77bab41ba1f266f23939fdef97eae17453f1b370e5d3dbef3b42&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248050.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617273,
+          "roomName": "Premium Queen Room With Two Queen Beds - Manhattan Floor",
+          "description": "The spacious double room provides air conditioning, soundproof walls, as well as a private bathroom featuring a walk-in shower and a hairdryer. This double room features a safe deposit box, heating, a TV with satellite channels and city views. The unit offers 2 beds.",
+          "roomSizeSquare": 27,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 4,
+          "maxChildren": 3,
+          "maxOccupancy": 4,
+          "bedTypes": [
+            {
+              "quantity": 2,
+              "bedType": "Large bed (King size)",
+              "bedSize": "151-180 cm wide",
+              "id": 36
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg",
+              "imageDescription": "Relax in a sleek, modern shower oasis.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/527434935.jpg?k=c0d05d76c837a33c0df60899e25feb97cf8fecf8b89244422e63bdef2203157b&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/527434935.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "\"Enjoy your peaceful retreat with no interruptions!\"",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg",
+              "imageDescription": "Relax in sleek serenity and modern luxury!",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489074.jpg?k=a95c4b2c1749966628b58726c5f75e6c1c0dc3147814f523cf2482a73cfcf063&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg",
+              "imageDescription": "Relax in luxury with our elegant bathroom amenities.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489094.jpg?k=d06c959703dd03ad7dd5515a91601fcdb3e7ac0d66e494a46fa1ab566c01bd10&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617274,
+          "roomName": "Premium Queen Room With Two Queen Beds",
+          "description": "The spacious double room offers air conditioning, soundproof walls, as well as a private bathroom featuring a walk-in shower and a hairdryer. This double room features a safe deposit box, heating, a TV with satellite channels and city views. The unit offers 2 beds.",
+          "roomSizeSquare": 27,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 4,
+          "maxChildren": 3,
+          "maxOccupancy": 4,
+          "bedTypes": [
+            {
+              "quantity": 2,
+              "bedType": "Large bed (King size)",
+              "bedSize": "151-180 cm wide",
+              "id": 36
+            }
+          ],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 176,
+              "name": "Interconnected room(s) available",
+              "sort": 63
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299717.jpg",
+              "imageDescription": "Relax in comfort and style with stunning city views!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299717.jpg?k=d11458a8983f3c5d8706731fa2640c78bdde0e21f9147dfe76e85330f063891d&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299717.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248044.jpg",
+              "imageDescription": "Rest in comfort with stylish elegance.",
+              "imageClass1": "room & sleeping area",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248044.jpg?k=21744669c14bbc7264ea682ca539ab2b8a5dda00cac5c0dcb5e93d1df1a3906a&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 159,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248044.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Enjoy your stay with our personalized peace signs!",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248042.jpg",
+              "imageDescription": "Relax in style with stunning city views!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248042.jpg?k=570f58e512db19fb9f589a26f3a131042cbc07487f3eeae6c7f89a050ddf1b80&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248042.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/548248050.jpg",
+              "imageDescription": "Relax in a sleek, modern bathroom retreat.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/548248050.jpg?k=f865f4402cee77bab41ba1f266f23939fdef97eae17453f1b370e5d3dbef3b42&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/548248050.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": "NONE"
+        },
+        {
+          "id": 2617275,
+          "roomName": "King Suite",
+          "description": "The suite offers a sofa, heating, as well as a private bathroom featuring a hairdryer. The spacious air-conditioned suite provides a TV with satellite channels, soundproof walls, a seating area, a safe deposit box as well as city views.",
+          "roomSizeSquare": 94,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 6,
+          "maxChildren": 5,
+          "maxOccupancy": 6,
+          "bedTypes": [],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 298,
+              "name": "Seating Area",
+              "sort": 59
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 328,
+              "name": "Sofa",
+              "sort": 65
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 329,
+              "name": "Sofa bed",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/523933076.jpg",
+              "imageDescription": "Relax in style with our luxurious accommodations!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/523933076.jpg?k=c7f592058b78e0ee7475be4b689db75c82b28b5a2827e4745fc512dfff9e1c80&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/523933076.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/523933082.jpg",
+              "imageDescription": "Relax in style with our spacious hotel room!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/523933082.jpg?k=942c9c68d5000532534b0efae1289c3fb9b0096872af569310cf588dc7aba18e&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/523933082.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489080.jpg",
+              "imageDescription": "Relax in style and comfort in your luxurious room!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489080.jpg?k=f4b8befc106e55aff20c8482cac7cc97b098bb13796aa176ca931f1dd9309f07&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489080.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Embrace tranquility with a touch of New York charm.",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489133.jpg",
+              "imageDescription": "Relax in comfort with our inviting hotel rooms.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489133.jpg?k=8a31e539abdd92ca9b544a7b1b162c85483dd28611cd8f62f8a5d7411dad32a8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489133.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg",
+              "imageDescription": "Experience comfort in a beautifully designed hotel room.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489116.jpg?k=03e55f2f056007a3c9d123d1590a7349b4fffd8fe95a6b34c1bb12502ebd928f&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": ""
+        },
+        {
+          "id": 2617276,
+          "roomName": "King Suite With Walk-In Shower",
+          "description": "The suite features a sofa, heating, as well as a private bathroom featuring a walk-in shower and a hairdryer. The spacious air-conditioned suite provides a TV with satellite channels, soundproof walls, a seating area, a safe deposit box as well as city views.",
+          "roomSizeSquare": 94,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 6,
+          "maxChildren": 5,
+          "maxOccupancy": 6,
+          "bedTypes": [],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 298,
+              "name": "Seating Area",
+              "sort": 59
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 328,
+              "name": "Sofa",
+              "sort": 65
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 329,
+              "name": "Sofa bed",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299716.jpg",
+              "imageDescription": "Relax in our modern, cozy hotel room!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299716.jpg?k=9097371f90523f6ea20a4d9e27bb0086a49e04bfc16ddd4cf8360743a2167146&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299716.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "Unwind in style with our exclusive privacy charm.",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299708.jpg",
+              "imageDescription": "Relax in style with luxurious space and city views!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299708.jpg?k=d0d22a43576b3d2e96ff8e222e16aa9d87c35d439df47e5ef0d5995e3be4e097&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299708.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/538299710.jpg",
+              "imageDescription": "Experience luxury and comfort in this stylish suite!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/538299710.jpg?k=7782cb68b3776820168d8a92d08748ca6be658c4de66aba93fcb2c2d38d381d1&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/538299710.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg",
+              "imageDescription": "Relax in style with our spacious and cozy rooms!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489116.jpg?k=03e55f2f056007a3c9d123d1590a7349b4fffd8fe95a6b34c1bb12502ebd928f&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": ""
+        },
+        {
+          "id": 2617277,
+          "roomName": "King Suite With Living Area - Manhattan Floor",
+          "description": "The suite offers a sofa and heating, as well as a private bathroom featuring a hairdryer. The spacious air-conditioned suite provides a TV with satellite channels, soundproof walls, a seating area, a safe deposit box as well as city views.",
+          "roomSizeSquare": 51,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 2,
+          "maxChildren": 1,
+          "maxOccupancy": 2,
+          "bedTypes": [],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 298,
+              "name": "Seating Area",
+              "sort": 59
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 328,
+              "name": "Sofa",
+              "sort": 65
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 329,
+              "name": "Sofa bed",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489033.jpg",
+              "imageDescription": "Relax in this stylish urban retreat with stunning views.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489033.jpg?k=ab1dbecd19b5432f0aa485dfa63bf5ba00b5914aeef26950c6c5777da85c64da&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489033.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/614428920.jpg",
+              "imageDescription": "Experience comfort in this stylish urban retreat!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/614428920.jpg?k=72fb10f3e715bebfe88bbdf2b2dbc261e2ab4c65f2e3325e25f348318620b429&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/614428920.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg",
+              "imageDescription": "Relax in luxury at this elegant bathroom retreat.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489094.jpg?k=d06c959703dd03ad7dd5515a91601fcdb3e7ac0d66e494a46fa1ab566c01bd10&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489094.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg",
+              "imageDescription": "Experience luxury with our modern spa-inspired bathrooms.",
+              "imageClass1": "bathroom",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489074.jpg?k=a95c4b2c1749966628b58726c5f75e6c1c0dc3147814f523cf2482a73cfcf063&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 26,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489074.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/614428915.jpg",
+              "imageDescription": "Experience luxury in a stylish urban retreat.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/614428915.jpg?k=f1464a6e79abdc9bec20280fa0fe46542db75b873b2445df95008cb47edf9bc3&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/614428915.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg",
+              "imageDescription": "\"Unwind in your New York sanctuary.\"",
+              "imageClass1": "other",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/524489112.jpg?k=5248c6024a1447a7dca20dccf2933f81618f401dc809b0a4e3427403760ecab8&o=",
+              "mainPhoto": false,
+              "score": 0.85,
+              "classId": 124,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": ""
+        },
+        {
+          "id": 2617278,
+          "roomName": "King Suite With Balcony",
+          "description": "The spacious suite offers air conditioning, soundproof walls, a balcony with city views as well as a private bathroom boasting a hairdryer.",
+          "roomSizeSquare": 94,
+          "roomSizeUnit": "m2",
+          "hotelId": "lp1897",
+          "maxAdults": 6,
+          "maxChildren": 5,
+          "maxOccupancy": 6,
+          "bedTypes": [],
+          "roomAmenities": [
+            {
+              "amenitiesId": 293,
+              "name": "Safety deposit box",
+              "sort": 17
+            },
+            {
+              "amenitiesId": 339,
+              "name": "TV",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 342,
+              "name": "Telephone",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 11,
+              "name": "Air conditioning",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 148,
+              "name": "Hair dryer",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 298,
+              "name": "Seating Area",
+              "sort": 59
+            },
+            {
+              "amenitiesId": 350,
+              "name": "Toilet",
+              "sort": 10
+            },
+            {
+              "amenitiesId": 266,
+              "name": "Private bathroom",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 156,
+              "name": "Heating",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 295,
+              "name": "Satellite channels",
+              "sort": 20
+            },
+            {
+              "amenitiesId": 328,
+              "name": "Sofa",
+              "sort": 65
+            },
+            {
+              "amenitiesId": 371,
+              "name": "View",
+              "sort": 31
+            },
+            {
+              "amenitiesId": 57,
+              "name": "City view",
+              "sort": 39
+            },
+            {
+              "amenitiesId": 197,
+              "name": "Linen",
+              "sort": 43
+            },
+            {
+              "amenitiesId": 366,
+              "name": "Upper floors accessible by elevator",
+              "sort": 166
+            },
+            {
+              "amenitiesId": 352,
+              "name": "Toilet paper",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 329,
+              "name": "Sofa bed",
+              "sort": 0
+            },
+            {
+              "amenitiesId": 361,
+              "name": "Trash cans",
+              "sort": 85
+            },
+            {
+              "amenitiesId": 327,
+              "name": "Socket near the bed",
+              "sort": 89
+            },
+            {
+              "amenitiesId": 5,
+              "name": "Accessible by lift",
+              "sort": 29
+            },
+            {
+              "amenitiesId": 322,
+              "name": "Smoke alarm",
+              "sort": 182
+            },
+            {
+              "amenitiesId": 182,
+              "name": "Key card access",
+              "sort": 158
+            }
+          ],
+          "photos": [
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/528869607.jpg",
+              "imageDescription": "Relax in style with a cozy seating area.",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/528869607.jpg?k=9bd89883c2fe81ad473be6b4117301f72be09560b28a10a4c23b93174cc1b668&o=",
+              "mainPhoto": true,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/528869607.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/528870032.jpg",
+              "imageDescription": "Relax in our stylish and comfortable hotel room!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/528870032.jpg?k=9ca53e8d4059fcbdeaf87fe0deaee983b92fcc79ce6df4dff16180926a0ae681&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/528870032.jpg"
+            },
+            {
+              "url": "https://static.cupid.travel/rooms-large-pictures/523933091.jpg",
+              "imageDescription": "Relax in this spacious and stylish hotel room!",
+              "imageClass1": "hotel room",
+              "imageClass2": "",
+              "failoverPhoto": "https://q-xx.bstatic.com/xdata/images/hotel/max1200/523933091.jpg?k=1377da82ca9a728e19311c9d8e509f262c0be26df883ddc9d7e422421bafa27c&o=",
+              "mainPhoto": false,
+              "score": 0.95,
+              "classId": 80,
+              "classOrder": 0,
+              "hd_url": "https://static.cupid.travel/rooms-large-pictures/523933091.jpg"
+            }
+          ],
+          "views": [],
+          "bedRelation": ""
+        }
+      ],
+      "phone": "+18774242449",
+      "fax": "",
+      "email": "hi-guestrelations@ihg.com",
+      "hotelType": "Hotels",
+      "hotelTypeId": 204,
+      "airportCode": "LGA",
+      "rating": 5.6,
+      "reviewCount": 6536,
+      "parking": "",
+      "groupRoomMin": 0,
+      "childAllowed": true,
+      "petsAllowed": true,
+      "policies": [
+        {
+          "id": 949,
+          "policy_type": "POLICY_HOTEL_GROUPS",
+          "name": "Groups",
+          "description": "When booking more than 5 rooms, different policies and additional supplements may apply.\n",
+          "child_allowed": "",
+          "pets_allowed": "",
+          "parking": ""
+        },
+        {
+          "id": 3263,
+          "policy_type": "POLICY_CHILDREN",
+          "name": "Children and extra bed policy",
+          "description": "Children of any age are allowed.\nChildren up to and including 17 years old stay for free when using an existing bed.\nYou haven't added any cots.\nYou haven't added any extra beds.",
+          "child_allowed": "",
+          "pets_allowed": "",
+          "parking": ""
+        },
+        {
+          "id": 5828,
+          "policy_type": "POLICY_HOTEL_INTERNET",
+          "name": "Internet",
+          "description": "WiFi is available in public areas and is free of charge.\n",
+          "child_allowed": "",
+          "pets_allowed": "",
+          "parking": ""
+        },
+        {
+          "id": 6107,
+          "policy_type": "POLICY_HOTEL_PETS",
+          "name": "Pets",
+          "description": "Pets are allowed. Charges may be applicable.\n",
+          "child_allowed": "",
+          "pets_allowed": "",
+          "parking": ""
+        },
+        {
+          "id": 107264,
+          "policy_type": "POLICY_HOTEL_PARKING",
+          "name": "Parking",
+          "description": "Public parking is possible on site (reservation is not needed) and costs  USD 72 per  day.\n",
+          "child_allowed": "",
+          "pets_allowed": "",
+          "parking": ""
+        }
+      ],
+      "sentiment_analysis": {
+        "cons": [
+          "Outdated facilities",
+          "Poor room conditions",
+          "Noise issues"
+        ],
+        "pros": [
+          "Location",
+          "Staff friendliness",
+          "Beds comfort"
+        ],
+        "categories": [
+          {
+            "name": "Cleanliness",
+            "rating": 5.9,
+            "description": "Mixed reviews on cleanliness with some guests praising clean rooms while others mentioned mold and dirty curtains."
+          },
+          {
+            "name": "Service",
+            "rating": 7.3,
+            "description": "Guests had mixed experiences with service, with some finding staff friendly and helpful, while others complained about slow responses and insistent tipping."
+          },
+          {
+            "name": "Location",
+            "rating": 8.4,
+            "description": "The hotel's location was consistently praised for being close to key landmarks and attractions, despite noise complaints."
+          },
+          {
+            "name": "Room Quality",
+            "rating": 6.6,
+            "description": "Rooms received mixed reviews, with some guests mentioning outdated facilities, dirty curtains, and malfunctioning air conditioning."
+          },
+          {
+            "name": "Amenities",
+            "rating": 6.7,
+            "description": "While some guests appreciated the location and room size, others mentioned the lack of essential amenities like a microwave and fridge."
+          },
+          {
+            "name": "Value for Money",
+            "rating": 5,
+            "description": "Several guests felt that the hotel did not offer value for money due to outdated facilities, poor room conditions, and disappointments during the stay."
+          },
+          {
+            "name": "Food and Beverage",
+            "rating": 7.3,
+            "description": "Breakfast and restaurant services received positive feedback overall, although some guests desired more variety."
+          },
+          {
+            "name": "Overall Experience",
+            "rating": 5.8,
+            "description": "The overall guest experience was polarized, with some having positive experiences while others expressed major disappointments with the hotel's condition."
+          }
+        ]
+      },
+      "sentiment_updated_at": "2025-06-25T08:37:29Z",
+      "deletedAt": null
+    }
+  }
